@@ -1,56 +1,16 @@
 [
     {
-        "id": "usr_698959037d3c10.86175413",
-        "email": "test123@gmail.com",
-        "password": "$2y$10$bJ80gPF6wdMeYFuln3Pn1uoD\/kY3SPAGXms3SW3aEcLKLY\/v7qO7S",
-        "created_at": "2026-02-09T04:48:19+01:00"
+        "id": "usr_69898143c85235.92306267",
+        "username": "Steven",
+        "email": "main.clyde.maranan@cvsu.edu.ph",
+        "password": "$2y$10$EzFu6Ra7aB\/ZHMxKhRHFdewP5pOCc9Nc9gnpnNT8fr4akcDd2ryD.",
+        "created_at": "2026-02-09T07:40:03+01:00"
     },
     {
-        "id": "usr_698959355d7666.54836164",
-        "email": "test1123@gmail.com",
-        "password": "$2y$10$KZ63.QLxOHUEsARAWg7qFOb\/tYpjdi0CQ9nUX9Q.eKH.Wgp2IesMy",
-        "created_at": "2026-02-09T04:49:09+01:00"
-    },
-    {
-        "id": "usr_6989711aa1d189.34183433",
-        "username": "username",
-        "email": "email@gmail.com",
-        "password": "$2y$10$il5yNLGJYGPIMyTORuxQm.uzQ3JTEz.0VX6Se02bZNruDL32MyQX.",
-        "created_at": "2026-02-09T06:31:06+01:00"
-    },
-    {
-        "id": "usr_6989714ac468c1.07268691",
-        "username": "username1",
-        "email": "email1@gmail.com",
-        "password": "$2y$10$gpl7TvsqfexhefF649jRs.lZ0L2WFH77KrAy4Wwph39Y9i7g9a816",
-        "created_at": "2026-02-09T06:31:54+01:00"
-    },
-    {
-        "id": "usr_698975882771a7.45896576",
-        "username": "deleon00",
-        "email": "main.gabrielian.deleon@cvsu.edu.ph",
-        "password": "$2y$10$oVKrS.KLZxdz79dKxbEAzuBUOrHxHn51SsQPh9dutcdHpKWAAGxmq",
-        "created_at": "2026-02-09T06:50:00+01:00"
-    },
-    {
-        "id": "usr_69897662edce67.88403542",
-        "username": "boss_steven_mapagmahal",
-        "email": "main.stevenclyde.maranan@cvsu.edu.ph",
-        "password": "$2y$10$vAoXlzCKMTm3l.byXO7Z6.6INXCxL5o\/idEUrm.AWadGi4vkzKMoW",
-        "created_at": "2026-02-09T06:53:39+01:00"
-    },
-    {
-        "id": "usr_698976b1b897f6.69176940",
-        "username": "asibor001",
-        "email": "main.markvincent.asibor@cvsu.edu.ph",
-        "password": "$2y$10$joYHZCwdiFlh\/13VQTwosedc8w7Qc.1dFkJiMOVeURvCrkT38G2pS",
-        "created_at": "2026-02-09T06:54:57+01:00"
-    },
-    {
-        "id": "usr_69897ea1de1993.62391829",
-        "username": "username001",
-        "email": "main.username.username@cvsu.edu.ph",
-        "password": "$2y$10$OGcKScuKqw94BTHLGTIiSe5lGmiIKHag1PUzF0ihSiK1fhgd0wuV6",
-        "created_at": "2026-02-09T07:28:50+01:00"
+        "id": "usr_69899a5b3dd6a2.17811266",
+        "username": "tellme",
+        "email": "main.steve.maranan@cvsu.edu.ph",
+        "password": "$2y$10$uyCZ1WgI0z4dntBbj42aJO63UN4eKfzJFUkU6lEogn3dYH68zdCiC",
+        "created_at": "2026-02-09T09:27:07+01:00"
     }
 ]

@@ -131,13 +131,16 @@ switch($action){
 
     case 'create_event':
         $title = trim($input['title'] ?? 'Untitled');
+        $description = trim($input['description'] ?? '');
+        $department = trim($input['department'] ?? '');
         $date = $input['date'] ?? null;
         $time = $input['time'] ?? null;
         $members = $input['members'] ?? [];
+        $isOpen = ($input['isOpen'] ?? false) ? true : false;
         if(!$date || !$time){ http_response_code(400); echo json_encode(['error'=>'date and time required']); exit; }
         $events = load_json($EVENTS_FILE);
         $id = uniqid('ev_', true);
-        $event = ['id'=>$id, 'title'=>$title, 'date'=>$date, 'time'=>$time, 'members'=>$members, 'created_at'=>date('c')];
+        $event = ['id'=>$id, 'title'=>$title, 'description'=>$description, 'department'=>$department, 'date'=>$date, 'time'=>$time, 'members'=>$members, 'isOpen'=>$isOpen, 'created_at'=>date('c')];
         $events[] = $event;
         save_json($EVENTS_FILE, $events);
         foreach($members as $m) ensure_member($m);

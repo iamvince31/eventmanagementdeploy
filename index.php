@@ -45,15 +45,31 @@
             <h2>Create Event / Invite Members</h2>
             <form id="eventForm">
                 <label>Title: <input type="text" name="title" required></label><br>
+                <label>Description:<br>
+                    <textarea name="description" rows="3" placeholder="Event details..."></textarea>
+                </label><br>
+                <label>Department:<br>
+                    <select name="department">
+                        <option value="">-- Select Department --</option>
+                        <option value="HR">HR</option>
+                        <option value="IT">IT</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Operations">Operations</option>
+                        <option value="Marketing">Marketing</option>
+                    </select>
+                </label><br>
                 <label>Date: <input type="date" name="date" required></label><br>
                 <label>Time: <input type="time" name="time" required></label><br>
                 <label>Members:<br>
-                    <select id="membersList" name="members" multiple size="5" required>
+                    <select id="membersList" name="members" multiple size="5">
                         <option value="">Loading members...</option>
                     </select>
                 </label><br>
                 <small style="color:#666;">Hold Ctrl/Cmd to select multiple members</small><br>
-                <button type="submit" class="btn">Create Event & Invite</button>
+                <label>
+                    <input type="checkbox" name="isOpen"> Open Event (everyone can join)
+                </label><br>
+                <button type="submit" class="btn">Create Event</button>
             </form>
             <div id="createResult"></div>
         </section>
@@ -67,7 +83,7 @@
         </section>
 
         <hr>
-
+        <!--  
         <section>
             <h2>Member Availability (mark busy)</h2>
             <form id="availForm">
@@ -83,6 +99,7 @@
             </form>
             <div id="availResult"></div>
         </section>
+       -->
     </div>
 
     <script>
@@ -155,24 +172,15 @@
         }
     }
 
-    // Load members for availability form
-    async function loadMembersForAvailability(){
-        const res = await postAction({action:'list_members'});
-        const select = document.getElementById('memberAvailList');
-        select.innerHTML = '';
-        if(res.members && res.members.length > 0){
-            res.members.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.username; // store username
-                opt.textContent = m.username; // display username
-                select.appendChild(opt);
-            });
-        } else {
-            const opt = document.createElement('option');
-            opt.textContent = 'No members available';
-            select.appendChild(opt);
-        }
-    }
+    // Load members for availability form (commented out for now)
+    // async function loadMembersForAvailability(){
+    //     const res = await postAction({action:'list_members'});
+    //     const select = document.getElementById('memberAvailList');
+    //     select.innerHTML = '';
+    // }
+
+    // Cache for email to username mapping
+    let membersCache = null;
 
     // Check auth and show appropriate section
     async function checkAuth(){
@@ -181,9 +189,9 @@
         if(user){
             document.getElementById('authSection').style.display = 'none';
             document.getElementById('appSection').style.display = 'block';
-            document.getElementById('currentUser').textContent = 'Logged in as: ' + user.username;
+            document.getElementById('currentUser').textContent = 'Logged in as: ' + (user.username || user.email);
             loadMembers();
-            loadMembersForAvailability();
+            // loadMembersForAvailability(); // commented out - availability form not in use
             refreshEvents();
         } else {
             document.getElementById('authSection').style.display = 'block';
@@ -195,28 +203,54 @@
     document.getElementById('eventForm').addEventListener('submit', async e => {
         e.preventDefault();
         const fd = new FormData(e.target);
+        const date = fd.get('date');
+        const time = fd.get('time');
+        
+        // Validate date/time not in past
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        const currentTime = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+        
+        if(date < today || (date === today && time < currentTime)){
+            document.getElementById('createResult').textContent = 'Error: Cannot set event in the past. Event time must be today or later.';
+            return;
+        }
+        
         const memberSelect = document.getElementById('membersList');
         const members = Array.from(memberSelect.selectedOptions).map(opt => opt.value);
-        const data = {action:'create_event', title:fd.get('title'), date:fd.get('date'), time:fd.get('time'), members};
+        const isOpen = fd.get('isOpen') ? true : false;
+        const data = {
+            action:'create_event',
+            title:fd.get('title'),
+            description:fd.get('description'),
+            department:fd.get('department'),
+            date:date,
+            time:time,
+            members:members,
+            isOpen:isOpen
+        };
         const res = await postAction(data);
         document.getElementById('createResult').textContent = res.message || JSON.stringify(res);
+        if(res.message && res.message.includes('created')) e.target.reset();
         refreshEvents();
     });
 
-    // Mark availability (busy)
-    document.getElementById('availForm').addEventListener('submit', async e => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        const data = {action:'set_availability', member:fd.get('member'), date:fd.get('date'), start:fd.get('start'), end:fd.get('end')};
-        const res = await postAction(data);
-        document.getElementById('availResult').textContent = res.message || JSON.stringify(res);
-        refreshEvents();
-    });
+    // Mark availability (busy) - commented out for now
+    // const availForm = document.getElementById('availForm');
+    // if(availForm) {
+    //     availForm.addEventListener('submit', async e => {
+    //         e.preventDefault();
+    //         const fd = new FormData(e.target);
+    //         const data = {action:'set_availability', member:fd.get('member'), date:fd.get('date'), start:fd.get('start'), end:fd.get('end')};
+    //         const res = await postAction(data);
+    //         document.getElementById('availResult').textContent = res.message || JSON.stringify(res);
+    //         refreshEvents();
+    //     });
+    // }
 
     document.getElementById('refreshEvents').addEventListener('click', refreshEvents);
 
     // Helper to map email to username
-    let membersCache = null;
     async function getEmailToUsernameMap(){
         if(!membersCache){
             const res = await postAction({action:'get_registered_members'});
@@ -243,7 +277,17 @@
             const h = document.createElement('h3');
             h.textContent = ev.title + ' — ' + ev.date + ' ' + ev.time;
             div.appendChild(h);
+            const info = document.createElement('div');
+            info.style.fontSize = '0.9rem';
+            info.style.marginBottom = '8px';
+            let infoHtml = '';
+            if(ev.description) infoHtml += '<p><strong>Description:</strong> ' + ev.description + '</p>';
+            if(ev.department) infoHtml += '<p><strong>Department:</strong> ' + ev.department + '</p>';
+            if(ev.isOpen) infoHtml += '<p style="color:green;"><strong>Open Event</strong> - Everyone can join</p>';
+            info.innerHTML = infoHtml;
+            div.appendChild(info);
             const ul = document.createElement('ul');
+            ul.innerHTML = '<strong>Members:</strong>';
             for(const m of ev.members){
                 const li = document.createElement('li');
                 const username = emailToUsername[m] || m;

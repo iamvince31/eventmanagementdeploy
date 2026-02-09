@@ -3,3 +3,26 @@ Home Page
 Accounts (Notify 10 mins before meeting)
 
 Members (Automatic DropDown once registered account)
+
+API for accounts for login
+
+Laravel - React - Tailwind
+
+Kiro - Node - Diagrams.net 
+
+Accounts
+Events
+
+
+Login / Register > Dashboard (Calendar with Tasks per Date) / with Add Event 
+
+Page 1 : Login 
+Page 2 : Register 
+Page 3 : Dashboard Calendar / Task List / Add task / Pop up Task Description with edit
+Page 4 : Create Event (after create go back to page 3)
+
+Part ni Gab: Login / Register 
+Part ni Mark: Calendar Dashboard with tasks notification
+Part ni Steven: Create with description, Drop down box for different departments members, Start time must be today at this moment- 
+never must be setted at the past, Set open event where everyone can join
+
