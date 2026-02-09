@@ -1,4 +1,8 @@
 7:00 - Time in
 
-7:30 - 8:00 : Orientation / Break Down
-8:00 - : Preparation of System / Github / Brainstorming
+7:30 - 8:00 : Orientation (Event Management System) / Break Down
+8:00 - 9:00 : Preparation of System / Github / Brainstorming
+9:00 - 10:00 : Determined 4 Modules to Implement (Faculty Schedule, Availability, Event Creation, Announcement and Communication)
+10:00 - 11:00 : Tested Initial BoilerPlate System.
+11:00 - 12:00 : Lunch Break x Brainstorming / Implementing Accounts w/ register/login
+12:00 - 1:00 : Implementing Member Listing on Create Schedule
