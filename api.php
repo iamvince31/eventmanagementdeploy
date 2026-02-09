@@ -1,5 +1,26 @@
 <?php
+session_start();
+// capture any accidental HTML/error output and return JSON instead
+ob_start();
+ini_set('display_errors', '0');
 header('Content-Type: application/json');
+
+set_exception_handler(function($ex){
+    http_response_code(500);
+    while(ob_get_level()) ob_end_clean();
+    echo json_encode(['error'=>'Exception: '.$ex->getMessage()]);
+    exit;
+});
+
+register_shutdown_function(function(){
+    $err = error_get_last();
+    if($err){
+        http_response_code(500);
+        while(ob_get_level()) ob_end_clean();
+        echo json_encode(['error'=>'Fatal error: '.$err['message']]);
+        exit;
+    }
+});
 
 $DATA_DIR = __DIR__ . '/data';
 if(!is_dir($DATA_DIR)) mkdir($DATA_DIR, 0777, true);
@@ -53,7 +74,47 @@ function member_is_busy_at($member, $date, $time){
     return ['busy'=>false];
 }
 
+try {
 switch($action){
+    case 'register':
+        $username = trim($input['username'] ?? '');
+        $email = trim($input['email'] ?? '');
+        $password = trim($input['password'] ?? '');
+        if(!$username || !$email || !$password){ http_response_code(400); echo json_encode(['error'=>'username, email and password required']); exit; }
+        $users = load_json($DATA_DIR . '/users.json');
+        foreach($users as $u) if($u['email'] === $email){ http_response_code(400); echo json_encode(['error'=>'user already exists']); exit; }
+        $user = ['id'=>uniqid('usr_', true), 'username'=>$username, 'email'=>$email, 'password'=>password_hash($password, PASSWORD_DEFAULT), 'created_at'=>date('c')];
+        $users[] = $user;
+        save_json($DATA_DIR . '/users.json', $users);
+        ensure_member($email);
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['user_email'] = $user['email'];
+        echo json_encode(['message'=>'Registered successfully', 'user'=>['id'=>$user['id'], 'email'=>$user['email']]]);
+        break;
+
+    case 'login':
+        $email = trim($input['email'] ?? '');
+        $password = trim($input['password'] ?? '');
+        if(!$email || !$password){ http_response_code(400); echo json_encode(['error'=>'email and password required']); exit; }
+        $users = load_json($DATA_DIR . '/users.json');
+        $found = null;
+        foreach($users as $u) if($u['email'] === $email){ $found = $u; break; }
+        if(!$found || !password_verify($password, $found['password'])){ http_response_code(400); echo json_encode(['error'=>'invalid email or password']); exit; }
+        $_SESSION['user_id'] = $found['id'];
+        $_SESSION['user_email'] = $found['email'];
+        echo json_encode(['message'=>'Logged in successfully', 'user'=>['id'=>$found['id'], 'email'=>$found['email']]]);
+        break;
+
+    case 'logout':
+        session_destroy();
+        echo json_encode(['message'=>'Logged out']);
+        break;
+
+    case 'get_current_user':
+        if(isset($_SESSION['user_id'])){ echo json_encode(['user'=>['id'=>$_SESSION['user_id'], 'email'=>$_SESSION['user_email']]]); }
+        else { echo json_encode(['user'=>null]); }
+        break;
+
     case 'create_event':
         $title = trim($input['title'] ?? 'Untitled');
         $date = $input['date'] ?? null;
@@ -113,13 +174,28 @@ switch($action){
         else echo json_encode(['available'=>true]);
         break;
 
+    case 'get_registered_members':
+        $users = load_json($DATA_DIR . '/users.json');
+        $members = [];
+        foreach($users as $u){
+            $members[] = ['username'=>$u['username'], 'email'=>$u['email']];
+        }
+        echo json_encode(['members'=>$members]);
+        break;
+
     case 'list_members':
         $members = load_json($MEMBERS_FILE);
         echo json_encode(['members'=>$members]);
         break;
 
-    default:
-        echo json_encode(['error'=>'unknown action', 'received'=>$action]);
-}
+        default:
+            echo json_encode(['error'=>'unknown action', 'received'=>$action]);
+    }
+    } catch (Throwable $t) {
+        http_response_code(500);
+        while (ob_get_level()) ob_end_clean();
+        echo json_encode(['error' => $t->getMessage(), 'trace' => $t->getTraceAsString()]);
+        exit;
+    }
 
 ?>
