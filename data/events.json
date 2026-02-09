@@ -1,28 +1,16 @@
 [
     {
-        "id": "ev_69898161b58f96.26517242",
-        "title": "etert",
-        "description": "reterte",
+        "id": "ev_6989a45d86dc47.88482600",
+        "title": "Tven",
+        "description": "qwertyuiop",
         "department": "HR",
-        "date": "2026-03-05",
-        "time": "15:53",
+        "date": "2026-02-09",
+        "time": "18:08",
         "members": [
-            "main.clyde.maranan@cvsu.edu.ph"
-        ],
-        "isOpen": false,
-        "created_at": "2026-02-09T07:40:33+01:00"
-    },
-    {
-        "id": "ev_69899a150ed8c0.96148106",
-        "title": "dgdg",
-        "description": "gdgdgd",
-        "department": "Finance",
-        "date": "2026-12-22",
-        "time": "12:32",
-        "members": [
-            "main.clyde.maranan@cvsu.edu.ph"
+            "main.justine.q@cvsu.edu.ph"
         ],
         "isOpen": true,
-        "created_at": "2026-02-09T09:25:57+01:00"
+        "host": "main.justine.q@cvsu.edu.ph",
+        "created_at": "2026-02-09T10:09:49+01:00"
     }
 ]
