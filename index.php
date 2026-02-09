@@ -58,18 +58,18 @@
                         <option value="Marketing">Marketing</option>
                     </select>
                 </label><br>
-                <label>Date: <input type="date" name="date" required></label><br>
-                <label>Time: <input type="time" name="time" required></label><br>
+                <label>Date: <input type="date" id="eventDate" name="date" required></label><br>
+                <label>Time: <input type="time" id="eventTime" name="time" required></label><br>
                 <label>Members:<br>
-                    <select id="membersList" name="members" multiple size="5">
-                        <option value="">Loading members...</option>
-                    </select>
+                    <div id="membersCheckboxes" style="border:1px solid #d0d5db; padding:8px; border-radius:4px; background:#fafbfc; max-height:150px; overflow-y:auto;">
+                        <p style="margin:0 0 6px 0; color:#6b7280;">Loading members...</p>
+                    </div>
                 </label><br>
-                <small style="color:#666;">Hold Ctrl/Cmd to select multiple members</small><br>
                 <label>
                     <input type="checkbox" name="isOpen"> Open Event (everyone can join)
                 </label><br>
-                <button type="submit" class="btn">Create Event</button>
+                <button type="submit" id="eventSubmitBtn" class="btn">Create Event</button>
+                <button type="button" id="cancelEditBtn" class="btn" style="display:none;margin-left:8px;">Cancel Edit</button>
             </form>
             <div id="createResult"></div>
         </section>
@@ -112,6 +112,10 @@
         });
         return resp.json();
     }
+
+    // state
+    let currentUser = null;
+    let editingEventId = null;
 
     // Auth form handlers
     document.getElementById('loginForm').addEventListener('submit', async e => {
@@ -156,19 +160,48 @@
     // Load members from users via get_registered_members
     async function loadMembers(){
         const res = await postAction({action:'get_registered_members'});
-        const select = document.getElementById('membersList');
-        select.innerHTML = '';
+        const container = document.getElementById('membersCheckboxes');
+        container.innerHTML = '';
         if(res.members && res.members.length > 0){
+            const ul = document.createElement('ul');
+            ul.style.margin = '0';
+            ul.style.padding = '0';
             res.members.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.email; // store email as value for creating events
-                opt.textContent = m.username; // display username
-                select.appendChild(opt);
+                const li = document.createElement('li');
+                li.style.listStyle = 'none';
+                li.style.display = 'flex';
+                li.style.alignItems = 'center';
+                li.style.padding = '6px 8px';
+                li.style.borderRadius = '4px';
+                li.style.cursor = 'pointer';
+                li.style.whiteSpace = 'nowrap';
+                li.className = 'member-checkbox-item';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.name = 'memberCheckbox';
+                checkbox.value = m.email;
+                checkbox.id = 'member_' + m.email;
+                checkbox.style.marginRight = '8px';
+                checkbox.style.cursor = 'pointer';
+                
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.style.margin = '0';
+                label.style.cursor = 'pointer';
+                label.textContent = m.username + ' (' + m.email + ')';
+                
+                li.appendChild(checkbox);
+                li.appendChild(label);
+                ul.appendChild(li);
             });
+            container.appendChild(ul);
         } else {
-            const opt = document.createElement('option');
-            opt.textContent = 'No members available';
-            select.appendChild(opt);
+            const p = document.createElement('p');
+            p.textContent = 'No members available';
+            p.style.margin = '0';
+            p.style.color = '#6b7280';
+            container.appendChild(p);
         }
     }
 
@@ -179,6 +212,27 @@
     //     select.innerHTML = '';
     // }
 
+    // Set date input constraints (today to 1 year from today)
+    function setDateConstraints(){
+        const dateInput = document.getElementById('eventDate');
+        const today = new Date();
+        const minDate = today.toISOString().split('T')[0];
+        const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()).toISOString().split('T')[0];
+        if(!dateInput) return;
+        dateInput.min = minDate;
+        dateInput.max = maxDate;
+        // default to today so user can quickly create today's events but still edit
+        if(!dateInput.value) dateInput.value = minDate;
+        // default time to current time (HH:MM) if not set
+        const timeInput = document.getElementById('eventTime');
+        if(timeInput){
+            const hh = String(today.getHours()).padStart(2,'0');
+            const mm = String(today.getMinutes()).padStart(2,'0');
+            const nowTime = hh + ':' + mm;
+            if(!timeInput.value) timeInput.value = nowTime;
+        }
+    }
+
     // Cache for email to username mapping
     let membersCache = null;
 
@@ -186,41 +240,54 @@
     async function checkAuth(){
         const res = await postAction({action:'get_current_user'});
         const user = res.user;
-        if(user){
-            document.getElementById('authSection').style.display = 'none';
-            document.getElementById('appSection').style.display = 'block';
-            document.getElementById('currentUser').textContent = 'Logged in as: ' + (user.username || user.email);
-            loadMembers();
-            // loadMembersForAvailability(); // commented out - availability form not in use
-            refreshEvents();
-        } else {
-            document.getElementById('authSection').style.display = 'block';
-            document.getElementById('appSection').style.display = 'none';
-        }
+            if(user){
+                currentUser = user;
+                document.getElementById('authSection').style.display = 'none';
+                document.getElementById('appSection').style.display = 'block';
+                document.getElementById('currentUser').textContent = 'Logged in as: ' + (user.username || user.email);
+                setDateConstraints();
+                await loadMembers();
+                // loadMembersForAvailability(); // commented out - availability form not in use
+                await refreshEvents();
+            } else {
+                currentUser = null;
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('appSection').style.display = 'none';
+            }
     }
 
-    // Create event
+    // Create or update event
     document.getElementById('eventForm').addEventListener('submit', async e => {
         e.preventDefault();
         const fd = new FormData(e.target);
         const date = fd.get('date');
         const time = fd.get('time');
-        
-        // Validate date/time not in past
+
+        // Validate date within allowed range and time not in past (if today)
         const now = new Date();
         const today = now.toISOString().split('T')[0];
+        const maxDateObj = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+        const maxDate = maxDateObj.toISOString().split('T')[0];
         const currentTime = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-        
-        if(date < today || (date === today && time < currentTime)){
-            document.getElementById('createResult').textContent = 'Error: Cannot set event in the past. Event time must be today or later.';
+
+        if(date < today){
+            document.getElementById('createResult').textContent = 'Error: Event date cannot be in the past. Select today or a future date.';
             return;
         }
-        
-        const memberSelect = document.getElementById('membersList');
-        const members = Array.from(memberSelect.selectedOptions).map(opt => opt.value);
+        if(date > maxDate){
+            document.getElementById('createResult').textContent = 'Error: Event date cannot be more than 1 year from today.';
+            return;
+        }
+        if(date === today && time < currentTime){
+            document.getElementById('createResult').textContent = 'Error: Event time cannot be in the past. Select a future time for today.';
+            return;
+        }
+
+        const memberCheckboxes = document.querySelectorAll('input[name="memberCheckbox"]:checked');
+        const members = Array.from(memberCheckboxes).map(cb => cb.value);
         const isOpen = fd.get('isOpen') ? true : false;
-        const data = {
-            action:'create_event',
+
+        const payload = {
             title:fd.get('title'),
             description:fd.get('description'),
             department:fd.get('department'),
@@ -229,10 +296,26 @@
             members:members,
             isOpen:isOpen
         };
-        const res = await postAction(data);
-        document.getElementById('createResult').textContent = res.message || JSON.stringify(res);
-        if(res.message && res.message.includes('created')) e.target.reset();
-        refreshEvents();
+
+        let res;
+        if(editingEventId){
+            payload.action = 'update_event';
+            payload.id = editingEventId;
+            res = await postAction(payload);
+            if(res && !res.error){
+                document.getElementById('createResult').textContent = res.message || 'Event updated';
+                // exit edit mode
+                cancelEdit();
+            } else {
+                document.getElementById('createResult').textContent = 'Error: ' + (res.error || JSON.stringify(res));
+            }
+        } else {
+            payload.action = 'create_event';
+            res = await postAction(payload);
+            document.getElementById('createResult').textContent = res.message || JSON.stringify(res);
+            if(res.message && res.message.includes('created')) e.target.reset();
+        }
+        await refreshEvents();
     });
 
     // Mark availability (busy) - commented out for now
@@ -264,6 +347,39 @@
         return membersCache;
     }
 
+    async function enterEditMode(ev){
+        editingEventId = ev.id;
+        const form = document.getElementById('eventForm');
+        form.querySelector('input[name="title"]').value = ev.title || '';
+        form.querySelector('textarea[name="description"]').value = ev.description || '';
+        form.querySelector('select[name="department"]').value = ev.department || '';
+        const dateInput = document.getElementById('eventDate');
+        const timeInput = document.getElementById('eventTime');
+        if(dateInput) dateInput.value = ev.date || '';
+        if(timeInput) timeInput.value = ev.time || '';
+        // uncheck all then check members
+        const checks = document.querySelectorAll('input[name="memberCheckbox"]');
+        checks.forEach(cb => cb.checked = ev.members.includes(cb.value));
+        const isOpenCb = form.querySelector('input[name="isOpen"]');
+        if(isOpenCb) isOpenCb.checked = !!ev.isOpen;
+        document.getElementById('eventSubmitBtn').textContent = 'Save Changes';
+        document.getElementById('cancelEditBtn').style.display = 'inline-block';
+        window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    function cancelEdit(){
+        editingEventId = null;
+        document.getElementById('eventForm').reset();
+        document.getElementById('eventSubmitBtn').textContent = 'Create Event';
+        document.getElementById('cancelEditBtn').style.display = 'none';
+        setDateConstraints();
+    }
+
+    document.getElementById('cancelEditBtn').addEventListener('click', ()=>{
+        cancelEdit();
+        document.getElementById('createResult').textContent = '';
+    });
+
     async function refreshEvents(){
         const res = await postAction({action:'list_events'});
         const container = document.getElementById('eventsList');
@@ -284,6 +400,8 @@
             if(ev.description) infoHtml += '<p><strong>Description:</strong> ' + ev.description + '</p>';
             if(ev.department) infoHtml += '<p><strong>Department:</strong> ' + ev.department + '</p>';
             if(ev.isOpen) infoHtml += '<p style="color:green;"><strong>Open Event</strong> - Everyone can join</p>';
+            const hostDisplay = ev.host ? (emailToUsername[ev.host] ? (emailToUsername[ev.host] + ' ('+ev.host+')') : ev.host) : 'Unknown';
+            infoHtml += '<p><strong>Host:</strong> ' + hostDisplay + '</p>';
             info.innerHTML = infoHtml;
             div.appendChild(info);
             const ul = document.createElement('ul');
@@ -297,11 +415,20 @@
                 // check availability per member
                 (async ()=>{
                     const av = await postAction({action:'get_member_availability_for_event', event_id:ev.id, member:m});
-                    li.textContent = m + ' — ' + (av.available? 'Available' : ('Busy at ' + av.busy_reason));
+                    li.textContent = (emailToUsername[m] || m) + ' — ' + (av.available? 'Available' : ('Busy at ' + av.busy_reason));
                     li.className = av.available ? 'member-available' : 'member-busy';
                 })();
             }
             div.appendChild(ul);
+            // edit button only for host
+            if(currentUser && ev.host && currentUser.email === ev.host){
+                const editBtn = document.createElement('button');
+                editBtn.textContent = 'Edit';
+                editBtn.className = 'btn';
+                editBtn.style.marginTop = '8px';
+                editBtn.addEventListener('click', ()=> enterEditMode(ev));
+                div.appendChild(editBtn);
+            }
             container.appendChild(div);
         }
     }

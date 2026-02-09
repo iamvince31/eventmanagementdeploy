@@ -140,7 +140,8 @@ switch($action){
         if(!$date || !$time){ http_response_code(400); echo json_encode(['error'=>'date and time required']); exit; }
         $events = load_json($EVENTS_FILE);
         $id = uniqid('ev_', true);
-        $event = ['id'=>$id, 'title'=>$title, 'description'=>$description, 'department'=>$department, 'date'=>$date, 'time'=>$time, 'members'=>$members, 'isOpen'=>$isOpen, 'created_at'=>date('c')];
+        $host = $_SESSION['user_email'] ?? null;
+        $event = ['id'=>$id, 'title'=>$title, 'description'=>$description, 'department'=>$department, 'date'=>$date, 'time'=>$time, 'members'=>$members, 'isOpen'=>$isOpen, 'host'=>$host, 'created_at'=>date('c')];
         $events[] = $event;
         save_json($EVENTS_FILE, $events);
         foreach($members as $m) ensure_member($m);
@@ -151,6 +152,30 @@ switch($action){
             $availability[$m] = $check['busy'] ? ['available'=>false,'busy_reason'=>$check['reason']] : ['available'=>true];
         }
         echo json_encode(['message'=>'Event created','event'=>$event,'availability'=>$availability]);
+        break;
+
+    case 'update_event':
+        $event_id = $input['id'] ?? null;
+        if(!$event_id){ http_response_code(400); echo json_encode(['error'=>'event id required']); exit; }
+        $events = load_json($EVENTS_FILE);
+        $foundIndex = null;
+        foreach($events as $idx => $e) if($e['id'] === $event_id){ $foundIndex = $idx; break; }
+        if($foundIndex === null){ http_response_code(404); echo json_encode(['error'=>'event not found']); exit; }
+        $event = $events[$foundIndex];
+        $currentUser = $_SESSION['user_email'] ?? null;
+        if(!$currentUser || ($event['host'] ?? null) !== $currentUser){ http_response_code(403); echo json_encode(['error'=>'only host can update this event']); exit; }
+        // update fields
+        $event['title'] = trim($input['title'] ?? $event['title']);
+        $event['description'] = trim($input['description'] ?? $event['description']);
+        $event['department'] = trim($input['department'] ?? $event['department']);
+        $event['date'] = $input['date'] ?? $event['date'];
+        $event['time'] = $input['time'] ?? $event['time'];
+        $event['members'] = $input['members'] ?? $event['members'];
+        $event['isOpen'] = ($input['isOpen'] ?? $event['isOpen']) ? true : false;
+        $event['updated_at'] = date('c');
+        $events[$foundIndex] = $event;
+        save_json($EVENTS_FILE, $events);
+        echo json_encode(['message'=>'Event updated','event'=>$event]);
         break;
 
     case 'list_events':

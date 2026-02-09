@@ -1,16 +1,9 @@
 [
     {
-        "id": "usr_69898143c85235.92306267",
-        "username": "Steven",
-        "email": "main.clyde.maranan@cvsu.edu.ph",
-        "password": "$2y$10$EzFu6Ra7aB\/ZHMxKhRHFdewP5pOCc9Nc9gnpnNT8fr4akcDd2ryD.",
-        "created_at": "2026-02-09T07:40:03+01:00"
-    },
-    {
-        "id": "usr_69899a5b3dd6a2.17811266",
-        "username": "tellme",
-        "email": "main.steve.maranan@cvsu.edu.ph",
-        "password": "$2y$10$uyCZ1WgI0z4dntBbj42aJO63UN4eKfzJFUkU6lEogn3dYH68zdCiC",
-        "created_at": "2026-02-09T09:27:07+01:00"
+        "id": "usr_6989a42cc5f314.56828026",
+        "username": "main.justine.q@cvsu.edu.ph",
+        "email": "main.justine.q@cvsu.edu.ph",
+        "password": "$2y$10$PoAY7wdzy7DtFgVNGHsI5.\/eOBm.7R2JK9A5PVKeQmRxT8lD\/Nmgy",
+        "created_at": "2026-02-09T10:09:00+01:00"
     }
 ]

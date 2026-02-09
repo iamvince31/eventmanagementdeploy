@@ -122,6 +122,54 @@ li.member-busy {
     font-weight: 600;
 }
 
+input[type="checkbox"] {
+  margin-right: 6px;
+  cursor: pointer;
+}
+
+#membersCheckboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  border: 1px solid #d0d5db;
+  padding: 8px;
+  border-radius: 4px;
+  background: #fafbfc;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+#membersCheckboxes ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  width: 100%;
+}
+
+#membersCheckboxes li {
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.member-checkbox-item {
+  transition: background-color 0.15s ease;
+}
+
+.member-checkbox-item:hover {
+  background-color: #e5eef7;
+}
+
+#membersCheckboxes label {
+  display: inline;
+  margin: 0;
+  cursor: pointer;
+  font-weight: normal;
+}
+
 @media (min-width: 700px) {
     body {
         max-width: 900px;
