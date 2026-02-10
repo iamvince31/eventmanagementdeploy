@@ -2,7 +2,10 @@
 
 7:00 - 8:00 : Activity Diagram Making
 8:00 - 9:00 : Scaling PHP Based Website into Laravel-React-Tailwind 
-9:00 - 10:00 : Installing Composer / Implementing/Fixing Laravel Framework
-10:00 - 11:00 : Preparing System Requirement Specification, Fixing Laravel Issues
+9:00 - 10:00 : Installing Composer / Implementing/Fixing Laravel Framework / 
+10:00 - 11:00 : Preparing System Requirement Specification, Fixing Laravel Issues / Oriented on new placement of Office
 11:00 - 12:00 : Reimplemented Laravel / Fixed Issue on Laravel Login
-12:00 - 1:00 :
+12:00 - 1:00 : Pushed Changes to Github and Distributed to Teammates / Additional Changes to Create to Excempt the logged account to members
+1:00 - 2:00 : Testing implementations / Helped on connection between teammates 
+2:00 - 3:00 : Improving account specifications on departments when creating an event / Truncated Tester accounts 
+3:00 - 4:00 : Added Departments filtering on create event

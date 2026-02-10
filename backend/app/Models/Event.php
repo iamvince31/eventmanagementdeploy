@@ -10,6 +10,7 @@ class Event extends Model
         'title',
         'description',
         'department',
+        'location',
         'date',
         'time',
         'is_open',
