@@ -1,0 +1,5 @@
+7 AM - Time-in
+7:30 AM - Formulating Use Case Diagram
+10 AM - Initial Testing of Register and Log-In Module
+11 AM - Lunch
+12 PM - 

@@ -28,14 +28,10 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const register = async (username, email, password) => {
-    const response = await api.post('/register', { username, email, password });
-    const { user, token } = response.data;
-    
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    setUser(user);
-    
+  const register = async (username, email, password, department) => {
+    const response = await api.post('/register', { username, email, password, department });
+    // Don't automatically log the user in - just return the response
+    // User will need to login manually
     return response.data;
   };
 
