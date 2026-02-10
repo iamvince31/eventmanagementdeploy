@@ -84,7 +84,7 @@ export default function Dashboard() {
               <h2 className="text-2xl font-bold">Events / Calendar</h2>
               <div className="space-x-2">
                 <button
-                  onClick={() => navigate('/add-event')}
+                  onClick={() => navigate('/add-event', { state: { selectedDate } })}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                 >
                   Add Event

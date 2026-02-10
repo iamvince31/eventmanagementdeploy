@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit }) {
+export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -20,9 +20,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     const today = now.toISOString().split('T')[0];
     const currentTime = now.toTimeString().slice(0, 5);
     
-    if (!date) setDate(today);
+    if (!date) setDate(defaultDate || today);
     if (!time) setTime(currentTime);
-  }, []);
+  }, [defaultDate]);
 
   useEffect(() => {
     if (editingEvent) {

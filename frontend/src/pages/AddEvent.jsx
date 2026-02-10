@@ -11,6 +11,7 @@ export default function AddEvent() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const editingEvent = location.state?.event || null;
+  const selectedDate = location.state?.selectedDate || null;
 
   useEffect(() => {
     fetchMembers();
@@ -89,6 +90,7 @@ export default function AddEvent() {
             onEventCreated={handleEventCreated}
             editingEvent={editingEvent}
             onCancelEdit={handleCancelEdit}
+            defaultDate={selectedDate}
           />
         </div>
       </main>

@@ -65,6 +65,7 @@ export default function Calendar({ events, onDateSelect }) {
       const dayEvents = getEventsForDate(day);
       const today = isToday(day);
       const selected = isSelected(day);
+      const eventCount = dayEvents.length;
 
       days.push(
         <div
@@ -78,22 +79,13 @@ export default function Calendar({ events, onDateSelect }) {
           `}
         >
           <div className="font-bold text-sm mb-1">{day}</div>
-          <div className="space-y-1">
-            {dayEvents.slice(0, 3).map((event, idx) => (
-              <div
-                key={idx}
-                className="text-xs bg-blue-500 text-white px-1 py-0.5 rounded truncate"
-                title={`${event.time} ${event.title}`}
-              >
-                {event.time} {event.title}
+          {eventCount > 0 && (
+            <div className="flex items-center justify-center mt-4">
+              <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center font-bold text-lg">
+                {eventCount}
               </div>
-            ))}
-            {dayEvents.length > 3 && (
-              <div className="text-xs text-gray-500 italic">
-                +{dayEvents.length - 3} more
-              </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       );
     }
