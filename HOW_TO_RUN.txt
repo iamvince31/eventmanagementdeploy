@@ -1,0 +1,154 @@
+========================================
+HOW TO RUN THE APPLICATION
+========================================
+
+FIRST TIME SETUP (Do this once):
+---------------------------------
+1. Open XAMPP Control Panel
+2. Start Apache and MySQL
+3. Open browser: http://localhost/phpmyadmin
+4. Click "New" → Create database: event_management
+5. Open Command Prompt
+6. Type: cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+7. Type: C:\xampp\php\php.exe artisan migrate
+8. Wait for "Migration table created successfully"
+
+
+EVERY TIME YOU WANT TO USE THE APP:
+====================================
+
+STEP 1: START XAMPP
+-------------------
+1. Open XAMPP Control Panel
+2. Click "Start" next to Apache
+3. Click "Start" next to MySQL
+4. Both should show green "Running"
+
+
+STEP 2: START BACKEND (Laravel)
+--------------------------------
+1. Open Command Prompt
+2. Type: cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+3. Type: C:\xampp\php\php.exe artisan serve
+4. You should see: "Server running on [http://127.0.0.1:8000]"
+5. KEEP THIS WINDOW OPEN!
+
+
+STEP 3: START FRONTEND (React)
+-------------------------------
+1. Open ANOTHER Command Prompt (new window)
+2. Type: cd C:\xampp\htdocs\EventManagementSystemOJT\frontend
+3. Type: npm run dev
+4. You should see: "Local: http://localhost:5173/"
+5. KEEP THIS WINDOW OPEN!
+
+
+STEP 4: OPEN BROWSER
+---------------------
+1. Open your web browser
+2. Go to: http://localhost:5173
+3. You should see the Login page!
+
+
+TESTING:
+--------
+1. Click "Register"
+2. Fill in:
+   - Username: Your Name
+   - Email: main.firstname.lastname@cvsu.edu.ph
+   - Password: test123
+3. Click "Register"
+4. You should see the Dashboard!
+5. Create an event to test
+
+
+HOW TO VIEW DATA IN DATABASE:
+------------------------------
+Option 1: Using phpMyAdmin (Visual)
+1. Open browser: http://localhost/phpmyadmin
+2. Click "event_management" database on the left
+3. Click on tables to view data:
+   - users (registered users)
+   - events (created events)
+   - event_user (event members)
+   - availabilities (busy schedules)
+
+Option 2: Using Command Line
+1. Open Command Prompt
+2. Type: cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+3. Type: C:\xampp\php\php.exe test-db.php
+4. This will show all users and events
+
+
+STOPPING THE APPLICATION:
+--------------------------
+1. In Backend terminal: Press Ctrl+C
+2. In Frontend terminal: Press Ctrl+C
+3. Close XAMPP (optional)
+
+
+TROUBLESHOOTING:
+----------------
+Problem: "Could not open input file: artisan"
+Solution: Use full path: C:\xampp\php\php.exe artisan serve
+
+Problem: "404 Not Found" when registering
+Solution: 
+  1. Make sure Laravel backend is running (Step 2)
+  2. Check backend terminal for errors
+  3. Try restarting the backend server
+
+Problem: "Database connection failed"
+Solution: 
+  1. Make sure MySQL is running in XAMPP
+  2. Make sure database "event_management" exists in phpMyAdmin
+  3. Check backend/.env file has correct database settings
+
+Problem: "500 Error" in browser
+Solution: 
+  1. Check Laravel terminal for error details
+  2. Make sure migrations ran successfully
+  3. Try: C:\xampp\php\php.exe artisan migrate
+
+Problem: "Registration doesn't work"
+Solution:
+  1. Open browser console (F12) and check for errors
+  2. Make sure email format is: main.firstname.lastname@cvsu.edu.ph
+  3. Check Laravel terminal for error messages
+  4. Verify database connection with: C:\xampp\php\php.exe test-db.php
+
+Problem: "Port 8000 already in use"
+Solution: Close other applications or use: 
+  C:\xampp\php\php.exe artisan serve --port=8001
+
+
+QUICK COMMANDS:
+---------------
+Start Backend:
+  cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+  C:\xampp\php\php.exe artisan serve
+
+Start Frontend:
+  cd C:\xampp\htdocs\EventManagementSystemOJT\frontend
+  npm run dev
+
+View Database Data:
+  cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+  C:\xampp\php\php.exe test-db.php
+
+Run Migrations:
+  cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+  C:\xampp\php\php.exe artisan migrate
+
+Clear Cache (if needed):
+  cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+  C:\xampp\php\php.exe artisan config:clear
+  C:\xampp\php\php.exe artisan cache:clear
+
+
+THAT'S IT!
+----------
+Your application should now be running at:
+Frontend: http://localhost:5173
+Backend API: http://localhost:8000
+Database: http://localhost/phpmyadmin

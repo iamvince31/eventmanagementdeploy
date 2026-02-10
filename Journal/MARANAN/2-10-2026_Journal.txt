@@ -1,0 +1,8 @@
+6:50 : Time in
+
+7:00 - 8:00 : Activity Diagram Making
+8:00 - 9:00 : Scaling PHP Based Website into Laravel-React-Tailwind 
+9:00 - 10:00 : Installing Composer / Implementing/Fixing Laravel Framework
+10:00 - 11:00 : Preparing System Requirement Specification, Fixing Laravel Issues
+11:00 - 12:00 : Reimplemented Laravel / Fixed Issue on Laravel Login
+12:00 - 1:00 :
