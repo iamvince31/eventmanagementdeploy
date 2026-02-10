@@ -92,6 +92,11 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
                     <span className="font-medium">Department:</span> {event.department}
                   </p>
                 )}
+                {event.location && (
+                  <p>
+                    <span className="font-medium">Location:</span> {event.location}
+                  </p>
+                )}
                 {event.is_open && (
                   <p className="text-green-600 font-medium">
                     Open Event - Everyone can join

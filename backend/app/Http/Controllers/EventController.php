@@ -19,6 +19,7 @@ class EventController extends Controller
                     'title' => $event->title,
                     'description' => $event->description,
                     'department' => $event->department,
+                    'location' => $event->location,
                     'date' => $event->date,
                     'time' => $event->time,
                     'is_open' => $event->is_open,
@@ -43,6 +44,7 @@ class EventController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'department' => 'nullable|string',
+            'location' => 'required|string|max:255',
             'date' => 'required|date',
             'time' => 'required',
             'member_ids' => 'nullable|array',
@@ -53,6 +55,7 @@ class EventController extends Controller
             'title' => $request->title,
             'description' => $request->description,
             'department' => $request->department,
+            'location' => $request->location,
             'date' => $request->date,
             'time' => $request->time,
             'is_open' => $request->is_open ?? false,
@@ -81,13 +84,14 @@ class EventController extends Controller
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
             'department' => 'nullable|string',
+            'location' => 'sometimes|required|string|max:255',
             'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
             'is_open' => 'boolean',
         ]);
 
-        $event->update($request->only(['title', 'description', 'department', 'date', 'time', 'is_open']));
+        $event->update($request->only(['title', 'description', 'department', 'location', 'date', 'time', 'is_open']));
 
         if ($request->has('member_ids')) {
             $event->members()->sync($request->member_ids);

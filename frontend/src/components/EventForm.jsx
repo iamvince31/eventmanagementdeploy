@@ -5,6 +5,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [department, setDepartment] = useState('');
+  const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -30,6 +31,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setTitle(editingEvent.title);
       setDescription(editingEvent.description || '');
       setDepartment(editingEvent.department || '');
+      setLocation(editingEvent.location || '');
       setDate(editingEvent.date);
       setTime(editingEvent.time);
       setSelectedMembers(editingEvent.members.map(m => m.id));
@@ -48,6 +50,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         title,
         description,
         department,
+        location,
         date,
         time,
         member_ids: selectedMembers,
@@ -75,6 +78,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setTitle('');
     setDescription('');
     setDepartment('');
+    setLocation('');
     const now = new Date();
     setDate(now.toISOString().split('T')[0]);
     setTime(now.toTimeString().slice(0, 5));
@@ -150,6 +154,18 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               <option key={dept} value={dept}>{dept}</option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700">Location</label>
+          <input
+            type="text"
+            required
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="e.g., Conference Room A, Building 1"
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-4">

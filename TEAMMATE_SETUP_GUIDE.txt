@@ -1,0 +1,236 @@
+========================================
+SETUP GUIDE FOR NEW TEAM MEMBERS
+========================================
+
+Follow these steps after pulling the latest code from Git.
+
+PREREQUISITES (Must have installed):
+------------------------------------
+1. XAMPP (with Apache + MySQL)
+2. Composer (PHP package manager)
+3. Node.js and npm
+
+
+STEP-BY-STEP SETUP:
+===================
+
+STEP 1: PULL THE CODE
+---------------------
+1. Open Command Prompt
+2. Navigate to your XAMPP htdocs folder:
+   cd C:\xampp\htdocs
+
+3. Clone or pull the repository:
+   git clone [repository-url] EventManagementSystemOJT
+   OR
+   cd EventManagementSystemOJT
+   git pull
+
+
+STEP 2: CREATE DATABASE
+-----------------------
+1. Open XAMPP Control Panel
+2. Start Apache and MySQL (both should show green)
+3. Open browser: http://localhost/phpmyadmin
+4. Click "New" button on the left
+5. Database name: event_management
+6. Collation: utf8mb4_general_ci
+7. Click "Create"
+
+
+STEP 3: SETUP BACKEND
+---------------------
+1. Open Command Prompt
+2. Navigate to backend folder:
+   cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+
+3. Install PHP dependencies:
+   composer install
+
+4. Copy environment file:
+   copy .env.example .env
+
+5. Generate application key:
+   php artisan key:generate
+
+6. Open backend/.env in text editor and verify these settings:
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=event_management
+   DB_USERNAME=root
+   DB_PASSWORD=
+
+7. Run database migrations:
+   php artisan migrate
+
+   You should see:
+   ✓ create_users_table
+   ✓ create_cache_table
+   ✓ create_jobs_table
+   ✓ create_personal_access_tokens_table
+   ✓ create_events_table
+   ✓ create_event_user_table
+
+
+STEP 4: SETUP FRONTEND
+----------------------
+1. Open NEW Command Prompt
+2. Navigate to frontend folder:
+   cd C:\xampp\htdocs\EventManagementSystemOJT\frontend
+
+3. Install Node dependencies:
+   npm install
+
+   (This will take a few minutes)
+
+
+STEP 5: RUN THE APPLICATION
+----------------------------
+You need 2 Command Prompt windows open:
+
+TERMINAL 1 - Backend:
+  cd C:\xampp\htdocs\EventManagementSystemOJT\backend
+  php artisan serve
+
+  You should see: "Server running on [http://127.0.0.1:8000]"
+  KEEP THIS WINDOW OPEN!
+
+TERMINAL 2 - Frontend:
+  cd C:\xampp\htdocs\EventManagementSystemOJT\frontend
+  npm run dev
+
+  You should see: "Local: http://localhost:5173/"
+  KEEP THIS WINDOW OPEN!
+
+
+STEP 6: TEST THE APPLICATION
+-----------------------------
+1. Open browser: http://localhost:5173
+2. Click "Register"
+3. Fill in:
+   - Username: Your Name
+   - Email: main.yourname.lastname@cvsu.edu.ph
+   - Password: test123
+4. Click "Register"
+5. You should see the Dashboard!
+
+
+IMPORTANT NOTES:
+================
+
+DATABASE SHARING OPTIONS:
+-------------------------
+Option A: Each person has their own local database
+  - Everyone follows steps above
+  - Data is NOT shared between laptops
+  - Good for development and testing
+
+Option B: Share one database (all 3 laptops use same data)
+  - One person hosts the MySQL database
+  - Others update backend/.env to point to host's IP:
+    DB_HOST=192.168.x.x  (replace with host's IP)
+  - Host must configure MySQL for remote access
+  - All 3 see the same events and users
+
+
+DAILY WORKFLOW:
+===============
+1. Pull latest code: git pull
+2. Check for new migrations: php artisan migrate
+3. Install new dependencies (if any):
+   - Backend: composer install
+   - Frontend: npm install
+4. Start XAMPP (Apache + MySQL)
+5. Start backend: php artisan serve
+6. Start frontend: npm run dev
+7. Open browser: http://localhost:5173
+
+
+TROUBLESHOOTING:
+================
+
+Problem: "composer: command not found"
+Solution: Install Composer from https://getcomposer.org/
+
+Problem: "npm: command not found"
+Solution: Install Node.js from https://nodejs.org/
+
+Problem: "Could not open input file: artisan"
+Solution: Make sure you're in the backend folder
+
+Problem: "SQLSTATE[HY000] [1049] Unknown database"
+Solution: Create the database in phpMyAdmin (Step 2)
+
+Problem: "SQLSTATE[42S02]: Base table or view not found"
+Solution: Run migrations: php artisan migrate
+
+Problem: "Port 8000 already in use"
+Solution: 
+  - Close other Laravel servers
+  - Or use different port: php artisan serve --port=8001
+
+Problem: "Port 5173 already in use"
+Solution: Close other Vite/React servers
+
+Problem: "500 Internal Server Error"
+Solution:
+  1. Check backend terminal for error details
+  2. Clear cache: php artisan config:clear
+  3. Make sure .env file exists and is configured
+
+Problem: "Registration doesn't work"
+Solution:
+  1. Email must be: main.firstname.lastname@cvsu.edu.ph
+  2. Check browser console (F12) for errors
+  3. Check backend terminal for errors
+
+
+USEFUL COMMANDS:
+================
+
+View all routes:
+  cd backend
+  php artisan route:list
+
+Clear all cache:
+  cd backend
+  php artisan config:clear
+  php artisan cache:clear
+  php artisan route:clear
+
+Reset database (WARNING: deletes all data):
+  cd backend
+  php artisan migrate:fresh
+
+View database in browser:
+  http://localhost/phpmyadmin
+  → Click "event_management"
+
+
+WHAT'S IN THE DATABASE:
+=======================
+After migrations, you'll have these tables:
+  - users (user accounts)
+  - events (event information)
+  - event_user (who joined which event)
+  - personal_access_tokens (login tokens)
+  - cache, jobs, sessions (Laravel system tables)
+
+
+NEED HELP?
+==========
+1. Check the error message in terminal
+2. Check browser console (F12)
+3. Check backend/storage/logs/laravel.log
+4. Ask your teammates!
+
+
+THAT'S IT!
+==========
+You're ready to start developing!
+
+Frontend: http://localhost:5173
+Backend API: http://localhost:8000
+Database: http://localhost/phpmyadmin
+
