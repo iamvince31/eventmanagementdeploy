@@ -18,7 +18,6 @@ class EventController extends Controller
                     'id' => $event->id,
                     'title' => $event->title,
                     'description' => $event->description,
-                    'department' => $event->department,
                     'location' => $event->location,
                     'date' => $event->date,
                     'time' => $event->time,
@@ -43,7 +42,6 @@ class EventController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'department' => 'nullable|string',
             'location' => 'required|string|max:255',
             'date' => 'required|date',
             'time' => 'required',
@@ -54,7 +52,6 @@ class EventController extends Controller
         $event = Event::create([
             'title' => $request->title,
             'description' => $request->description,
-            'department' => $request->department,
             'location' => $request->location,
             'date' => $request->date,
             'time' => $request->time,
@@ -83,7 +80,6 @@ class EventController extends Controller
         $request->validate([
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'department' => 'nullable|string',
             'location' => 'sometimes|required|string|max:255',
             'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
@@ -91,7 +87,7 @@ class EventController extends Controller
             'is_open' => 'boolean',
         ]);
 
-        $event->update($request->only(['title', 'description', 'department', 'location', 'date', 'time', 'is_open']));
+        $event->update($request->only(['title', 'description', 'location', 'date', 'time', 'is_open']));
 
         if ($request->has('member_ids')) {
             $event->members()->sync($request->member_ids);

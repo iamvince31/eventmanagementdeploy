@@ -4,7 +4,6 @@ import api from '../services/api';
 export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [department, setDepartment] = useState('');
   const [location, setLocation] = useState('');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
@@ -13,8 +12,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const departments = ['HR', 'IT', 'Finance', 'Operations', 'Marketing'];
+  const [filterDepartment, setFilterDepartment] = useState('all');
 
   useEffect(() => {
     // Set default date and time
@@ -30,7 +28,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     if (editingEvent) {
       setTitle(editingEvent.title);
       setDescription(editingEvent.description || '');
-      setDepartment(editingEvent.department || '');
       setLocation(editingEvent.location || '');
       setDate(editingEvent.date);
       setTime(editingEvent.time);
@@ -49,7 +46,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       const payload = {
         title,
         description,
-        department,
         location,
         date,
         time,
@@ -77,7 +73,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const resetForm = () => {
     setTitle('');
     setDescription('');
-    setDepartment('');
     setLocation('');
     const now = new Date();
     setDate(now.toISOString().split('T')[0]);
@@ -100,6 +95,14 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         : [...prev, memberId]
     );
   };
+
+  // Filter members based on selected department filter
+  const filteredMembers = filterDepartment === 'all' 
+    ? members 
+    : members.filter(member => member.department === filterDepartment);
+
+  // Get unique departments from members
+  const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
@@ -143,20 +146,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Department</label>
-          <select
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-          >
-            <option value="">-- Select Department --</option>
-            {departments.map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
           <label className="block text-sm font-medium text-gray-700">Location</label>
           <input
             type="text"
@@ -193,12 +182,28 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">Members</label>
+          
+          {/* Department Filter */}
+          <div className="mb-3">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Filter by Department</label>
+            <select
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            >
+              <option value="all">All Departments</option>
+              {availableDepartments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="border border-gray-300 rounded-md p-3 bg-gray-50 max-h-40 overflow-y-auto">
-            {members.length === 0 ? (
-              <p className="text-sm text-gray-500">No members available</p>
+            {filteredMembers.length === 0 ? (
+              <p className="text-sm text-gray-500">No members available in this department</p>
             ) : (
               <div className="space-y-2">
-                {members.map(member => (
+                {filteredMembers.map(member => (
                   <label
                     key={member.id}
                     className="flex items-center p-2 hover:bg-blue-50 rounded cursor-pointer"
@@ -211,12 +216,21 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                     />
                     <span className="ml-2 text-sm text-gray-700">
                       {member.username} ({member.email})
+                      {member.department && (
+                        <span className="ml-2 text-xs text-gray-500">- {member.department}</span>
+                      )}
                     </span>
                   </label>
                 ))}
               </div>
             )}
           </div>
+          
+          {selectedMembers.length > 0 && (
+            <p className="mt-2 text-xs text-gray-600">
+              {selectedMembers.length} member(s) selected
+            </p>
+          )}
         </div>
 
         <div>

@@ -21,6 +21,7 @@ class AuthController extends Controller
                 'regex:/^main\.[a-zA-Z]+\.[a-zA-Z]+@cvsu\.edu\.ph$/i'
             ],
             'password' => 'required|string|min:6',
+            'department' => 'required|string',
         ], [
             'email.regex' => 'Email must be in format main.(firstname).(lastname)@cvsu.edu.ph'
         ]);
@@ -29,6 +30,7 @@ class AuthController extends Controller
             'name' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'department' => $request->department,
         ]);
 
         $token = $user->createToken('auth-token')->plainTextToken;
@@ -39,6 +41,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'username' => $user->name,
                 'email' => $user->email,
+                'department' => $user->department,
             ],
             'token' => $token,
         ], 201);
@@ -73,6 +76,7 @@ class AuthController extends Controller
                 'id' => $user->id,
                 'username' => $user->name,
                 'email' => $user->email,
+                'department' => $user->department,
             ],
             'token' => $token,
         ]);
@@ -94,6 +98,7 @@ class AuthController extends Controller
                 'id' => $request->user()->id,
                 'username' => $request->user()->name,
                 'email' => $request->user()->email,
+                'department' => $request->user()->department,
             ],
         ]);
     }

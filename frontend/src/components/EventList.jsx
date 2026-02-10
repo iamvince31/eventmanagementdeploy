@@ -87,11 +87,6 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
                     <span className="font-medium">Description:</span> {event.description}
                   </p>
                 )}
-                {event.department && (
-                  <p>
-                    <span className="font-medium">Department:</span> {event.department}
-                  </p>
-                )}
                 {event.location && (
                   <p>
                     <span className="font-medium">Location:</span> {event.location}
