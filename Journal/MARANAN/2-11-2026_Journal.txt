@@ -3,3 +3,7 @@
 7:00 - 8:00 : Implementing form attachments for additional proofs
 8:00 - 9:00 : Debugging multiple form attachments / improvement UI
 9:00 - 10:00 : Refactoring UI of the Create Event
+10:00 - 11:00 : Testing Changes on Create Events
+11:00 - 12:00 : Improved Invite members interface to have a search bar with
+12:00 - 1:00 : Formulating System Requirement Specification
+1:00 - 2:00 : Attempted Security tests to forms

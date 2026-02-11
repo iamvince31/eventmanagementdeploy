@@ -15,6 +15,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [searchMember, setSearchMember] = useState('');
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -159,6 +160,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const filteredMembers = filterDepartment === 'all'
     ? members
     : members.filter(member => member.department === filterDepartment);
+
+  // Further filter by search term
+  const searchFilteredMembers = filteredMembers.filter(member =>
+    member.username.toLowerCase().includes(searchMember.toLowerCase()) ||
+    member.email.toLowerCase().includes(searchMember.toLowerCase())
+  );
 
   const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
 
@@ -309,6 +316,39 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 )}
               </div>
 
+              
+
+              {/* Search Bar */}
+              <div className="mb-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search members by name or email..."
+                    value={searchMember}
+                    onChange={(e) => setSearchMember(e.target.value)}
+                    className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                  <svg
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  {searchMember && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchMember('')}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </div>
               {/* Department Filter */}
               <div className="mb-3">
                 <select
@@ -322,15 +362,16 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   ))}
                 </select>
               </div>
-
               <div className="border border-gray-200 rounded-lg bg-gray-50/50 h-48 overflow-y-auto">
-                {filteredMembers.length === 0 ? (
+                {searchFilteredMembers.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
-                    <p className="text-sm text-gray-400">No members available</p>
+                    <p className="text-sm text-gray-400">
+                      {searchMember ? 'No members found' : 'No members available'}
+                    </p>
                   </div>
                 ) : (
                   <div className="p-2 space-y-1">
-                    {filteredMembers.map(member => (
+                    {searchFilteredMembers.map(member => (
                       <label
                         key={member.id}
                         className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(member.id)
