@@ -4,6 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Calendar from '../components/Calendar';
 import EventDetails from '../components/EventDetails';
+import Modal from '../components/Modal';
+import { getFixedImageUrl } from '../utils/image';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -13,6 +15,10 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+
+  // Modal State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -53,6 +59,16 @@ export default function Dashboard() {
       console.error('Error deleting event:', error);
       alert('Failed to delete event: ' + (error.response?.data?.error || error.message));
     }
+  };
+
+  const handleViewEvent = (event) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedEvent(null);
   };
 
   const handleLogout = async () => {
@@ -203,10 +219,127 @@ export default function Dashboard() {
               currentUser={user}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onView={handleViewEvent}
             />
           </div>
         </div>
       </main>
+
+      {/* Event Details Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title="Event Details"
+      >
+        {selectedEvent && (
+          <div className="space-y-4">
+            {/* Image */}
+            {selectedEvent.images && selectedEvent.images.length > 0 && (
+              <div className="mb-4">
+                {selectedEvent.images.length === 1 ? (
+                  <img
+                    src={getFixedImageUrl(selectedEvent.images[0])}
+                    alt={selectedEvent.title}
+                    className="w-full h-64 object-cover rounded-lg shadow-sm"
+                  />
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedEvent.images.map((image, index) => (
+                      <img
+                        key={index}
+                        src={getFixedImageUrl(image)}
+                        alt={`${selectedEvent.title} ${index + 1}`}
+                        className="w-full h-32 object-cover rounded-lg shadow-sm"
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Title & Time */}
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900">{selectedEvent.title}</h3>
+              <p className="text-gray-500 flex items-center mt-1">
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {/* Format Date nicer? */}
+                {selectedEvent.date} at {selectedEvent.time}
+              </p>
+            </div>
+
+            {/* Location */}
+            {selectedEvent.location && (
+              <div className="flex items-start">
+                <svg className="w-5 h-5 text-gray-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900">Location</p>
+                  <p className="text-gray-600">{selectedEvent.location}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Description */}
+            {selectedEvent.description && (
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">Description</p>
+                <p className="text-gray-600 leading-relaxed text-sm">
+                  {selectedEvent.description}
+                </p>
+              </div>
+            )}
+
+            {/* Host */}
+            <div className="pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-sm">
+                    {selectedEvent.host.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="text-sm">
+                    <p className="font-medium text-gray-900">Hosted by {selectedEvent.host.username}</p>
+                    <p className="text-gray-500">{selectedEvent.host.email}</p>
+                  </div>
+                </div>
+                {/* Maybe render open event badge here */}
+                {selectedEvent.is_open && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Open Event
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Actions in Modal (Optional) */}
+            {(user?.id === selectedEvent.host.id) && (
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
+                <button
+                  onClick={() => {
+                    handleCloseModal();
+                    handleEdit(selectedEvent);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => {
+                    handleCloseModal();
+                    handleDelete(selectedEvent);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100"
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

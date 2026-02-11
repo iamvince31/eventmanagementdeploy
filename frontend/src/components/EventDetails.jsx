@@ -1,4 +1,4 @@
-export default function EventDetails({ date, events, members, currentUser, onEdit, onDelete }) {
+export default function EventDetails({ date, events, members, currentUser, onEdit, onDelete, onView }) {
   const formatDate = (dateStr) => {
     const d = new Date(dateStr + 'T00:00:00');
     return d.toLocaleDateString('en-US', {
@@ -51,7 +51,8 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
         {events.map((event, idx) => (
           <div
             key={event.id || idx}
-            className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:bg-blue-50/50 hover:border-blue-200 transition-all duration-200 group"
+            onClick={() => onView && onView(event)}
+            className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:bg-blue-50/50 hover:border-blue-200 transition-all duration-200 group cursor-pointer"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -81,7 +82,10 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
             {/* Action Buttons */}
             <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-200/60">
               <button
-                onClick={() => onEdit(event)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(event);
+                }}
                 className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
               >
                 <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -90,7 +94,10 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
                 Edit
               </button>
               <button
-                onClick={() => onDelete(event)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(event);
+                }}
                 className="flex-1 inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
               >
                 <svg className="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
