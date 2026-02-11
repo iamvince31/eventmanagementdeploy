@@ -66,12 +66,6 @@ export default function AddEvent() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="hidden sm:flex items-center space-x-3" role="img" aria-label={`User: ${user?.username}`}>
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-200 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm" aria-hidden="true">
-                  {user?.username?.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm font-medium text-white">{user?.username}</span>
-              </div>
               <button
                 onClick={() => navigate('/dashboard')}
                 className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-all duration-200"
@@ -79,6 +73,12 @@ export default function AddEvent() {
               >
                 Back
               </button>
+              <div className="hidden sm:flex items-center space-x-3" role="img" aria-label={`User: ${user?.username}`}>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-200 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm" aria-hidden="true">
+                  {user?.username?.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm font-medium text-white">{user?.username}</span>
+              </div>
             </div>
           </div>
         </div>

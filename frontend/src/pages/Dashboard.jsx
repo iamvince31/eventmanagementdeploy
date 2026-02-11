@@ -120,13 +120,13 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/account')}
-                className="hidden sm:flex items-center space-x-3 hover:opacity-80 transition-opacity duration-200" 
+                className="hidden sm:flex items-center space-x-3" 
                 aria-label="Go to account settings"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-200 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
                   {user?.username?.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm font-medium text-white">{user?.username}</span>
+                <span className="text-sm font-medium text-white hover:opacity-80 transition-opacity duration-200">{user?.username}</span>
               </button>
             </div>
           </div>
