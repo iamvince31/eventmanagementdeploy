@@ -21,7 +21,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     const currentTime = now.toTimeString().slice(0, 5);
-    
+
     if (!date) setDate(defaultDate || today);
     if (!time) setTime(currentTime);
   }, [defaultDate]);
@@ -53,11 +53,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       formData.append('date', date);
       formData.append('time', time);
       formData.append('is_open', isOpen ? '1' : '0');
-      
+
       images.forEach((image) => {
         formData.append('images[]', image);
       });
-      
+
       selectedMembers.forEach(id => {
         formData.append('member_ids[]', id);
       });
@@ -120,7 +120,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const addImages = (files) => {
     if (files.length > 0) {
       setImages(prev => [...prev, ...files]);
-      
+
       files.forEach(file => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -144,8 +144,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    
-    const files = Array.from(e.dataTransfer.files).filter(file => 
+
+    const files = Array.from(e.dataTransfer.files).filter(file =>
       file.type.startsWith('image/')
     );
     addImages(files);
@@ -156,101 +156,134 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const filteredMembers = filterDepartment === 'all' 
-    ? members 
+  const filteredMembers = filterDepartment === 'all'
+    ? members
     : members.filter(member => member.department === filterDepartment);
 
   const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
 
   return (
-    <div>
+    <div className="animate-fade-in">
 
+      {/* Error Alert */}
       {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-4">
-          <p className="text-sm text-red-800">{error}</p>
+        <div className="mb-5 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start space-x-3">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-red-800">{error}</p>
+          </div>
         </div>
       )}
 
+      {/* Success Alert */}
       {success && (
-        <div className="mb-4 rounded-md bg-green-50 p-4">
-          <p className="text-sm text-green-800">{success}</p>
+        <div className="mb-5 rounded-xl bg-green-50 border border-green-200 p-4 flex items-start space-x-3">
+          <div className="flex-shrink-0 mt-0.5">
+            <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-green-800">{success}</p>
+          </div>
         </div>
       )}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Event Details Box (1/3 width) */}
-          <div className="lg:col-span-1 bg-white border-2 border-gray-300 rounded-lg p-6 shadow-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Details</h3>
+          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="flex items-center space-x-2 mb-5">
+              <div className="bg-blue-50 rounded-lg p-2">
+                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </div>
+              <h3 className="text-base font-bold text-gray-900">Event Details</h3>
+            </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Title</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                 <input
                   type="text"
                   required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  placeholder="Enter event title"
+                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
                   rows="4"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Event details..."
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Location</label>
-                <input
-                  type="text"
-                  required
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  placeholder="e.g., Conference Room A, Building 1"
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
+                <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g., Conference Room A"
+                    className="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                  />
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
                   <input
                     type="date"
                     required
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Time</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
                   <input
                     type="time"
                     required
                     value={time}
                     onChange={(e) => setTime(e.target.value)}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="flex items-center">
+                <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
                   <input
                     type="checkbox"
                     checked={isOpen}
                     onChange={(e) => setIsOpen(e.target.checked)}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
-                  <span className="ml-2 text-sm text-gray-700">
-                    Open Event (everyone can join)
+                  <span className="ml-2.5 text-sm text-gray-700 font-medium">
+                    Open Event
                   </span>
+                  <span className="ml-1 text-xs text-gray-400">(everyone can join)</span>
                 </label>
               </div>
             </div>
@@ -258,15 +291,30 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
           {/* Right Column - Members and Images (2/3 width) */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Members List Box (Red) - Scrollable Vertically */}
-            <div className="bg-white border-2 border-gray-300 rounded-lg p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Invite Members</h3>
-              
+            {/* Members List Box */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-2">
+                  <div className="bg-purple-50 rounded-lg p-2">
+                    <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-bold text-gray-900">Invite Members</h3>
+                </div>
+                {selectedMembers.length > 0 && (
+                  <span className="text-xs font-semibold text-purple-600 bg-purple-50 px-2.5 py-1 rounded-full">
+                    {selectedMembers.length} selected
+                  </span>
+                )}
+              </div>
+
+              {/* Department Filter */}
               <div className="mb-3">
                 <select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
                 >
                   <option value="all">All Departments</option>
                   {availableDepartments.map(dept => (
@@ -275,15 +323,20 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 </select>
               </div>
 
-              <div className="border border-gray-300 rounded-md p-3 bg-gray-50 h-48 overflow-y-auto">
+              <div className="border border-gray-200 rounded-lg bg-gray-50/50 h-48 overflow-y-auto">
                 {filteredMembers.length === 0 ? (
-                  <p className="text-sm text-gray-500">No members available</p>
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-sm text-gray-400">No members available</p>
+                  </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="p-2 space-y-1">
                     {filteredMembers.map(member => (
                       <label
                         key={member.id}
-                        className="flex items-center p-2 hover:bg-blue-50 rounded cursor-pointer"
+                        className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(member.id)
+                            ? 'bg-blue-50 border border-blue-200'
+                            : 'hover:bg-white border border-transparent'
+                          }`}
                       >
                         <input
                           type="checkbox"
@@ -291,10 +344,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                           onChange={() => toggleMember(member.id)}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                        <span className="ml-2 text-sm text-gray-700">
+                        <span className="ml-2.5 text-sm text-gray-700 font-medium">
                           {member.username}
                           {member.department && (
-                            <span className="ml-2 text-xs text-gray-500">({member.department})</span>
+                            <span className="ml-2 text-xs text-gray-400 font-normal">({member.department})</span>
                           )}
                         </span>
                       </label>
@@ -302,27 +355,27 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   </div>
                 )}
               </div>
-              
-              {selectedMembers.length > 0 && (
-                <p className="mt-2 text-xs text-gray-600">
-                  {selectedMembers.length} member(s) selected
-                </p>
-              )}
             </div>
 
-            {/* Event Images Box (Blue) - Scrollable Horizontally */}
-            <div className="bg-white border-2 border-gray-300 rounded-lg p-6 shadow-md">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Event Images</h3>
-              
+            {/* Event Images Box */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+              <div className="flex items-center space-x-2 mb-4">
+                <div className="bg-amber-50 rounded-lg p-2">
+                  <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-base font-bold text-gray-900">Event Images</h3>
+              </div>
+
               <div
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-lg p-4 transition-colors ${
-                  isDragging 
-                    ? 'border-blue-500 bg-blue-50' 
-                    : 'border-gray-300 bg-gray-50 hover:border-gray-400'
-                }`}
+                className={`border-2 border-dashed rounded-xl p-4 transition-all duration-200 ${isDragging
+                    ? 'border-blue-400 bg-blue-50/50 scale-[1.01]'
+                    : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
+                  }`}
               >
                 <input
                   type="file"
@@ -332,18 +385,18 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   className="hidden"
                   id="image-upload"
                 />
-                
+
                 <div className="flex gap-3 overflow-x-auto pb-2">
                   {/* Add Image Button */}
                   <label
                     htmlFor="image-upload"
-                    className="flex-shrink-0 w-32 h-32 border-2 border-dashed border-gray-300 rounded-md cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center"
+                    className="flex-shrink-0 w-28 h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-200 flex items-center justify-center group"
                   >
                     <div className="text-center">
-                      <svg className="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="mx-auto h-7 w-7 text-gray-300 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                       </svg>
-                      <span className="mt-1 text-xs text-gray-500">Add Image</span>
+                      <span className="mt-1 text-xs text-gray-400 group-hover:text-blue-500 font-medium">Add</span>
                     </div>
                   </label>
 
@@ -353,33 +406,33 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                       <img
                         src={preview}
                         alt={`Preview ${index + 1}`}
-                        className="w-32 h-32 object-cover rounded-md border border-gray-300"
+                        className="w-28 h-28 object-cover rounded-xl border border-gray-200"
                       />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-red-600 shadow-sm"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
                       </button>
                     </div>
                   ))}
                 </div>
-                
+
                 {imagePreviews.length === 0 && (
-                  <p className="text-center text-xs text-gray-500 mt-2">
-                    Click + or drag images here
+                  <p className="text-center text-xs text-gray-400 mt-2">
+                    Drag & drop or click + to add images
                   </p>
                 )}
               </div>
-              
-              <p className="mt-2 text-xs text-gray-500">
-                {imagePreviews.length > 0 
-                  ? `${imagePreviews.length} image(s) selected` 
-                  : 'Drag and drop or click to add images'}
-              </p>
+
+              {imagePreviews.length > 0 && (
+                <p className="mt-2 text-xs text-gray-400">
+                  {imagePreviews.length} image{imagePreviews.length !== 1 ? 's' : ''} selected
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -389,15 +442,34 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
           <button
             type="submit"
             disabled={loading}
-            className="flex-1 px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            className="flex-1 inline-flex items-center justify-center px-5 py-3 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Saving...' : editingEvent ? 'Save Changes' : 'Create Event'}
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                Saving...
+              </>
+            ) : editingEvent ? (
+              <>
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Save Changes
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Event
+              </>
+            )}
           </button>
           {editingEvent && (
             <button
               type="button"
               onClick={handleCancel}
-              className="px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="px-5 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
             >
               Cancel
             </button>
