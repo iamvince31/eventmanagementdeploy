@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import { getFixedImageUrl } from '../utils/image';
 
 export default function EventList({ events, currentUser, onEdit, onRefresh }) {
   const [availability, setAvailability] = useState({});
@@ -17,7 +18,7 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
   const fetchAvailability = async (eventId, userId) => {
     const key = `${eventId}-${userId}`;
     setLoading(prev => ({ ...prev, [key]: true }));
-    
+
     try {
       const response = await api.get(`/events/${eventId}/users/${userId}/availability`);
       setAvailability(prev => ({
@@ -86,18 +87,18 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
               {event.images && event.images.length > 0 && (
                 <div className="mb-3">
                   {event.images.length === 1 ? (
-                    <img 
-                      src={event.images[0]} 
-                      alt={event.title} 
+                    <img
+                      src={getFixedImageUrl(event.images[0])}
+                      alt={event.title}
                       className="w-full max-w-md h-48 object-cover rounded-md border border-gray-300"
                     />
                   ) : (
                     <div className="grid grid-cols-2 gap-2">
                       {event.images.map((image, index) => (
-                        <img 
+                        <img
                           key={index}
-                          src={image} 
-                          alt={`${event.title} ${index + 1}`} 
+                          src={getFixedImageUrl(image)}
+                          alt={`${event.title} ${index + 1}`}
                           className="w-full h-32 object-cover rounded-md border border-gray-300"
                         />
                       ))}
