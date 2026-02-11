@@ -105,7 +105,6 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
                   )}
                 </div>
               )}
-              </div>
 
               <div className="space-y-2 text-sm">
                 {event.description && (
