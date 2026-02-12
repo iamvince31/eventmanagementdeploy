@@ -15,6 +15,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+  const [userSchedule, setUserSchedule] = useState({});
+  const [eventConflicts, setEventConflicts] = useState([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +24,26 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
+    fetchUserSchedule();
+  }, []);
+
+  // Refetch schedule when window regains focus (user comes back from /accounts)
+  useEffect(() => {
+    const handleFocus = () => {
+      fetchUserSchedule();
+    };
+    
+    const handleScheduleUpdate = () => {
+      fetchUserSchedule();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    window.addEventListener('scheduleUpdated', handleScheduleUpdate);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('scheduleUpdated', handleScheduleUpdate);
+    };
   }, []);
 
   const fetchData = async () => {
@@ -37,6 +59,58 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUserSchedule = async () => {
+    try {
+      const response = await api.get('/schedules');
+      if (response.data.schedule) {
+        setUserSchedule(response.data.schedule);
+      }
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+    }
+  };
+
+  const checkScheduleConflict = (event) => {
+    if (!event || !event.date || !event.time) return null;
+    
+    // Get day of week from event date
+    const eventDate = new Date(event.date + 'T00:00:00');
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = days[eventDate.getDay()];
+    
+    // Get user's schedule for that day
+    const daySchedule = userSchedule[dayName] || [];
+    
+    if (daySchedule.length === 0) return null;
+    
+    // Parse event time (assuming format like "14:00" or "2:00 PM")
+    const eventTime = event.time;
+    let eventHour, eventMinute;
+    
+    if (eventTime.includes(':')) {
+      const parts = eventTime.split(':');
+      eventHour = parseInt(parts[0]);
+      eventMinute = parseInt(parts[1]);
+      
+      // Handle PM times if format includes AM/PM
+      if (eventTime.toLowerCase().includes('pm') && eventHour < 12) {
+        eventHour += 12;
+      } else if (eventTime.toLowerCase().includes('am') && eventHour === 12) {
+        eventHour = 0;
+      }
+    }
+    
+    const eventTimeStr = `${String(eventHour).padStart(2, '0')}:${String(eventMinute).padStart(2, '0')}`;
+    
+    // Check for conflicts
+    const conflicts = daySchedule.filter(classSlot => {
+      if (!classSlot.startTime || !classSlot.endTime) return false;
+      return eventTimeStr >= classSlot.startTime && eventTimeStr < classSlot.endTime;
+    });
+    
+    return conflicts.length > 0 ? conflicts : null;
   };
 
   const handleEdit = (event) => {
@@ -61,14 +135,41 @@ export default function Dashboard() {
     }
   };
 
-  const handleViewEvent = (event) => {
+  const handleViewEvent = async (event) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
+    
+    // Refresh user schedule to get latest data
+    await fetchUserSchedule();
+    
+    // Check for schedule conflicts for all invited members
+    if (event.members && event.members.length > 0) {
+      await checkEventConflicts(event);
+    } else {
+      setEventConflicts([]);
+    }
+  };
+
+  const checkEventConflicts = async (event) => {
+    try {
+      const memberIds = event.members.map(m => m.id);
+      const response = await api.post('/schedules/check-conflicts', {
+        user_ids: memberIds,
+        date: event.date,
+        time: event.time
+      });
+      
+      setEventConflicts(response.data.conflicts || []);
+    } catch (error) {
+      console.error('Error checking conflicts:', error);
+      setEventConflicts([]);
+    }
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedEvent(null);
+    setEventConflicts([]);
   };
 
   const handleLogout = async () => {
@@ -230,6 +331,76 @@ export default function Dashboard() {
       >
         {selectedEvent && (
           <div className="space-y-4">
+            {/* Schedule Conflict Warning for Invited Members */}
+            {eventConflicts.length > 0 && (
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                <div className="flex items-start">
+                  <svg className="w-6 h-6 text-yellow-400 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-yellow-800 mb-2">⚠️ Schedule Conflicts Detected</h4>
+                    <p className="text-sm text-yellow-700 mb-3">
+                      The following invited members have class schedule conflicts:
+                    </p>
+                    <div className="space-y-3">
+                      {eventConflicts.map((conflict, index) => (
+                        <div key={index} className="bg-white/50 rounded-lg p-3 border border-yellow-200">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-sm flex-shrink-0">
+                                {conflict.username.charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-900">{conflict.username}</p>
+                                <p className="text-xs text-gray-600">{conflict.email}</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-2 ml-10 flex items-center text-sm text-yellow-800">
+                            <svg className="w-4 h-4 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                            </svg>
+                            <span className="font-medium">{conflict.class_time}</span>
+                            {conflict.class_description && (
+                              <span className="ml-2 text-gray-700">- {conflict.class_description}</span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Schedule Conflict Warning */}
+            {checkScheduleConflict(selectedEvent) && (
+              <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                <div className="flex items-start">
+                  <svg className="w-6 h-6 text-orange-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-orange-800 mb-1">Your Schedule Conflict</h4>
+                    <p className="text-sm text-orange-700">
+                      This event conflicts with your class schedule:
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {checkScheduleConflict(selectedEvent).map((conflict, index) => (
+                        <li key={index} className="text-sm text-orange-700 flex items-center">
+                          <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                          </svg>
+                          {conflict.startTime} - {conflict.endTime}: {conflict.description || 'Class'}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Image */}
             {selectedEvent.images && selectedEvent.images.length > 0 && (
               <div className="mb-4">

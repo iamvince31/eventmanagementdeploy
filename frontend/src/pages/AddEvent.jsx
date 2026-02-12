@@ -66,19 +66,16 @@ export default function AddEvent() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-white bg-white/15 border border-white/30 rounded-lg hover:bg-white/25 transition-all duration-200"
-                aria-label="Go back to dashboard"
+              <button 
+                onClick={() => navigate('/account')}
+                className="hidden sm:flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600" 
+                aria-label={`Go to account page for ${user?.username}`}
               >
-                Back
-              </button>
-              <div className="hidden sm:flex items-center space-x-3" role="img" aria-label={`User: ${user?.username}`}>
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-200 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm" aria-hidden="true">
                   {user?.username?.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-sm font-medium text-white">{user?.username}</span>
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -86,12 +83,26 @@ export default function AddEvent() {
 
       {/* Page Header */}
       <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-        <h2 className="text-2xl font-bold text-gray-900">
-          {editingEvent ? 'Edit Event' : 'Create New Event'}
-        </h2>
-        <p className="text-sm text-gray-500 mt-0.5">
-          {editingEvent ? 'Update the event details below' : 'Fill in the details to create a new event'}
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              {editingEvent ? 'Edit Event' : 'Create New Event'}
+            </h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {editingEvent ? 'Update the event details below' : 'Fill in the details to create a new event'}
+            </p>
+          </div>
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-all duration-200 shadow-sm"
+            aria-label="Go back to dashboard"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Dashboard
+          </button>
+        </div>
       </div>
 
       {/* Form */}

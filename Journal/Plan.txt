@@ -36,9 +36,7 @@ Improvement ng login
 account dashboard with information details
 Forget password - Verification account on register
 
-DB_CONNECTION=mysql
-DB_HOST=turntable.proxy.rlwy.net:44304/railway
-DB_PORT=3306
-DB_DATABASE=railway
-DB_USERNAME=root
-DB_PASSWORD=rFmJwhJXBupuGTKGbKphTRXvEzbEraiN
+its must conflict on sched when events overlap between user + add a account 
+feature where the user may set their class hours and used as basis for scheduling 
+events as well then only the host will see who is conflicted
+
