@@ -2,4 +2,9 @@
 7:30 AM - Formulating Use Case Diagram
 10 AM - Initial Testing of Register and Log-In Module
 11 AM - Lunch
-12 PM - 
+12 PM - Continuing Drafting of Use Case Diagram
+1 PM - Backend Improvements for Register and Log-In Module
+2 PM - Database Management and Error Handling
+3 PM - Testing for Creating New Event
+4 PM  - UI/UX improvements for Dashboard
+5 PM - Time-out

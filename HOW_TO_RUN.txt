@@ -152,3 +152,4 @@ Your application should now be running at:
 Frontend: http://localhost:5173
 Backend API: http://localhost:8000
 Database: http://localhost/phpmyadmin
+aa
