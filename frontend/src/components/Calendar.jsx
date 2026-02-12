@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function Calendar({ events, onDateSelect }) {
+export default function Calendar({ events, onDateSelect, highlightedDate }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -50,6 +50,12 @@ export default function Calendar({ events, onDateSelect }) {
     return selectedDate === dateStr;
   };
 
+  const isHighlighted = (day) => {
+    if (!highlightedDate) return false;
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    return highlightedDate === dateStr;
+  };
+
   const renderCalendarDays = () => {
     const days = [];
     const today = new Date();
@@ -67,6 +73,7 @@ export default function Calendar({ events, onDateSelect }) {
       const dayEvents = getEventsForDate(day);
       const isCurrentDay = isToday(day);
       const selected = isSelected(day);
+      const highlighted = isHighlighted(day);
 
       const cellDate = new Date(year, month, day);
       cellDate.setHours(0, 0, 0, 0);
@@ -84,6 +91,7 @@ export default function Calendar({ events, onDateSelect }) {
               ? 'bg-blue-50 border-2 border-blue-500 shadow-sm'
               : 'bg-white border border-gray-200 hover:border-blue-300 hover:shadow-md'}
             ${selected ? 'ring-2 ring-blue-400 ring-offset-1' : ''}
+            ${highlighted ? 'ring-4 ring-green-400 ring-offset-2 animate-pulse bg-green-50' : ''}
             ${isPast ? 'opacity-40 cursor-default' : ''}
           `}
         >

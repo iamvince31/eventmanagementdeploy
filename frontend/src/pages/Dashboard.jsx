@@ -17,10 +17,13 @@ export default function Dashboard() {
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [userSchedule, setUserSchedule] = useState({});
   const [eventConflicts, setEventConflicts] = useState([]);
+  const [highlightedDate, setHighlightedDate] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [isEventsListModalOpen, setIsEventsListModalOpen] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -181,6 +184,55 @@ export default function Dashboard() {
     setSelectedDateEvents(events);
   };
 
+  const handleUpcomingClick = () => {
+    if (upcomingEvents.length > 0) {
+      // Get the first upcoming event
+      const nextEvent = upcomingEvents[0];
+      // Highlight the date on calendar
+      setHighlightedDate(nextEvent.date);
+      // Select the date to show events
+      const eventsOnDate = events.filter(e => e.date === nextEvent.date);
+      handleDateSelect(nextEvent.date, eventsOnDate);
+      
+      // Remove highlight after 2 seconds
+      setTimeout(() => {
+        setHighlightedDate(null);
+      }, 2000);
+    }
+  };
+
+  const handleMembersClick = () => {
+    setIsMembersModalOpen(true);
+  };
+
+  const handleTotalEventsClick = () => {
+    setIsEventsListModalOpen(true);
+  };
+
+  const groupMembersByDepartment = () => {
+    const grouped = {};
+    members.forEach(member => {
+      const dept = member.department || 'No Department';
+      if (!grouped[dept]) {
+        grouped[dept] = [];
+      }
+      grouped[dept].push(member);
+    });
+    
+    // Sort members alphabetically within each department
+    Object.keys(grouped).forEach(dept => {
+      grouped[dept].sort((a, b) => a.username.localeCompare(b.username));
+    });
+    
+    return grouped;
+  };
+
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.date + 'T' + a.time);
+    const dateB = new Date(b.date + 'T' + b.time);
+    return dateA - dateB;
+  });
+
   // Compute stats
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -239,7 +291,10 @@ export default function Dashboard() {
         {/* Stats Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
           {/* Total Events */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-default">
+          <button
+            onClick={handleTotalEventsClick}
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left"
+          >
             <div className="flex items-center space-x-4">
               <div className="bg-gradient-to-br from-blue-100 to-blue-50 rounded-xl p-4 group-hover:from-blue-200 group-hover:to-blue-100 transition-colors duration-300">
                 <svg className="w-7 h-7 text-blue-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,10 +306,18 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{events.length}</p>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Upcoming Events */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-default">
+          <button
+            onClick={handleUpcomingClick}
+            disabled={upcomingEvents.length === 0}
+            className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${
+              upcomingEvents.length > 0 
+                ? 'hover:shadow-2xl hover:scale-105 cursor-pointer' 
+                : 'opacity-50 cursor-not-allowed'
+            }`}
+          >
             <div className="flex items-center space-x-4">
               <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
                 <svg className="w-7 h-7 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -266,10 +329,13 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{upcomingEvents.length}</p>
               </div>
             </div>
-          </div>
+          </button>
 
           {/* Total Members */}
-          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-default">
+          <button
+            onClick={handleMembersClick}
+            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left"
+          >
             <div className="flex items-center space-x-4">
               <div className="bg-gradient-to-br from-purple-100 to-purple-50 rounded-xl p-4 group-hover:from-purple-200 group-hover:to-purple-100 transition-colors duration-300">
                 <svg className="w-7 h-7 text-purple-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,7 +347,7 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{members.length}</p>
               </div>
             </div>
-          </div>
+          </button>
         </div>
 
         {/* Section Header */}
@@ -307,6 +373,7 @@ export default function Dashboard() {
             <Calendar
               events={events}
               onDateSelect={handleDateSelect}
+              highlightedDate={highlightedDate}
             />
           </div>
           <div>
@@ -507,6 +574,95 @@ export default function Dashboard() {
             )}
           </div>
         )}
+      </Modal>
+
+      {/* Members List Modal */}
+      <Modal
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
+        title="All Members"
+        fullscreen={true}
+      >
+        <div className="h-full overflow-y-auto">
+          <div className="max-w-6xl mx-auto py-8 px-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-8">
+              {Object.entries(groupMembersByDepartment()).map(([department, deptMembers]) => (
+                <div key={department}>
+                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
+                    {department}
+                  </h3>
+                  <ul className="space-y-3">
+                    {deptMembers.map((member) => (
+                      <li key={member.id} className="text-gray-300">
+                        <div className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                          {member.username}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-0.5">
+                          {member.email}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Events List Modal */}
+      <Modal
+        isOpen={isEventsListModalOpen}
+        onClose={() => setIsEventsListModalOpen(false)}
+        title="All Events"
+      >
+        <div className="space-y-3 max-h-96 overflow-y-auto">
+          {sortedEvents.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">No events scheduled</p>
+          ) : (
+            sortedEvents.map(event => (
+              <button
+                key={event.id}
+                onClick={() => {
+                  setIsEventsListModalOpen(false);
+                  handleViewEvent(event);
+                }}
+                className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-blue-50 hover:border-blue-200 border border-gray-200 transition-all duration-200"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-1">{event.title}</h4>
+                    <div className="flex items-center text-sm text-gray-600 space-x-4">
+                      <span className="flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {event.date}
+                      </span>
+                      <span className="flex items-center">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {event.time}
+                      </span>
+                    </div>
+                    {event.location && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center">
+                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        </svg>
+                        {event.location}
+                      </p>
+                    )}
+                  </div>
+                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  </svg>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
       </Modal>
     </div>
   );

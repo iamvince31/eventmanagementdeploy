@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ isOpen, onClose, title, children }) {
+export default function Modal({ isOpen, onClose, title, children, fullscreen = false }) {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -30,7 +30,11 @@ export default function Modal({ isOpen, onClose, title, children }) {
       ></div>
 
       {/* Modal Panel */}
-      <div className="relative w-full max-w-lg transform rounded-2xl bg-white shadow-2xl transition-all animate-fade-in-up flex flex-col max-h-[85vh]">
+      <div className={`relative transform rounded-2xl bg-white shadow-2xl transition-all animate-fade-in-up flex flex-col ${
+        fullscreen 
+          ? 'w-full h-full max-w-none max-h-none m-4' 
+          : 'w-full max-w-lg max-h-[85vh]'
+      }`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
           <h3 className="text-xl font-bold text-gray-900">
@@ -47,7 +51,7 @@ export default function Modal({ isOpen, onClose, title, children }) {
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto flex-1">
           {children}
         </div>
       </div>
