@@ -1,0 +1,4 @@
+7:00 - Time in
+
+7:00 - 8:00 : Hosting / Configuring MYSQL Online for sharing between teammates : Password : CEIT-2026-OJT
+8:00 - 9:00 : Implementing migration on database for teammates to connect
