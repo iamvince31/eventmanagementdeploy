@@ -7,7 +7,9 @@
 12 PM - Improving UI Apperance of Dashboard and Account Settings
 1 PM - Initial Drafting of System Requirements Specification for Dependencies and Functional Requirements
 2 PM - UI/UX Improvements of Dashboard, Account Settings
-3 PM - Git version control
+3 PM - Writing System Requirements Specification for Dependencies and Functional Requirements
+4 PM - Brainstorming for Hosting Database
+5 PM - Time-out
 
 
 

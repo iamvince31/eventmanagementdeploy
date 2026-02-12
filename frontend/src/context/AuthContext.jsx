@@ -47,6 +47,21 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const forgotPassword = async (email) => {
+    const response = await api.post('/forgot-password', { email });
+    return response.data;
+  };
+
+  const resetPassword = async (email, token, password, passwordConfirmation) => {
+    const response = await api.post('/reset-password', {
+      email,
+      token,
+      password,
+      password_confirmation: passwordConfirmation,
+    });
+    return response.data;
+  };
+
   const updateUser = (updatedUserData) => {
     const updatedUser = { ...user, ...updatedUserData };
     localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -54,7 +69,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateUser, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, forgotPassword, resetPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );
