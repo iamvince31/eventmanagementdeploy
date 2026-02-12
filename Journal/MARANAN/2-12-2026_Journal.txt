@@ -7,4 +7,4 @@
 11:00 - 12:00 : Lunch Break
 12:00 - 1:00 : Implementing a Calendar Schedule for user to toggle first before getting a priviledge to host event
 1:00 - 2:00 : Switched back to XAMPP initially for testing purposes due to slow data loading / implemented calendar conflicting when schedules overlap
-2:00 - 3:00 : 
+2:00 - 3:00 : Reconnected all 3 Improved features to repository
