@@ -47,6 +47,7 @@ class EventController extends Controller
                         'id' => $m->id,
                         'username' => $m->name,
                         'email' => $m->email,
+                        'status' => $m->pivot->status,
                     ]),
                 ];
             }),
@@ -109,7 +110,8 @@ class EventController extends Controller
         }
 
         if ($request->member_ids) {
-            $event->members()->attach($request->member_ids);
+            $memberData = collect($request->member_ids)->mapWithKeys(fn($id) => [$id => ['status' => 'pending']])->all();
+            $event->members()->attach($memberData);
         }
 
         $event->load(['host', 'members', 'images']);
@@ -180,7 +182,12 @@ class EventController extends Controller
         }
 
         if ($request->has('member_ids')) {
-            $event->members()->sync($request->member_ids);
+            // Keep existing statuses for members that remain, set 'pending' for new ones
+            $existingMembers = $event->members()->pluck('status', 'users.id')->all();
+            $syncData = collect($request->member_ids)->mapWithKeys(function ($id) use ($existingMembers) {
+                return [$id => ['status' => $existingMembers[$id] ?? 'pending']];
+            })->all();
+            $event->members()->sync($syncData);
         }
 
         return response()->json(['message' => 'Event updated successfully', 'event' => $event->load(['host', 'members', 'images'])]);
@@ -199,5 +206,33 @@ class EventController extends Controller
     public function availability(Event $event, User $user)
     {
         return response()->json(['available' => true]);
+    }
+
+    public function respondToInvitation(Request $request, Event $event)
+    {
+        $user = $request->user();
+
+        // Host cannot respond to their own event
+        if ($event->host_id === $user->id) {
+            return response()->json(['error' => 'Host cannot respond to their own event'], 403);
+        }
+
+        // Check if user is an invited member
+        if (!$event->members()->where('users.id', $user->id)->exists()) {
+            return response()->json(['error' => 'You are not invited to this event'], 403);
+        }
+
+        $request->validate([
+            'status' => 'required|in:accepted,declined',
+        ]);
+
+        $event->members()->updateExistingPivot($user->id, [
+            'status' => $request->status,
+        ]);
+
+        return response()->json([
+            'message' => 'Invitation ' . $request->status . ' successfully',
+            'status' => $request->status,
+        ]);
     }
 }

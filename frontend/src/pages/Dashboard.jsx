@@ -28,6 +28,11 @@ export default function Dashboard() {
   useEffect(() => {
     fetchData();
     fetchUserSchedule();
+
+    // Auto-select today's date
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    setSelectedDate(todayStr);
   }, []);
 
   // Refetch schedule when window regains focus (user comes back from /accounts)
@@ -35,14 +40,14 @@ export default function Dashboard() {
     const handleFocus = () => {
       fetchUserSchedule();
     };
-    
+
     const handleScheduleUpdate = () => {
       fetchUserSchedule();
     };
-    
+
     window.addEventListener('focus', handleFocus);
     window.addEventListener('scheduleUpdated', handleScheduleUpdate);
-    
+
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('scheduleUpdated', handleScheduleUpdate);
@@ -55,8 +60,15 @@ export default function Dashboard() {
         api.get('/events'),
         api.get('/users'),
       ]);
-      setEvents(eventsRes.data.events);
+      const fetchedEvents = eventsRes.data.events;
+      setEvents(fetchedEvents);
       setMembers(membersRes.data.members);
+
+      // Auto-select today's events
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const todayEvents = fetchedEvents.filter(event => event.date === todayStr);
+      setSelectedDateEvents(todayEvents);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -77,26 +89,26 @@ export default function Dashboard() {
 
   const checkScheduleConflict = (event) => {
     if (!event || !event.date || !event.time) return null;
-    
+
     // Get day of week from event date
     const eventDate = new Date(event.date + 'T00:00:00');
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayName = days[eventDate.getDay()];
-    
+
     // Get user's schedule for that day
     const daySchedule = userSchedule[dayName] || [];
-    
+
     if (daySchedule.length === 0) return null;
-    
+
     // Parse event time (assuming format like "14:00" or "2:00 PM")
     const eventTime = event.time;
     let eventHour, eventMinute;
-    
+
     if (eventTime.includes(':')) {
       const parts = eventTime.split(':');
       eventHour = parseInt(parts[0]);
       eventMinute = parseInt(parts[1]);
-      
+
       // Handle PM times if format includes AM/PM
       if (eventTime.toLowerCase().includes('pm') && eventHour < 12) {
         eventHour += 12;
@@ -104,15 +116,15 @@ export default function Dashboard() {
         eventHour = 0;
       }
     }
-    
+
     const eventTimeStr = `${String(eventHour).padStart(2, '0')}:${String(eventMinute).padStart(2, '0')}`;
-    
+
     // Check for conflicts
     const conflicts = daySchedule.filter(classSlot => {
       if (!classSlot.startTime || !classSlot.endTime) return false;
       return eventTimeStr >= classSlot.startTime && eventTimeStr < classSlot.endTime;
     });
-    
+
     return conflicts.length > 0 ? conflicts : null;
   };
 
@@ -141,10 +153,10 @@ export default function Dashboard() {
   const handleViewEvent = async (event) => {
     setSelectedEvent(event);
     setIsModalOpen(true);
-    
+
     // Refresh user schedule to get latest data
     await fetchUserSchedule();
-    
+
     // Check for schedule conflicts for all invited members
     if (event.members && event.members.length > 0) {
       await checkEventConflicts(event);
@@ -161,7 +173,7 @@ export default function Dashboard() {
         date: event.date,
         time: event.time
       });
-      
+
       setEventConflicts(response.data.conflicts || []);
     } catch (error) {
       console.error('Error checking conflicts:', error);
@@ -273,7 +285,7 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigate('/account')}
-                className="hidden sm:flex items-center space-x-3" 
+                className="hidden sm:flex items-center space-x-3"
                 aria-label="Go to account settings"
               >
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-200 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -549,29 +561,130 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Actions in Modal (Optional) */}
-            {(user?.id === selectedEvent.host.id) && (
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
-                <button
-                  onClick={() => {
-                    handleCloseModal();
-                    handleEdit(selectedEvent);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    handleCloseModal();
-                    handleDelete(selectedEvent);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100"
-                >
-                  Delete
-                </button>
+            {/* Members & RSVP Status */}
+            {selectedEvent.members && selectedEvent.members.length > 0 && (
+              <div className="pt-4 border-t border-gray-100">
+                <p className="font-semibold text-gray-900 mb-3">Invited Members</p>
+                <div className="space-y-2">
+                  {selectedEvent.members.map((member) => (
+                    <div key={member.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
+                          {member.username.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="text-sm text-gray-700 font-medium">{member.username}</span>
+                      </div>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${member.status === 'accepted'
+                        ? 'bg-green-100 text-green-800'
+                        : member.status === 'declined'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                        {member.status === 'accepted' ? '✓ Accepted' : member.status === 'declined' ? '✗ Declined' : '● Pending'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
+
+            {/* Actions in Modal */}
+            <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-4">
+              {/* Left side - Accept/Decline buttons for invited members */}
+              {selectedEvent.members && selectedEvent.members.some(member => member.id === user?.id) && user?.id !== selectedEvent.host.id && (() => {
+                const myMembership = selectedEvent.members.find(m => m.id === user?.id);
+                const myStatus = myMembership?.status;
+
+                if (myStatus === 'pending') {
+                  return (
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await api.post(`/events/${selectedEvent.id}/respond`, { status: 'accepted' });
+                            await fetchData();
+                            // Update selected event with new data
+                            const updatedRes = await api.get('/events');
+                            const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
+                            if (updatedEvent) setSelectedEvent(updatedEvent);
+                          } catch (error) {
+                            console.error('Error accepting invitation:', error);
+                            alert('Failed to accept invitation: ' + (error.response?.data?.error || error.message));
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                      >
+                        ✓ Accept
+                      </button>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await api.post(`/events/${selectedEvent.id}/respond`, { status: 'declined' });
+                            await fetchData();
+                            const updatedRes = await api.get('/events');
+                            const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
+                            if (updatedEvent) setSelectedEvent(updatedEvent);
+                          } catch (error) {
+                            console.error('Error declining invitation:', error);
+                            alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
+                          }
+                        }}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                      >
+                        ✗ Decline
+                      </button>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${myStatus === 'accepted'
+                      ? 'bg-green-100 text-green-800'
+                      : 'bg-red-100 text-red-800'
+                      }`}>
+                      {myStatus === 'accepted' ? '✓ You accepted this invitation' : '✗ You declined this invitation'}
+                    </span>
+                  );
+                }
+              })()}
+
+              {/* Right side - Host actions and Reschedule */}
+              <div className="flex space-x-2 ml-auto">
+                {/* Reschedule button for all users */}
+                <button
+                  onClick={() => {
+                    // TODO: Handle reschedule
+                    console.log('Reschedule event');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                >
+                  Reschedule
+                </button>
+
+                {/* Edit/Delete buttons only for host */}
+                {(user?.id === selectedEvent.host.id) && (
+                  <>
+                    <button
+                      onClick={() => {
+                        handleCloseModal();
+                        handleEdit(selectedEvent);
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleCloseModal();
+                        handleDelete(selectedEvent);
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </Modal>

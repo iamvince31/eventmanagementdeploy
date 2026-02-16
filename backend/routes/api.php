@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
     Route::get('/events/{event}/users/{user}/availability', [EventController::class, 'availability']);
+    Route::post('/events/{event}/respond', [EventController::class, 'respondToInvitation']);
     
     // Users
     Route::get('/users', [UserController::class, 'index']);
