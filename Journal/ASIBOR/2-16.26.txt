@@ -1,0 +1,4 @@
+7:00 - 8:00 make ´the current date the default events for events
+8:00 - 9:00 add the accpts and decline button on events for invited members
+9:00 - 10.00 implement the accept and decline button on events for invited members and show the events that are accepted and declined
+10:00 - 11:00 testing the new features and debugging
