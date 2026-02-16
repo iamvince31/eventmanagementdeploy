@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate }) {
+export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, hasSchedule = true }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -114,6 +114,22 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     );
   };
 
+  const handleSelectAll = () => {
+    const allFilteredIds = searchFilteredMembers.map(m => m.id);
+    const allSelected = allFilteredIds.every(id => selectedMembers.includes(id));
+    
+    if (allSelected) {
+      // Deselect all filtered members
+      setSelectedMembers(prev => prev.filter(id => !allFilteredIds.includes(id)));
+    } else {
+      // Select all filtered members
+      setSelectedMembers(prev => {
+        const newIds = allFilteredIds.filter(id => !prev.includes(id));
+        return [...prev, ...newIds];
+      });
+    }
+  };
+
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     validateAndAddImages(files);
@@ -217,7 +233,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
   return (
     <div className="animate-fade-in">
-
       {/* Error Alert */}
       {error && (
         <div className="mb-5 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start space-x-3">
@@ -395,18 +410,42 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   )}
                 </div>
               </div>
-              {/* Department Filter */}
-              <div className="mb-3">
+              
+              {/* Department Filter and Select All */}
+              <div className="mb-3 flex gap-2">
                 <select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                 >
                   <option value="all">All Departments</option>
                   {availableDepartments.map(dept => (
                     <option key={dept} value={dept}>{dept}</option>
                   ))}
                 </select>
+                
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  disabled={searchFilteredMembers.length === 0}
+                  className="px-4 py-2.5 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
+                  {searchFilteredMembers.length > 0 && searchFilteredMembers.every(m => selectedMembers.includes(m.id)) ? (
+                    <span className="flex items-center">
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Deselect All
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Select All
+                    </span>
+                  )}
+                </button>
               </div>
               <div className="border border-gray-200 rounded-lg bg-gray-50/50 h-48 overflow-y-auto">
                 {searchFilteredMembers.length === 0 ? (

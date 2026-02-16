@@ -45,6 +45,7 @@ class AuthController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'schedule_initialized' => false,
             ],
             'token' => $token,
         ], 201);
@@ -131,6 +132,7 @@ class AuthController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'schedule_initialized' => $user->schedule_initialized ?? false,
             ],
             'token' => $token,
         ]);
@@ -153,6 +155,7 @@ class AuthController extends Controller
                 'username' => $request->user()->name,
                 'email' => $request->user()->email,
                 'department' => $request->user()->department,
+                'schedule_initialized' => $request->user()->schedule_initialized ?? false,
             ],
         ]);
     }

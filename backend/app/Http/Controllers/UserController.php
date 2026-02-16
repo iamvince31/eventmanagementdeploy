@@ -47,6 +47,7 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'schedule_initialized' => $user->schedule_initialized ?? false,
             ],
         ]);
     }

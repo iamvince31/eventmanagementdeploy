@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-export default function Modal({ isOpen, onClose, title, children, fullscreen = false, maxWidth = 'max-w-lg', noPadding = false }) {
+export default function Modal({ isOpen, onClose, title, children, fullscreen = false, maxWidth = 'max-w-lg', noPadding = false, showCloseButton = true, closeOnBackdrop = true }) {
   useEffect(() => {
     const handleEscape = (e) => {
       if (e.key === 'Escape') {
@@ -26,7 +26,7 @@ export default function Modal({ isOpen, onClose, title, children, fullscreen = f
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
+        onClick={closeOnBackdrop ? onClose : undefined}
       ></div>
 
       {/* Modal Panel */}
@@ -39,14 +39,16 @@ export default function Modal({ isOpen, onClose, title, children, fullscreen = f
           <h3 className="text-xl font-bold text-gray-900">
             {title}
           </h3>
-          <button
-            onClick={onClose}
-            className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600"
-          >
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {showCloseButton && (
+            <button
+              onClick={onClose}
+              className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 transition-colors focus:outline-none focus:ring-2 focus:ring-green-600"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Content */}

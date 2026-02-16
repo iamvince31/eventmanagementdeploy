@@ -12,15 +12,27 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
+  // Check if we're at the boundaries of 2026
+  const isAtStartOf2026 = year === 2026 && month === 0; // January 2026
+  const isAtEndOf2026 = year === 2026 && month === 11; // December 2026
+
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const prevMonth = () => {
-    setCurrentDate(new Date(year, month - 1, 1));
+    const newDate = new Date(year, month - 1, 1);
+    // Restrict to 2026 only - don't go before January 2026
+    if (newDate.getFullYear() >= 2026) {
+      setCurrentDate(newDate);
+    }
   };
 
   const nextMonth = () => {
-    setCurrentDate(new Date(year, month + 1, 1));
+    const newDate = new Date(year, month + 1, 1);
+    // Restrict to 2026 only - don't go after December 2026
+    if (newDate.getFullYear() <= 2026) {
+      setCurrentDate(newDate);
+    }
   };
 
   const getEventsForDate = (day) => {
@@ -136,7 +148,12 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
       <div className="flex justify-between items-center mb-5">
         <button
           onClick={prevMonth}
-          className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
+          disabled={isAtStartOf2026}
+          className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+            isAtStartOf2026
+              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+          }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -147,7 +164,12 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
         </h2>
         <button
           onClick={nextMonth}
-          className="w-9 h-9 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
+          disabled={isAtEndOf2026}
+          className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
+            isAtEndOf2026
+              ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+              : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+          }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />

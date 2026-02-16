@@ -10,12 +10,54 @@ export default function AddEvent() {
   const { user, logout } = useAuth();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [userSchedule, setUserSchedule] = useState({});
+  const [hasSchedule, setHasSchedule] = useState(user?.schedule_initialized ?? false);
   const editingEvent = location.state?.event || null;
   const selectedDate = location.state?.selectedDate || null;
 
   useEffect(() => {
-    fetchMembers();
+    const loadData = async () => {
+      await fetchMembers();
+      await fetchUserSchedule();
+    };
+    loadData();
+
+    // Listen for schedule updates
+    const handleScheduleUpdate = () => {
+      fetchUserSchedule();
+    };
+
+    window.addEventListener('scheduleUpdated', handleScheduleUpdate);
+    window.addEventListener('scheduleChanged', handleScheduleUpdate);
+
+    return () => {
+      window.removeEventListener('scheduleUpdated', handleScheduleUpdate);
+      window.removeEventListener('scheduleChanged', handleScheduleUpdate);
+    };
   }, []);
+
+  // Redirect to dashboard if schedule not initialized
+  useEffect(() => {
+    if (!loading && !hasSchedule && !editingEvent) {
+      // User hasn't initialized schedule, redirect to dashboard
+      navigate('/dashboard');
+    }
+  }, [loading, hasSchedule, editingEvent, navigate]);
+
+  const fetchUserSchedule = async () => {
+    try {
+      const response = await api.get('/schedules');
+      if (response.data.schedule) {
+        setUserSchedule(response.data.schedule);
+      }
+      // Check the initialized flag from backend
+      const scheduleInitialized = response.data.initialized || false;
+      setHasSchedule(scheduleInitialized);
+    } catch (error) {
+      console.error('Error fetching schedule:', error);
+      setHasSchedule(false);
+    }
+  };
 
   const fetchMembers = async () => {
     try {
@@ -114,6 +156,7 @@ export default function AddEvent() {
             editingEvent={editingEvent}
             onCancelEdit={handleCancelEdit}
             defaultDate={selectedDate}
+            hasSchedule={hasSchedule}
           />
         </div>
       </main>

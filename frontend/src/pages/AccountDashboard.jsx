@@ -181,11 +181,23 @@ export default function AccountDashboard() {
         throw new Error('Failed to save schedule');
       }
 
-      setMessage({ type: 'success', text: 'Schedule saved! Event conflicts will be updated automatically.' });
-      await fetchSchedule(); // Refresh schedule to get IDs from database
+      setMessage({ type: 'success', text: 'Schedule saved! You can now create events.' });
+      
+      // Refresh schedule to get IDs from database and updated initialized status
+      await fetchSchedule();
+      
+      // Update user context to reflect schedule_initialized = true
+      if (updateUser) {
+        const updatedUserData = { ...user, schedule_initialized: true };
+        updateUser(updatedUserData);
+        console.log('Updated user with schedule_initialized:', updatedUserData);
+      }
       
       // Trigger a storage event to notify other tabs/windows
       window.dispatchEvent(new Event('scheduleUpdated'));
+      
+      // Trigger custom event for Dashboard to refresh
+      window.dispatchEvent(new CustomEvent('scheduleChanged', { detail: { hasSchedule: true } }));
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to save schedule. Please try again.' });
     } finally {
@@ -288,9 +300,24 @@ export default function AccountDashboard() {
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6 flex justify-between items-center">
                 <div>
-                  <h3 className="text-2xl font-bold text-white">?? Class Schedule</h3>
+                  <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Class Schedule
+                    {!user?.schedule_initialized && !scheduleSaving && (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white animate-pulse">
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Required
+                      </span>
+                    )}
+                  </h3>
                   <p className="text-green-200 text-sm mt-1">
-                    {scheduleLoading ? 'Loading schedule...' : `${getTotalScheduledClasses()} classes scheduled this week`}
+                    {scheduleLoading ? 'Loading schedule...' : user?.schedule_initialized
+                      ? `${getTotalScheduledClasses()} classes scheduled this week`
+                      : 'No schedule set - Required to create events'}
                   </p>
                 </div>
                 <button
@@ -312,7 +339,10 @@ export default function AccountDashboard() {
                     </>
                   ) : (
                     <>
-                      ?? Save Schedule
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                      </svg>
+                      Save Schedule
                     </>
                   )}
                 </button>
@@ -355,10 +385,10 @@ export default function AccountDashboard() {
                     })}
                   </div>
 
-                  {/* Schedule Table - Blue Box */}
+                  {/* Schedule Table - Green Box */}
                   <div className="flex-1 bg-green-100 border-2 border-green-300 rounded-lg p-6">
                     <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-xl font-bold text-blue-900">{selectedDay} Schedule</h4>
+                      <h4 className="text-xl font-bold text-gray-900">{selectedDay} Schedule</h4>
                       <button
                         onClick={() => addNewClass(selectedDay)}
                         className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-1"
@@ -385,13 +415,13 @@ export default function AccountDashboard() {
                         <table className="w-full">
                           <thead>
                             <tr className="bg-green-200">
-                              <th className="px-4 py-3 text-left text-sm font-bold text-blue-900">
+                              <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
                                 Time Range
                               </th>
-                              <th className="px-4 py-3 text-left text-sm font-bold text-blue-900">
+                              <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
                                 Class Description
                               </th>
-                              <th className="px-4 py-3 text-center text-sm font-bold text-blue-900 w-20">
+                              <th className="px-4 py-3 text-center text-sm font-bold text-gray-900 w-20">
                                 Action
                               </th>
                             </tr>

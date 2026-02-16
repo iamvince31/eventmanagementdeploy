@@ -13,11 +13,13 @@ export default function Dashboard() {
   const [events, setEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [scheduleLoading, setScheduleLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [userSchedule, setUserSchedule] = useState({});
   const [eventConflicts, setEventConflicts] = useState([]);
   const [highlightedDate, setHighlightedDate] = useState(null);
+  const [hasSchedule, setHasSchedule] = useState(user?.schedule_initialized ?? false);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,16 +27,29 @@ export default function Dashboard() {
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [selectedMemberForView, setSelectedMemberForView] = useState(null);
   const [isEventsListModalOpen, setIsEventsListModalOpen] = useState(false);
+  const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
 
   useEffect(() => {
-    fetchData();
-    fetchUserSchedule();
+    const loadData = async () => {
+      await Promise.all([fetchData(), fetchUserSchedule()]);
+    };
+    loadData();
 
     // Auto-select today's date
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     setSelectedDate(todayStr);
   }, []);
+
+  // Check if schedule is set and show modal on first load
+  useEffect(() => {
+    console.log('Schedule check:', { loading, scheduleLoading, hasSchedule, isScheduleRequiredModalOpen });
+    if (!loading && !scheduleLoading && !hasSchedule) {
+      // Show modal automatically if no schedule is set
+      console.log('Opening schedule required modal');
+      setIsScheduleRequiredModalOpen(true);
+    }
+  }, [loading, scheduleLoading, hasSchedule]);
 
   // Refetch schedule when window regains focus (user comes back from /accounts)
   useEffect(() => {
@@ -46,12 +61,23 @@ export default function Dashboard() {
       fetchUserSchedule();
     };
 
+    const handleScheduleChange = (event) => {
+      // When schedule is saved, refetch and close modal
+      fetchUserSchedule().then(() => {
+        if (event.detail?.hasSchedule) {
+          setIsScheduleRequiredModalOpen(false);
+        }
+      });
+    };
+
     window.addEventListener('focus', handleFocus);
     window.addEventListener('scheduleUpdated', handleScheduleUpdate);
+    window.addEventListener('scheduleChanged', handleScheduleChange);
 
     return () => {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('scheduleUpdated', handleScheduleUpdate);
+      window.removeEventListener('scheduleChanged', handleScheduleChange);
     };
   }, []);
 
@@ -79,12 +105,21 @@ export default function Dashboard() {
 
   const fetchUserSchedule = async () => {
     try {
+      setScheduleLoading(true);
       const response = await api.get('/schedules');
+      console.log('Schedule response:', response.data);
       if (response.data.schedule) {
         setUserSchedule(response.data.schedule);
       }
+      // Check the initialized flag from backend
+      const scheduleInitialized = response.data.initialized || false;
+      console.log('Schedule initialized:', scheduleInitialized);
+      setHasSchedule(scheduleInitialized);
     } catch (error) {
       console.error('Error fetching schedule:', error);
+      setHasSchedule(false);
+    } finally {
+      setScheduleLoading(false);
     }
   };
 
@@ -257,12 +292,22 @@ export default function Dashboard() {
     return eventDate >= today;
   });
 
-  if (loading) {
+  const handleAddEventClick = () => {
+    if (!hasSchedule) {
+      // Show modal if schedule not initialized
+      setIsScheduleRequiredModalOpen(true);
+      return;
+    }
+    navigate('/add-event', { state: { selectedDate } });
+  };
+
+  // Show loading while checking schedule status OR loading initial data
+  if (scheduleLoading || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-12 h-12 border-4 border-green-300 border-t-green-700 rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">Loading dashboard...</p>
+          <p className="text-gray-500 font-medium">Loading...</p>
         </div>
       </div>
     );
@@ -270,6 +315,11 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
+      {/* Overlay when schedule is required */}
+      {!hasSchedule && isScheduleRequiredModalOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30" />
+      )}
+      
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -371,15 +421,30 @@ export default function Dashboard() {
             <h2 className="text-3xl font-bold text-gray-900">Calendar View</h2>
             <p className="text-sm text-gray-600 mt-1.5 font-medium">Click a date to view or manage your events</p>
           </div>
-          <button
-            onClick={() => navigate('/add-event', { state: { selectedDate } })}
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white font-semibold rounded-xl hover:from-green-800 hover:via-green-800 hover:to-green-900 shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 group"
-          >
-            <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Event
-          </button>
+          <div className="flex flex-col items-end gap-2">
+            <button
+              onClick={handleAddEventClick}
+              disabled={!hasSchedule}
+              className={`inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group ${
+                hasSchedule
+                  ? 'bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Event
+            </button>
+            {!hasSchedule && (
+              <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <span className="font-medium">Set your class schedule first</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Calendar + Event Details */}
@@ -834,6 +899,93 @@ export default function Dashboard() {
                 </div>
               </button>
             ))
+          )}
+        </div>
+      </Modal>
+
+      {/* Schedule Required Modal */}
+      <Modal
+        isOpen={isScheduleRequiredModalOpen}
+        onClose={() => {
+          // Only allow closing if user has schedule
+          if (hasSchedule) {
+            setIsScheduleRequiredModalOpen(false);
+          }
+        }}
+        title="Class Schedule Required"
+        showCloseButton={false}
+        closeOnBackdrop={false}
+      >
+        <div className="space-y-6">
+          {/* Icon and Message */}
+          <div className="flex flex-col items-center text-center">
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Set Up Your Class Schedule First</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Before {hasSchedule ? 'creating events' : 'using the dashboard'}, you need to set up your class schedule. This helps prevent scheduling conflicts and ensures better event planning.
+            </p>
+          </div>
+
+          {/* Benefits List */}
+          <div className="bg-green-50 rounded-lg p-4 border border-green-200">
+            <h4 className="text-sm font-semibold text-green-900 mb-3">Why set up your schedule?</h4>
+            <ul className="space-y-2">
+              <li className="flex items-start text-sm text-green-800">
+                <svg className="w-5 h-5 mr-2 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Automatically detect scheduling conflicts</span>
+              </li>
+              <li className="flex items-start text-sm text-green-800">
+                <svg className="w-5 h-5 mr-2 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Better event planning and coordination</span>
+              </li>
+              <li className="flex items-start text-sm text-green-800">
+                <svg className="w-5 h-5 mr-2 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Avoid double-booking yourself</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => navigate('/account')}
+              className="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Set Up Schedule Now
+            </button>
+            {hasSchedule && (
+              <button
+                onClick={() => setIsScheduleRequiredModalOpen(false)}
+                className="px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition-all duration-200"
+              >
+                Maybe Later
+              </button>
+            )}
+          </div>
+
+          {/* Warning if no schedule */}
+          {!hasSchedule && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-xs text-amber-800 text-center">
+                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                You must set up your schedule to access the dashboard
+              </p>
+            </div>
           )}
         </div>
       </Modal>

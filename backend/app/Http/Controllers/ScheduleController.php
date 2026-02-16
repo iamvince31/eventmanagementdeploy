@@ -34,7 +34,8 @@ class ScheduleController extends Controller
         }
 
         return response()->json([
-            'schedule' => $groupedSchedules
+            'schedule' => $groupedSchedules,
+            'initialized' => $user->schedule_initialized
         ]);
     }
 
@@ -78,6 +79,10 @@ class ScheduleController extends Controller
             if (!empty($schedules)) {
                 UserSchedule::insert($schedules);
             }
+            
+            // Mark schedule as initialized (even if empty)
+            $user->schedule_initialized = true;
+            $user->save();
             
             \DB::commit();
 
