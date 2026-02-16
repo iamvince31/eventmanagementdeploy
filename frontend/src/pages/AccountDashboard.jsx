@@ -25,6 +25,7 @@ export default function AccountDashboard() {
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [scheduleLoading, setScheduleLoading] = useState(true);
   const [scheduleSaving, setScheduleSaving] = useState(false);
+  const [scheduleEditMode, setScheduleEditMode] = useState(false);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -168,6 +169,7 @@ export default function AccountDashboard() {
   const handleScheduleSave = async () => {
     setScheduleSaving(true);
     try {
+      console.log('Saving schedule:', schedule);
       const response = await fetch('http://localhost:8000/api/schedules', {
         method: 'POST',
         headers: {
@@ -177,11 +179,21 @@ export default function AccountDashboard() {
         body: JSON.stringify({ schedule }),
       });
 
+      console.log('Response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to save schedule');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Save failed:', errorData);
+        throw new Error(errorData.message || 'Failed to save schedule');
       }
 
+      const data = await response.json();
+      console.log('Save successful:', data);
+
       setMessage({ type: 'success', text: 'Schedule saved! You can now create events.' });
+      
+      // Exit edit mode after successful save
+      setScheduleEditMode(false);
       
       // Refresh schedule to get IDs from database and updated initialized status
       await fetchSchedule();
@@ -199,6 +211,7 @@ export default function AccountDashboard() {
       // Trigger custom event for Dashboard to refresh
       window.dispatchEvent(new CustomEvent('scheduleChanged', { detail: { hasSchedule: true } }));
     } catch (error) {
+      console.error('Error saving schedule:', error);
       setMessage({ type: 'error', text: 'Failed to save schedule. Please try again.' });
     } finally {
       setScheduleSaving(false);
@@ -211,6 +224,16 @@ export default function AccountDashboard() {
 
   const getTotalScheduledClasses = () => {
     return Object.values(schedule).reduce((total, daySchedule) => total + daySchedule.length, 0);
+  };
+
+  // Convert 24-hour time to 12-hour AM/PM format
+  const formatTime12Hour = (time24) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour % 12 || 12;
+    return `${hour12}:${minutes} ${ampm}`;
   };
 
   if (!user || loggingOut) {
@@ -320,32 +343,61 @@ export default function AccountDashboard() {
                       : 'No schedule set - Required to create events'}
                   </p>
                 </div>
-                <button
-                  onClick={handleScheduleSave}
-                  disabled={scheduleSaving}
-                  className={`px-4 py-2 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 ${
-                    scheduleSaving 
-                      ? 'bg-gray-400 cursor-not-allowed' 
-                      : 'bg-green-500 hover:bg-green-600'
-                  }`}
-                >
-                  {scheduleSaving ? (
+                <div className="flex gap-2">
+                  {scheduleEditMode ? (
                     <>
-                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Saving...
+                      <button
+                        onClick={handleScheduleSave}
+                        disabled={scheduleSaving}
+                        className={`px-4 py-2 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 ${
+                          scheduleSaving 
+                            ? 'bg-gray-400 cursor-not-allowed' 
+                            : 'bg-green-500 hover:bg-green-600'
+                        }`}
+                      >
+                        {scheduleSaving ? (
+                          <>
+                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            </svg>
+                            Save Schedule
+                          </>
+                        )}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setScheduleEditMode(false);
+                          fetchSchedule(); // Reload original data
+                        }}
+                        disabled={scheduleSaving}
+                        className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        Cancel
+                      </button>
                     </>
                   ) : (
-                    <>
+                    <button
+                      onClick={() => setScheduleEditMode(true)}
+                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2"
+                    >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
-                      Save Schedule
-                    </>
+                      Edit Schedule
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
 
               <div className="p-6">
@@ -389,26 +441,34 @@ export default function AccountDashboard() {
                   <div className="flex-1 bg-green-100 border-2 border-green-300 rounded-lg p-6">
                     <div className="flex justify-between items-center mb-4">
                       <h4 className="text-xl font-bold text-gray-900">{selectedDay} Schedule</h4>
-                      <button
-                        onClick={() => addNewClass(selectedDay)}
-                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-1"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Class
-                      </button>
+                      {scheduleEditMode && (
+                        <button
+                          onClick={() => addNewClass(selectedDay)}
+                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-1"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Add Class
+                        </button>
+                      )}
                     </div>
                     
                     {getTotalScheduledClasses() === 0 ? (
                       <div className="text-center py-12 text-gray-500">
+                        <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
                         <p className="text-lg font-medium">No schedule set yet</p>
-                        <p className="text-sm mt-1">Click "Add Class" to add your classes</p>
+                        <p className="text-sm mt-1">Click "Edit Schedule" then "Add Class" to add your classes</p>
                       </div>
                     ) : schedule[selectedDay]?.length === 0 ? (
                       <div className="text-center py-12 text-gray-500">
+                        <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
                         <p className="text-lg font-medium">No classes on {selectedDay}</p>
-                        <p className="text-sm mt-1">Click "Add Class" to add a class</p>
+                        {scheduleEditMode && <p className="text-sm mt-1">Click "Add Class" to add a class</p>}
                       </div>
                     ) : (
                       <div className="bg-white rounded-lg overflow-hidden border border-green-300">
@@ -421,9 +481,11 @@ export default function AccountDashboard() {
                               <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
                                 Class Description
                               </th>
-                              <th className="px-4 py-3 text-center text-sm font-bold text-gray-900 w-20">
-                                Action
-                              </th>
+                              {scheduleEditMode && (
+                                <th className="px-4 py-3 text-center text-sm font-bold text-gray-900 w-20">
+                                  Action
+                                </th>
+                              )}
                             </tr>
                           </thead>
                           <tbody>
@@ -435,42 +497,57 @@ export default function AccountDashboard() {
                                 }`}
                               >
                                 <td className="px-4 py-3">
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="time"
-                                      value={slot.startTime}
-                                      onChange={(e) => updateClassSlot(selectedDay, slot.id, 'startTime', e.target.value)}
-                                      className="px-2 py-1.5 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 w-28"
-                                    />
-                                    <span className="text-gray-500 font-bold">-</span>
-                                    <input
-                                      type="time"
-                                      value={slot.endTime}
-                                      onChange={(e) => updateClassSlot(selectedDay, slot.id, 'endTime', e.target.value)}
-                                      className="px-2 py-1.5 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 w-28"
-                                    />
-                                  </div>
+                                  {scheduleEditMode ? (
+                                    <div className="flex items-center gap-2">
+                                      <input
+                                        type="time"
+                                        value={slot.startTime}
+                                        onChange={(e) => updateClassSlot(selectedDay, slot.id, 'startTime', e.target.value)}
+                                        className="px-2 py-1.5 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 w-28"
+                                      />
+                                      <span className="text-gray-500 font-bold">-</span>
+                                      <input
+                                        type="time"
+                                        value={slot.endTime}
+                                        onChange={(e) => updateClassSlot(selectedDay, slot.id, 'endTime', e.target.value)}
+                                        className="px-2 py-1.5 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 w-28"
+                                      />
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2 text-gray-900 font-medium">
+                                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      {formatTime12Hour(slot.startTime)} - {formatTime12Hour(slot.endTime)}
+                                    </div>
+                                  )}
                                 </td>
                                 <td className="px-4 py-3">
-                                  <input
-                                    type="text"
-                                    placeholder="Enter class name..."
-                                    value={slot.description}
-                                    onChange={(e) => updateClassSlot(selectedDay, slot.id, 'description', e.target.value)}
-                                    className="w-full px-3 py-2 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                                  />
+                                  {scheduleEditMode ? (
+                                    <input
+                                      type="text"
+                                      placeholder="Enter class name..."
+                                      value={slot.description}
+                                      onChange={(e) => updateClassSlot(selectedDay, slot.id, 'description', e.target.value)}
+                                      className="w-full px-3 py-2 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+                                    />
+                                  ) : (
+                                    <div className="text-gray-900">{slot.description || <span className="text-gray-400 italic">No description</span>}</div>
+                                  )}
                                 </td>
-                                <td className="px-4 py-3 text-center">
-                                  <button
-                                    onClick={() => removeClassSlot(selectedDay, slot.id)}
-                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                    title="Remove class"
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
-                                </td>
+                                {scheduleEditMode && (
+                                  <td className="px-4 py-3 text-center">
+                                    <button
+                                      onClick={() => removeClassSlot(selectedDay, slot.id)}
+                                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                      title="Remove class"
+                                    >
+                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                      </svg>
+                                    </button>
+                                  </td>
+                                )}
                               </tr>
                             ))}
                           </tbody>
@@ -490,8 +567,22 @@ export default function AccountDashboard() {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
                 <div className="bg-gradient-to-r from-green-700 via-green-700 to-green-800 px-8 py-6">
-                  <h3 className="text-2xl font-bold text-white">
-                    {editMode ? '? Edit Profile' : '?? Account Information'}
+                  <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                    {editMode ? (
+                      <>
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit Profile
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        Account Information
+                      </>
+                    )}
                   </h3>
                 </div>
 
@@ -643,19 +734,19 @@ export default function AccountDashboard() {
                   <h3 className="text-lg font-bold text-white">Quick Actions</h3>
                 </div>
                 <div className="px-6 py-6 space-y-2">
-                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-blue-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
+                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
                     <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
                     Change Password
                   </button>
-                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-blue-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
+                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
                     <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
                     </svg>
                     Notifications
                   </button>
-                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-blue-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
+                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
                     <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
