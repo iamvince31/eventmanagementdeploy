@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
+  const [selectedMemberForView, setSelectedMemberForView] = useState(null);
   const [isEventsListModalOpen, setIsEventsListModalOpen] = useState(false);
 
   useEffect(() => {
@@ -205,7 +206,7 @@ export default function Dashboard() {
       // Select the date to show events
       const eventsOnDate = events.filter(e => e.date === nextEvent.date);
       handleDateSelect(nextEvent.date, eventsOnDate);
-      
+
       // Remove highlight after 2 seconds
       setTimeout(() => {
         setHighlightedDate(null);
@@ -214,6 +215,9 @@ export default function Dashboard() {
   };
 
   const handleMembersClick = () => {
+    if (members.length > 0) {
+      setSelectedMemberForView(members[0]);
+    }
     setIsMembersModalOpen(true);
   };
 
@@ -230,12 +234,12 @@ export default function Dashboard() {
       }
       grouped[dept].push(member);
     });
-    
+
     // Sort members alphabetically within each department
     Object.keys(grouped).forEach(dept => {
       grouped[dept].sort((a, b) => a.username.localeCompare(b.username));
     });
-    
+
     return grouped;
   };
 
@@ -324,11 +328,10 @@ export default function Dashboard() {
           <button
             onClick={handleUpcomingClick}
             disabled={upcomingEvents.length === 0}
-            className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${
-              upcomingEvents.length > 0 
-                ? 'hover:shadow-2xl hover:scale-105 cursor-pointer' 
-                : 'opacity-50 cursor-not-allowed'
-            }`}
+            className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${upcomingEvents.length > 0
+              ? 'hover:shadow-2xl hover:scale-105 cursor-pointer'
+              : 'opacity-50 cursor-not-allowed'
+              }`}
           >
             <div className="flex items-center space-x-4">
               <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
@@ -407,278 +410,298 @@ export default function Dashboard() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         title="Event Details"
+        maxWidth="max-w-5xl"
+        noPadding={true}
       >
         {selectedEvent && (
-          <div className="space-y-4">
-            {/* Schedule Conflict Warning for Invited Members */}
-            {eventConflicts.length > 0 && (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
-                <div className="flex items-start">
-                  <svg className="w-6 h-6 text-yellow-400 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-yellow-800 mb-2">⚠️ Schedule Conflicts Detected</h4>
-                    <p className="text-sm text-yellow-700 mb-3">
-                      The following invited members have class schedule conflicts:
-                    </p>
-                    <div className="space-y-3">
-                      {eventConflicts.map((conflict, index) => (
-                        <div key={index} className="bg-white/50 rounded-lg p-3 border border-yellow-200">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-sm flex-shrink-0">
-                                {conflict.username.charAt(0).toUpperCase()}
+          <div className="flex items-start">
+            {/* Left Pane - Event Details */}
+            <div className="w-7/12 flex flex-col bg-white sticky top-0 h-[calc(85vh-5rem)] overflow-y-auto scrollbar-hide">
+              <div className="p-6 space-y-6">
+
+                {/* Warnings Section */}
+                {/* Schedule Conflict Warning for Invited Members */}
+                {eventConflicts.length > 0 && (
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-lg">
+                    <div className="flex items-start">
+                      <svg className="w-6 h-6 text-yellow-400 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-yellow-800 mb-2">⚠️ Schedule Conflicts Detected</h4>
+                        <p className="text-sm text-yellow-700 mb-3">
+                          The following invited members have class schedule conflicts:
+                        </p>
+                        <div className="space-y-3">
+                          {eventConflicts.map((conflict, index) => (
+                            <div key={index} className="bg-white/50 rounded-lg p-3 border border-yellow-200">
+                              <div className="flex items-start justify-between">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-sm flex-shrink-0">
+                                    {conflict.username.charAt(0).toUpperCase()}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-gray-900">{conflict.username}</p>
+                                    <p className="text-xs text-gray-600">{conflict.email}</p>
+                                  </div>
+                                </div>
                               </div>
-                              <div>
-                                <p className="text-sm font-semibold text-gray-900">{conflict.username}</p>
-                                <p className="text-xs text-gray-600">{conflict.email}</p>
+                              <div className="mt-2 ml-10 flex items-center text-sm text-yellow-800">
+                                <svg className="w-4 h-4 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                </svg>
+                                <span className="font-medium">{conflict.class_time}</span>
+                                {conflict.class_description && (
+                                  <span className="ml-2 text-gray-700">- {conflict.class_description}</span>
+                                )}
                               </div>
                             </div>
-                          </div>
-                          <div className="mt-2 ml-10 flex items-center text-sm text-yellow-800">
-                            <svg className="w-4 h-4 mr-1.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                            </svg>
-                            <span className="font-medium">{conflict.class_time}</span>
-                            {conflict.class_description && (
-                              <span className="ml-2 text-gray-700">- {conflict.class_description}</span>
-                            )}
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
+                )}
 
-            {/* Schedule Conflict Warning */}
-            {checkScheduleConflict(selectedEvent) && (
-              <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
-                <div className="flex items-start">
-                  <svg className="w-6 h-6 text-orange-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-orange-800 mb-1">Your Schedule Conflict</h4>
-                    <p className="text-sm text-orange-700">
-                      This event conflicts with your class schedule:
+                {/* Schedule Conflict Warning */}
+                {checkScheduleConflict(selectedEvent) && (
+                  <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-lg">
+                    <div className="flex items-start">
+                      <svg className="w-6 h-6 text-orange-400 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                      </svg>
+                      <div className="flex-1">
+                        <h4 className="text-sm font-bold text-orange-800 mb-1">Your Schedule Conflict</h4>
+                        <p className="text-sm text-orange-700">
+                          This event conflicts with your class schedule:
+                        </p>
+                        <ul className="mt-2 space-y-1">
+                          {checkScheduleConflict(selectedEvent).map((conflict, index) => (
+                            <li key={index} className="text-sm text-orange-700 flex items-center">
+                              <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                              </svg>
+                              {conflict.startTime} - {conflict.endTime}: {conflict.description || 'Class'}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Image */}
+                {selectedEvent.images && selectedEvent.images.length > 0 && (
+                  <div className="mb-4">
+                    {selectedEvent.images.length === 1 ? (
+                      <img
+                        src={getFixedImageUrl(selectedEvent.images[0])}
+                        alt={selectedEvent.title}
+                        className="w-full h-64 object-cover rounded-xl shadow-sm"
+                      />
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {selectedEvent.images.map((image, index) => (
+                          <img
+                            key={index}
+                            src={getFixedImageUrl(image)}
+                            alt={`${selectedEvent.title} ${index + 1}`}
+                            className="w-full h-32 object-cover rounded-xl shadow-sm"
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Title & Time */}
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900">{selectedEvent.title}</h3>
+                  <p className="text-gray-500 flex items-center mt-1">
+                    <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    {selectedEvent.date} at {selectedEvent.time}
+                  </p>
+                </div>
+
+                {/* Location */}
+                {selectedEvent.location && (
+                  <div className="flex items-start">
+                    <svg className="w-5 h-5 text-gray-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900">Location</p>
+                      <p className="text-gray-600">{selectedEvent.location}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Description */}
+                {selectedEvent.description && (
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-1">Description</p>
+                    <p className="text-gray-600 leading-relaxed text-sm">
+                      {selectedEvent.description}
                     </p>
-                    <ul className="mt-2 space-y-1">
-                      {checkScheduleConflict(selectedEvent).map((conflict, index) => (
-                        <li key={index} className="text-sm text-orange-700 flex items-center">
-                          <svg className="w-4 h-4 mr-1.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                          </svg>
-                          {conflict.startTime} - {conflict.endTime}: {conflict.description || 'Class'}
-                        </li>
-                      ))}
-                    </ul>
+                  </div>
+                )}
+
+                {/* Host */}
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">
+                        {selectedEvent.host.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="text-sm">
+                        <p className="font-medium text-gray-900">Hosted by {selectedEvent.host.username}</p>
+                        <p className="text-gray-500">{selectedEvent.host.email}</p>
+                      </div>
+                    </div>
+                    {/* Maybe render open event badge here */}
+                    {selectedEvent.is_open && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Open Event
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
 
-            {/* Image */}
-            {selectedEvent.images && selectedEvent.images.length > 0 && (
-              <div className="mb-4">
-                {selectedEvent.images.length === 1 ? (
-                  <img
-                    src={getFixedImageUrl(selectedEvent.images[0])}
-                    alt={selectedEvent.title}
-                    className="w-full h-64 object-cover rounded-lg shadow-sm"
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedEvent.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={getFixedImageUrl(image)}
-                        alt={`${selectedEvent.title} ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg shadow-sm"
-                      />
+              {/* Actions Footer - Fixed at bottom of left pane */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                <div className="flex justify-between items-center">
+                  {/* Left side - Accept/Decline buttons for invited members */}
+                  {selectedEvent.members && selectedEvent.members.some(member => member.id === user?.id) && user?.id !== selectedEvent.host.id && (() => {
+                    const myMembership = selectedEvent.members.find(m => m.id === user?.id);
+                    const myStatus = myMembership?.status;
+
+                    if (myStatus === 'pending') {
+                      return (
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.post(`/events/${selectedEvent.id}/respond`, { status: 'accepted' });
+                                await fetchData();
+                                // Update selected event with new data
+                                const updatedRes = await api.get('/events');
+                                const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
+                                if (updatedEvent) setSelectedEvent(updatedEvent);
+                              } catch (error) {
+                                console.error('Error accepting invitation:', error);
+                                alert('Failed to accept invitation: ' + (error.response?.data?.error || error.message));
+                              }
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                          >
+                            ✓ Accept
+                          </button>
+                          <button
+                            onClick={async () => {
+                              try {
+                                await api.post(`/events/${selectedEvent.id}/respond`, { status: 'declined' });
+                                await fetchData();
+                                const updatedRes = await api.get('/events');
+                                const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
+                                if (updatedEvent) setSelectedEvent(updatedEvent);
+                              } catch (error) {
+                                console.error('Error declining invitation:', error);
+                                alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
+                              }
+                            }}
+                            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
+                          >
+                            ✗ Decline
+                          </button>
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${myStatus === 'accepted'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                          }`}>
+                          {myStatus === 'accepted' ? '✓ You accepted' : '✗ You declined'}
+                        </span>
+                      );
+                    }
+                  })()}
+
+                  {/* Right side - Host actions and Reschedule */}
+                  <div className="flex space-x-2 ml-auto">
+                    <button
+                      onClick={() => {
+                        // TODO: Handle reschedule
+                        console.log('Reschedule event');
+                      }}
+                      className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                    >
+                      Reschedule
+                    </button>
+
+                    {/* Edit/Delete buttons only for host */}
+                    {(user?.id === selectedEvent.host.id) && (
+                      <>
+                        <button
+                          onClick={() => {
+                            handleCloseModal();
+                            handleEdit(selectedEvent);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-green-800 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleCloseModal();
+                            handleDelete(selectedEvent);
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Pane - Invited Members */}
+            <div className="w-5/12 bg-gray-50 border-l border-gray-100 flex flex-col">
+              <div className="p-4 border-b border-gray-200 bg-gray-50">
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider">Invited Members</h4>
+              </div>
+              <div className="p-4">
+                {selectedEvent.members && selectedEvent.members.length > 0 ? (
+                  <div className="space-y-2">
+                    {selectedEvent.members.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm">
+                        <div className="flex items-center space-x-2 min-w-0">
+                          <div className="w-7 h-7 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs flex-shrink-0">
+                            {member.username.charAt(0).toUpperCase()}
+                          </div>
+                          <span className="text-sm text-gray-700 font-medium truncate">{member.username}</span>
+                        </div>
+                        <span className={`flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${member.status === 'accepted'
+                          ? 'bg-green-100 text-green-800'
+                          : member.status === 'declined'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                          }`}>
+                          {member.status === 'accepted' ? 'Accepted' : member.status === 'declined' ? 'Declined' : 'Pending'}
+                        </span>
+                      </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Title & Time */}
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">{selectedEvent.title}</h3>
-              <p className="text-gray-500 flex items-center mt-1">
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {/* Format Date nicer? */}
-                {selectedEvent.date} at {selectedEvent.time}
-              </p>
-            </div>
-
-            {/* Location */}
-            {selectedEvent.location && (
-              <div className="flex items-start">
-                <svg className="w-5 h-5 text-gray-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-                <div className="flex-1">
-                  <p className="font-semibold text-gray-900">Location</p>
-                  <p className="text-gray-600">{selectedEvent.location}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Description */}
-            {selectedEvent.description && (
-              <div>
-                <p className="font-semibold text-gray-900 mb-1">Description</p>
-                <p className="text-gray-600 leading-relaxed text-sm">
-                  {selectedEvent.description}
-                </p>
-              </div>
-            )}
-
-            {/* Host */}
-            <div className="pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-8 h-8 rounded-full bg-green-200 flex items-center justify-center text-green-700 font-bold text-sm">
-                    {selectedEvent.host.username.charAt(0).toUpperCase()}
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
+                    <p className="text-sm">No members invited</p>
                   </div>
-                  <div className="text-sm">
-                    <p className="font-medium text-gray-900">Hosted by {selectedEvent.host.username}</p>
-                    <p className="text-gray-500">{selectedEvent.host.email}</p>
-                  </div>
-                </div>
-                {/* Maybe render open event badge here */}
-                {selectedEvent.is_open && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    Open Event
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Actions in Modal (Optional) */}
-            {(user?.id === selectedEvent.host.id) && (
-              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-100 mt-4">
-                <button
-                  onClick={() => {
-                    handleCloseModal();
-                    handleEdit(selectedEvent);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-green-800 bg-green-100 rounded-lg hover:bg-green-200"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => {
-                    handleCloseModal();
-                    handleDelete(selectedEvent);
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100"
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-
-            {/* Actions in Modal */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-100 mt-4">
-              {/* Left side - Accept/Decline buttons for invited members */}
-              {selectedEvent.members && selectedEvent.members.some(member => member.id === user?.id) && user?.id !== selectedEvent.host.id && (() => {
-                const myMembership = selectedEvent.members.find(m => m.id === user?.id);
-                const myStatus = myMembership?.status;
-
-                if (myStatus === 'pending') {
-                  return (
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={async () => {
-                          try {
-                            await api.post(`/events/${selectedEvent.id}/respond`, { status: 'accepted' });
-                            await fetchData();
-                            // Update selected event with new data
-                            const updatedRes = await api.get('/events');
-                            const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
-                            if (updatedEvent) setSelectedEvent(updatedEvent);
-                          } catch (error) {
-                            console.error('Error accepting invitation:', error);
-                            alert('Failed to accept invitation: ' + (error.response?.data?.error || error.message));
-                          }
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
-                      >
-                        ✓ Accept
-                      </button>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await api.post(`/events/${selectedEvent.id}/respond`, { status: 'declined' });
-                            await fetchData();
-                            const updatedRes = await api.get('/events');
-                            const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
-                            if (updatedEvent) setSelectedEvent(updatedEvent);
-                          } catch (error) {
-                            console.error('Error declining invitation:', error);
-                            alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
-                          }
-                        }}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                      >
-                        ✗ Decline
-                      </button>
-                    </div>
-                  );
-                } else {
-                  return (
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-semibold ${myStatus === 'accepted'
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-red-100 text-red-800'
-                      }`}>
-                      {myStatus === 'accepted' ? '✓ You accepted this invitation' : '✗ You declined this invitation'}
-                    </span>
-                  );
-                }
-              })()}
-
-              {/* Right side - Host actions and Reschedule */}
-              <div className="flex space-x-2 ml-auto">
-                {/* Reschedule button for all users */}
-                <button
-                  onClick={() => {
-                    // TODO: Handle reschedule
-                    console.log('Reschedule event');
-                  }}
-                  className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
-                >
-                  Reschedule
-                </button>
-
-                {/* Edit/Delete buttons only for host */}
-                {(user?.id === selectedEvent.host.id) && (
-                  <>
-                    <button
-                      onClick={() => {
-                        handleCloseModal();
-                        handleEdit(selectedEvent);
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => {
-                        handleCloseModal();
-                        handleDelete(selectedEvent);
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                    >
-                      Delete
-                    </button>
-                  </>
                 )}
               </div>
             </div>
@@ -690,31 +713,71 @@ export default function Dashboard() {
       <Modal
         isOpen={isMembersModalOpen}
         onClose={() => setIsMembersModalOpen(false)}
-        title="All Members"
-        fullscreen={true}
+        title="People"
+        maxWidth="max-w-4xl"
+        noPadding={true}
       >
-        <div className="h-full overflow-y-auto">
-          <div className="max-w-6xl mx-auto py-8 px-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-8">
-              {Object.entries(groupMembersByDepartment()).map(([department, deptMembers]) => (
-                <div key={department}>
-                  <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4">
-                    {department}
-                  </h3>
-                  <ul className="space-y-3">
-                    {deptMembers.map((member) => (
-                      <li key={member.id} className="text-gray-300">
-                        <div className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
-                          {member.username}
-                        </div>
-                        <div className="text-xs text-gray-500 mt-0.5">
-                          {member.email}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+        <div className="flex h-[500px] overflow-hidden">
+          {/* Left Pane - Details */}
+          <div className="w-7/12 p-8 flex flex-col items-center justify-center border-r border-gray-100 bg-white">
+            {selectedMemberForView ? (
+              <div className="flex flex-col items-center text-center animate-fade-in">
+                <div className="w-32 h-32 rounded-full bg-gradient-to-br from-green-100 to-green-50 flex items-center justify-center text-4xl font-bold text-green-600 mb-6 shadow-sm border-4 border-white">
+                  {selectedMemberForView.username.charAt(0).toUpperCase()}
                 </div>
-              ))}
+                <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                  {selectedMemberForView.username}
+                </h2>
+                <p className="text-gray-500 mb-4">{selectedMemberForView.email}</p>
+
+                {selectedMemberForView.department && (
+                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                    {selectedMemberForView.department}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-gray-400">
+                <p>Select a person to view details</p>
+              </div>
+            )}
+          </div>
+
+          {/* Right Pane - List */}
+          <div className="w-5/12 bg-gray-50 flex flex-col border-l border-gray-100 h-full overflow-hidden">
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <p className="text-sm text-gray-500">
+                Select a person to view details
+              </p>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {members.length === 0 ? (
+                <p className="p-4 text-center text-gray-500 text-sm">No members found</p>
+              ) : (
+                <ul className="divide-y divide-gray-100">
+                  {members.sort((a, b) => a.username.localeCompare(b.username)).map((member) => (
+                    <li
+                      key={member.id}
+                      onClick={() => setSelectedMemberForView(member)}
+                      className={`p-4 flex items-center space-x-3 cursor-pointer transition-all duration-200 hover:bg-white ${selectedMemberForView?.id === member.id ? 'bg-white border-l-4 border-green-500 shadow-sm' : 'border-l-4 border-transparent'
+                        }`}
+                    >
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${selectedMemberForView?.id === member.id
+                        ? 'bg-green-600 text-white shadow-md'
+                        : 'bg-white border border-gray-200 text-gray-600'
+                        }`}>
+                        {member.username.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className={`text-sm font-medium truncate ${selectedMemberForView?.id === member.id ? 'text-gray-900' : 'text-gray-700'
+                          }`}>
+                          {member.username}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           </div>
         </div>
