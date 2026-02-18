@@ -37,4 +37,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/schedules', [ScheduleController::class, 'store']);
     Route::delete('/schedules/{id}', [ScheduleController::class, 'destroy']);
     Route::post('/schedules/check-conflicts', [ScheduleController::class, 'checkConflicts']);
+
+    // Reschedule Requests
+    Route::get('/events/{event}/reschedule-requests', [App\Http\Controllers\EventRescheduleRequestController::class, 'index']);
+    Route::post('/events/{event}/reschedule', [App\Http\Controllers\EventRescheduleRequestController::class, 'store']);
+    Route::post('/reschedule-requests/{id}/respond', [App\Http\Controllers\EventRescheduleRequestController::class, 'respond']);
 });

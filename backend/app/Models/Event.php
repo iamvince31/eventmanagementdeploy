@@ -14,10 +14,12 @@ class Event extends Model
         'time',
         'is_open',
         'host_id',
+        'auto_accept_reschedule',
     ];
 
     protected $casts = [
         'is_open' => 'boolean',
+        'auto_accept_reschedule' => 'boolean',
     ];
 
     public function host()
@@ -32,6 +34,11 @@ class Event extends Model
 
     public function images()
     {
-        return $this->hasMany(EventImage::class)->orderBy('order');
+        return $this->hasMany(EventImage::class);
+    }
+
+    public function rescheduleRequests()
+    {
+        return $this->hasMany(EventRescheduleRequest::class);
     }
 }

@@ -52,13 +52,25 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
           <div
             key={event.id || idx}
             onClick={() => onView && onView(event)}
-            className="bg-gray-50 border border-gray-100 rounded-xl p-4 hover:bg-green-100/50 hover:border-green-300 transition-all duration-200 group cursor-pointer"
+            className={`border rounded-xl p-4 transition-all duration-200 group cursor-pointer ${event.has_pending_reschedule_requests
+              ? 'bg-orange-50 border-orange-400 hover:bg-orange-100 ring-1 ring-orange-200'
+              : event.is_open
+                ? 'bg-blue-50 border-blue-500 hover:bg-blue-100'
+                : 'bg-gray-50 border-gray-100 hover:bg-green-100/50 hover:border-green-300'
+              }`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-gray-900 text-sm truncate">
-                  {event.title}
-                </p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-900 text-sm truncate">
+                    {event.title}
+                  </p>
+                  {event.has_pending_reschedule_requests && (
+                    <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
+                      Reschedule
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center mt-1.5 space-x-3">
                   <span className="inline-flex items-center text-xs text-gray-500">
                     <svg className="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

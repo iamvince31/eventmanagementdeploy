@@ -31,6 +31,13 @@ export default function Dashboard() {
   const [isEventsListModalOpen, setIsEventsListModalOpen] = useState(false);
   const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
 
+  // Reschedule State
+  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('');
+  const [rescheduleReason, setRescheduleReason] = useState('');
+  const [rescheduleRequests, setRescheduleRequests] = useState([]);
+
   useEffect(() => {
     const loadData = async () => {
       await Promise.all([fetchData(), fetchUserSchedule()]);
@@ -201,6 +208,12 @@ export default function Dashboard() {
     } else {
       setEventConflicts([]);
     }
+
+    if (user && event.host.id === user.id) {
+      fetchRescheduleRequests(event.id);
+    } else {
+      setRescheduleRequests([]);
+    }
   };
 
   const checkEventConflicts = async (event) => {
@@ -280,6 +293,59 @@ export default function Dashboard() {
     return grouped;
   };
 
+  const fetchRescheduleRequests = async (eventId) => {
+    try {
+      const response = await api.get(`/events/${eventId}/reschedule-requests`);
+      setRescheduleRequests(response.data.requests);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+    }
+  };
+
+  const handleRescheduleClick = () => {
+    setRescheduleDate(selectedEvent.date);
+    setRescheduleTime(selectedEvent.time);
+    setRescheduleReason('');
+    setIsRescheduleModalOpen(true);
+  };
+
+  const submitRescheduleRequest = async (e) => {
+    e.preventDefault();
+    try {
+      await api.post(`/events/${selectedEvent.id}/reschedule`, {
+        suggested_date: rescheduleDate,
+        suggested_time: rescheduleTime,
+        reason: rescheduleReason,
+      });
+      alert('Reschedule request sent!');
+      setIsRescheduleModalOpen(false);
+    } catch (error) {
+      console.error('Error sending request:', error);
+      alert('Failed to send request: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleRespondToReschedule = async (requestId, status) => {
+    try {
+      await api.post(`/reschedule-requests/${requestId}/respond`, { status });
+      await fetchRescheduleRequests(selectedEvent.id);
+      await fetchData();
+
+      if (status === 'accepted') {
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Error responding:', error);
+      alert('Failed to respond: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const sortedEvents = [...events].sort((a, b) => {
+    const dateA = new Date(a.date + 'T' + a.time);
+    const dateB = new Date(b.date + 'T' + b.time);
+    return dateA - dateB;
+  });
+
   // Compute stats
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -306,16 +372,16 @@ export default function Dashboard() {
       {!hasSchedule && isScheduleRequiredModalOpen && (
         <div className="fixed inset-0 bg-black/50 z-30" />
       )}
-      
+
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 gap-4">
             <div className="flex items-center space-x-3 flex-1">
               {/* CEIT Logo */}
-              <img 
-                src={logo} 
-                alt="CEIT Logo"  
+              <img
+                src={logo}
+                alt="CEIT Logo"
                 className="h-10 w-auto"
               />
               <div>
@@ -325,9 +391,9 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center space-x-4">
               {/* Notifications Bell */}
-              <NotificationBell 
-                events={events} 
-                user={user} 
+              <NotificationBell
+                events={events}
+                user={user}
                 onNotificationClick={handleViewEvent}
               />
 
@@ -438,11 +504,10 @@ export default function Dashboard() {
             <button
               onClick={handleAddEventClick}
               disabled={!hasSchedule}
-              className={`inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group ${
-                hasSchedule
+              className={`inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group ${hasSchedule
                   ? 'bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600'
                   : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
@@ -524,7 +589,7 @@ export default function Dashboard() {
           <div className="flex items-start">
             {/* Left Pane - Event Details */}
             <div className="w-7/12 flex flex-col bg-white sticky top-0 h-[calc(85vh-5rem)] overflow-y-auto scrollbar-hide">
-              <div className="p-6 space-y-6">
+              <div className="p-6 space-y-6 flex-1">
 
                 {/* Warnings Section */}
                 {/* Schedule Conflict Warning for Invited Members */}
@@ -678,6 +743,54 @@ export default function Dashboard() {
                 </div>
               </div>
 
+              {/* Reschedule Requests (Host Only) */}
+              {user?.id === selectedEvent.host.id && rescheduleRequests.length > 0 && (
+                <div className="p-6 border-t border-gray-100 bg-orange-50">
+                  <h4 className="text-sm font-bold text-orange-800 mb-3">📅 Reschedule Requests</h4>
+                  <div className="space-y-3">
+                    {rescheduleRequests.map(request => (
+                      <div key={request.id} className="bg-white rounded-lg p-3 border border-orange-200 shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <div className="flex items-center space-x-2">
+                              <span className="font-semibold text-gray-900 text-sm">{request.user.username}</span>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                request.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                {request.status}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700 mt-1">
+                              Suggested: <span className="font-medium">{request.suggested_date} at {request.suggested_time}</span>
+                            </p>
+                            {request.reason && (
+                              <p className="text-xs text-gray-500 mt-1 italic">"{request.reason}"</p>
+                            )}
+                          </div>
+                          {request.status === 'pending' && (
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleRespondToReschedule(request.id, 'accepted')}
+                                className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded hover:bg-green-200"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleRespondToReschedule(request.id, 'declined')}
+                                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded hover:bg-gray-200"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Actions Footer - Fixed at bottom of left pane */}
               <div className="p-4 border-t border-gray-100 bg-gray-50/50">
                 <div className="flex justify-between items-center">
@@ -740,15 +853,15 @@ export default function Dashboard() {
 
                   {/* Right side - Host actions and Reschedule */}
                   <div className="flex space-x-2 ml-auto">
-                    <button
-                      onClick={() => {
-                        // TODO: Handle reschedule
-                        console.log('Reschedule event');
-                      }}
-                      className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
-                    >
-                      Reschedule
-                    </button>
+                    {/* Reschedule button for invited members (not host) - Only show if pending */}
+                    {user?.id !== selectedEvent.host.id && selectedEvent.members?.find(m => m.id === user?.id)?.status === 'pending' && (
+                      <button
+                        onClick={handleRescheduleClick}
+                        className="px-4 py-2 text-sm font-medium text-orange-700 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                      >
+                        Reschedule
+                      </button>
+                    )}
 
                     {/* Edit/Delete buttons only for host */}
                     {(user?.id === selectedEvent.host.id) && (
@@ -930,15 +1043,30 @@ export default function Dashboard() {
                     setIsEventsListModalOpen(false);
                     handleViewEvent(event);
                   }}
-                  className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-green-100 hover:border-green-300 border border-gray-200 transition-all duration-200"
+                  className={`w-full text-left p-4 rounded-lg border transition-all duration-200 ${event.has_pending_reschedule_requests
+                    ? 'bg-orange-50 border-orange-500 hover:bg-orange-100 ring-2 ring-orange-200'
+                    : event.is_open
+                      ? 'bg-blue-50 border-blue-500 hover:bg-blue-100'
+                      : 'bg-gray-50 border-gray-200 hover:bg-green-100 hover:border-green-300'
+                    }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
+                      <div className="flex items-center space-x-2 mb-1 flex-wrap">
                         <h4 className="font-semibold text-gray-900">{event.title}</h4>
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
                           Host
                         </span>
+                        {event.is_open && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                            Open
+                          </span>
+                        )}
+                        {event.has_pending_reschedule_requests && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
+                            Reschedule Request
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center text-sm text-gray-600 space-x-4">
                         <span className="flex items-center">
@@ -971,9 +1099,16 @@ export default function Dashboard() {
                         </p>
                       )}
                     </div>
-                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                    <div className="flex flex-col items-end space-y-2 ml-2">
+                      <svg className={`w-5 h-5 ${event.has_pending_reschedule_requests ? 'text-orange-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                      {new Date(event.date + 'T' + event.time) < new Date() && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                          Ended
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </button>
               ))
@@ -1066,6 +1201,63 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+      </Modal>
+      <Modal
+        isOpen={isRescheduleModalOpen}
+        onClose={() => setIsRescheduleModalOpen(false)}
+        title="Propose New Time"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={submitRescheduleRequest} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New Date</label>
+            <input
+              type="date"
+              required
+              value={rescheduleDate}
+              onChange={(e) => setRescheduleDate(e.target.value)}
+              className="w-full rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New Time</label>
+            <input
+              type="time"
+              required
+              value={rescheduleTime}
+              onChange={(e) => setRescheduleTime(e.target.value)}
+              className="w-full rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Reason (Optional)</label>
+            <textarea
+              value={rescheduleReason}
+              onChange={(e) => setRescheduleReason(e.target.value)}
+              className="w-full rounded-lg border-gray-300 focus:ring-green-500 focus:border-green-500"
+              rows="3"
+              placeholder="Why do you want to reschedule?"
+            ></textarea>
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={() => setIsRescheduleModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={`px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors ${selectedEvent?.auto_accept_reschedule
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-green-600 hover:bg-green-700'
+                }`}
+            >
+              {selectedEvent?.auto_accept_reschedule ? 'Reschedule' : 'Send Request'}
+            </button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

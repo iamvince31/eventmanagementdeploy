@@ -123,11 +123,12 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
 
           {eventCount > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
-              {dayEvents.slice(0, 3).map((_, idx) => (
+              {dayEvents.slice(0, 3).map((event, idx) => (
                 <div
                   key={idx}
-                  className={`w-2 h-2 rounded-full ${idx === 0 ? 'bg-green-600' : idx === 1 ? 'bg-green-500' : 'bg-amber-500'
+                  className={`w-2 h-2 rounded-full ${event.has_pending_reschedule_requests ? 'bg-orange-500' : (event.is_open ? 'bg-blue-500' : (idx === 0 ? 'bg-green-600' : idx === 1 ? 'bg-green-500' : 'bg-green-400'))}
                     }`}
+                  title={event.title}
                 />
               ))}
               {eventCount > 3 && (

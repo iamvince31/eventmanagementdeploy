@@ -38,6 +38,8 @@ class EventController extends Controller
                     'date' => $event->date,
                     'time' => $event->time,
                     'is_open' => $event->is_open,
+                    'auto_accept_reschedule' => $event->auto_accept_reschedule,
+                    'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
                     'host' => [
                         'id' => $event->host->id,
                         'username' => $event->host->name,
@@ -66,6 +68,7 @@ class EventController extends Controller
             'time' => 'required',
             'member_ids' => 'nullable|array',
             'is_open' => 'boolean',
+            'auto_accept_reschedule' => 'boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 images.',
             'images.*.image' => 'Each file must be an image.',
@@ -80,6 +83,7 @@ class EventController extends Controller
             'date' => $request->date,
             'time' => $request->time,
             'is_open' => $request->is_open ?? false,
+            'auto_accept_reschedule' => $request->auto_accept_reschedule ?? false,
             'host_id' => $request->user()->id,
         ]);
 
@@ -146,6 +150,7 @@ class EventController extends Controller
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
             'is_open' => 'boolean',
+            'auto_accept_reschedule' => 'boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 images.',
             'images.*.image' => 'Each file must be an image.',
@@ -153,7 +158,7 @@ class EventController extends Controller
             'images.*.max' => 'Each image must not exceed 2MB in size.',
         ]);
 
-        $event->update($request->only(['title', 'description', 'location', 'date', 'time', 'is_open']));
+        $event->update($request->only(['title', 'description', 'location', 'date', 'time', 'is_open', 'auto_accept_reschedule']));
 
         // Handle new images
         if ($request->hasFile('images')) {

@@ -11,6 +11,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [time, setTime] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [autoAcceptReschedule, setAutoAcceptReschedule] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,6 +39,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setTime(editingEvent.time);
       setSelectedMembers(editingEvent.members.map(m => m.id));
       setIsOpen(editingEvent.is_open);
+      setAutoAcceptReschedule(editingEvent.auto_accept_reschedule || false);
     }
   }, [editingEvent]);
 
@@ -55,6 +57,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       formData.append('date', date);
       formData.append('time', time);
       formData.append('is_open', isOpen ? '1' : '0');
+      formData.append('auto_accept_reschedule', autoAcceptReschedule ? '1' : '0');
 
       images.forEach((image) => {
         formData.append('images[]', image);
@@ -97,6 +100,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setTime(now.toTimeString().slice(0, 5));
     setSelectedMembers([]);
     setIsOpen(false);
+    setAutoAcceptReschedule(false);
   };
 
   const handleCancel = () => {
@@ -137,45 +141,45 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
   const validateAndAddImages = (files) => {
     setFileError('');
-    
+
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
     const maxSize = 2 * 1024 * 1024; // 2MB
     const maxFiles = 5;
-    
+
     // Check if adding these files would exceed the limit
     if (images.length + files.length > maxFiles) {
       setFileError(`Maximum ${maxFiles} images allowed. You can only add ${maxFiles - images.length} more.`);
       return;
     }
-    
+
     const validFiles = [];
     const errors = [];
-    
+
     files.forEach(file => {
       // Check file type
       if (!validTypes.includes(file.type)) {
         errors.push(`"${file.name}" is not a valid image. Only JPG, PNG, GIF, and WebP are allowed.`);
         return;
       }
-      
+
       // Check file size
       if (file.size > maxSize) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
         errors.push(`"${file.name}" is too large (${sizeMB}MB). Maximum size is 2MB.`);
         return;
       }
-      
+
       validFiles.push(file);
     });
-    
+
     // Show errors if any
     if (errors.length > 0) {
       setFileError(errors.join(' '));
-      
+
       // Clear error after 5 seconds
       setTimeout(() => setFileError(''), 5000);
     }
-    
+
     // Add valid files
     if (validFiles.length > 0) {
       addImages(validFiles);
@@ -354,6 +358,21 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   <span className="ml-1 text-xs text-gray-400">(everyone can join)</span>
                 </label>
               </div>
+
+              <div>
+                <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={autoAcceptReschedule}
+                    onChange={(e) => setAutoAcceptReschedule(e.target.checked)}
+                    className="h-4 w-4 text-green-700 focus:ring-green-600 border-gray-300 rounded"
+                  />
+                  <span className="ml-2.5 text-sm text-gray-700 font-medium">
+                    Auto-accept reschedule requests
+                  </span>
+                  <span className="ml-1 text-xs text-gray-400">(approve changes automatically)</span>
+                </label>
+              </div>
             </div>
           </div>
 
@@ -377,7 +396,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 )}
               </div>
 
-              
+
 
               {/* Search Bar */}
               <div className="mb-3">
@@ -460,8 +479,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                       <label
                         key={member.id}
                         className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(member.id)
-                            ? 'bg-green-100 border border-green-300'
-                            : 'hover:bg-white border border-transparent'
+                          ? 'bg-green-100 border border-green-300'
+                          : 'hover:bg-white border border-transparent'
                           }`}
                       >
                         <input
@@ -523,13 +542,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-xl p-4 transition-all duration-200 ${
-                  isDragging
-                    ? 'border-green-500 bg-green-100/50 scale-[1.01]'
-                    : fileError
+                className={`border-2 border-dashed rounded-xl p-4 transition-all duration-200 ${isDragging
+                  ? 'border-green-500 bg-green-100/50 scale-[1.01]'
+                  : fileError
                     ? 'border-red-300 bg-red-50/30'
                     : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <input
                   type="file"
@@ -544,11 +562,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   {/* Add Image Button */}
                   <label
                     htmlFor="image-upload"
-                    className={`flex-shrink-0 w-28 h-28 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-center group ${
-                      images.length >= 5
-                        ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-50'
-                        : 'border-gray-300 hover:border-green-500 hover:bg-green-100/50'
-                    }`}
+                    className={`flex-shrink-0 w-28 h-28 border-2 border-dashed rounded-xl cursor-pointer transition-all duration-200 flex items-center justify-center group ${images.length >= 5
+                      ? 'border-gray-200 bg-gray-100 cursor-not-allowed opacity-50'
+                      : 'border-gray-300 hover:border-green-500 hover:bg-green-100/50'
+                      }`}
                   >
                     <div className="text-center">
                       <svg className="mx-auto h-7 w-7 text-gray-300 group-hover:text-green-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

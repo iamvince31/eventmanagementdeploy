@@ -66,7 +66,8 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
           {events.map(event => (
             <div
               key={event.id}
-              className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+              className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${event.is_open ? 'border-green-500 bg-green-50' : 'border-gray-200'
+                }`}
             >
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
