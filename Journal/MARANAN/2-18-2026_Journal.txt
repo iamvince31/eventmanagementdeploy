@@ -1,0 +1,8 @@
+7:00 - Time In
+
+7:00 - 8:00 : Tested account remembrance features
+8:00 - 9:00 : Added CEIT Logo on Navigation / Improving UI on Dashboard
+9:00 - 10:00 :  Improvement/Debugging on account locking features on no account side
+10:00 - 11:00 : Added notification bell for ease of access / Improving UI on dashboard where instead of total events, just by your events only
+11:00 - 12:00 : Lunch break / Replaced loading screen to skeleton screen as buffer
+12:00 - 1:00 :

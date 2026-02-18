@@ -9,21 +9,9 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [lockoutInfo, setLockoutInfo] = useState(null);
-  const [failedAttempts, setFailedAttempts] = useState(0);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  // Check lockout status when email changes
-  useEffect(() => {
-    if (!email) {
-      setLockoutInfo(null);
-      setFailedAttempts(0);
-      return;
-    }
-    
-    checkLockoutStatus(email);
-  }, [email]);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -33,67 +21,16 @@ export default function Login() {
     }
   }, []);
 
-  const checkLockoutStatus = (emailAddress) => {
-    const lockoutKey = `loginLockout_${emailAddress}`;
-    const storedLockout = localStorage.getItem(lockoutKey);
-    
-    if (storedLockout) {
-      const lockoutData = JSON.parse(storedLockout);
-      const now = Math.floor(Date.now() / 1000);
-      
-      if (lockoutData.lockedUntil > now) {
-        // Still locked
-        const remainingSeconds = lockoutData.lockedUntil - now;
-        setLockoutInfo({
-          message: 'This account is locked due to too many failed attempts.',
-          remainingSeconds: remainingSeconds,
-        });
-        setFailedAttempts(3);
-        
-        // Start countdown
-        const interval = setInterval(() => {
-          setLockoutInfo(prev => {
-            if (!prev || prev.remainingSeconds <= 1) {
-              clearInterval(interval);
-              localStorage.removeItem(lockoutKey);
-              setFailedAttempts(0);
-              return null;
-            }
-            return {
-              ...prev,
-              remainingSeconds: prev.remainingSeconds - 1,
-            };
-          });
-        }, 1000);
-      } else {
-        // Lockout expired
-        localStorage.removeItem(lockoutKey);
-        setLockoutInfo(null);
-        setFailedAttempts(0);
-      }
-    } else {
-      // No lockout for this email
-      setLockoutInfo(null);
-      setFailedAttempts(0);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setLockoutInfo(null);
     setLoading(true);
-
-    const lockoutKey = `loginLockout_${email}`;
-    const attemptsKey = `loginAttempts_${email}`;
 
     try {
       await login(email, password);
       
-      // Successful login - clear attempts for this email
-      setFailedAttempts(0);
-      localStorage.removeItem(lockoutKey);
-      localStorage.removeItem(attemptsKey);
-      
+      // Successful login
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
       } else {
@@ -106,28 +43,16 @@ export default function Login() {
       
       // Check if it's a lockout response (429 status)
       if (err.response?.status === 429 && response?.remaining_seconds) {
-        const lockedUntil = Math.floor(Date.now() / 1000) + response.remaining_seconds;
-        
-        // Store lockout for this specific email
-        localStorage.setItem(lockoutKey, JSON.stringify({
-          lockedUntil: lockedUntil,
-          email: email,
-        }));
-        
         setLockoutInfo({
           message: response.message,
           remainingSeconds: response.remaining_seconds,
         });
-        setFailedAttempts(3);
         
         // Start countdown timer
         const interval = setInterval(() => {
           setLockoutInfo(prev => {
             if (!prev || prev.remainingSeconds <= 1) {
               clearInterval(interval);
-              localStorage.removeItem(lockoutKey);
-              localStorage.removeItem(attemptsKey);
-              setFailedAttempts(0);
               return null;
             }
             return {
@@ -137,51 +62,9 @@ export default function Login() {
           });
         }, 1000);
       } else {
-        // Failed login - get attempts for this specific email
-        const storedAttempts = localStorage.getItem(attemptsKey);
-        const currentAttempts = storedAttempts ? parseInt(storedAttempts) : 0;
-        const newAttempts = currentAttempts + 1;
-        
-        // Store attempts for this email
-        localStorage.setItem(attemptsKey, newAttempts.toString());
-        setFailedAttempts(newAttempts);
-        
-        // Check if this is the 3rd attempt
-        if (newAttempts >= 3) {
-          // Lock immediately on frontend for this email
-          const lockedUntil = Math.floor(Date.now() / 1000) + 300; // 5 minutes
-          
-          localStorage.setItem(lockoutKey, JSON.stringify({
-            lockedUntil: lockedUntil,
-            email: email,
-          }));
-          
-          setLockoutInfo({
-            message: 'Too many failed attempts. This account has been locked for 5 minutes.',
-            remainingSeconds: 300,
-          });
-          
-          // Start countdown
-          const interval = setInterval(() => {
-            setLockoutInfo(prev => {
-              if (!prev || prev.remainingSeconds <= 1) {
-                clearInterval(interval);
-                localStorage.removeItem(lockoutKey);
-                localStorage.removeItem(attemptsKey);
-                setFailedAttempts(0);
-                return null;
-              }
-              return {
-                ...prev,
-                remainingSeconds: prev.remainingSeconds - 1,
-              };
-            });
-          }, 1000);
-        } else {
-          // Show error with remaining attempts
-          const remainingAttempts = 3 - newAttempts;
-          setError(response?.message || response?.errors?.email?.[0] || `Invalid email or password. ${remainingAttempts} attempt(s) remaining.`);
-        }
+        // Show error message from backend
+        const errorMessage = response?.errors?.email?.[0] || response?.message || 'Invalid credentials';
+        setError(errorMessage);
       }
     } finally {
       setLoading(false);
@@ -236,21 +119,6 @@ export default function Login() {
                 </div>
                 <div className="ml-3 flex-1">
                   <p className="text-sm text-red-800">{error}</p>
-                  {failedAttempts > 0 && failedAttempts < 3 && (
-                    <div className="mt-2">
-                      <div className="flex items-center">
-                        <div className="flex-1 bg-red-200 rounded-full h-2">
-                          <div 
-                            className="bg-red-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${(failedAttempts / 3) * 100}%` }}
-                          ></div>
-                        </div>
-                        <span className="ml-2 text-xs font-medium text-red-700">
-                          {failedAttempts}/3
-                        </span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -306,10 +174,10 @@ export default function Login() {
           <div>
             <button
               type="submit"
-              disabled={loading || lockoutInfo || failedAttempts >= 3}
+              disabled={loading || lockoutInfo}
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {lockoutInfo || failedAttempts >= 3 ? (
+              {lockoutInfo ? (
                 <span className="flex items-center">
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

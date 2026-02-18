@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 
-export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, hasSchedule = true }) {
+export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, hasSchedule = true, currentUser }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
@@ -220,8 +220,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   };
 
   const filteredMembers = filterDepartment === 'all'
-    ? members
-    : members.filter(member => member.department === filterDepartment);
+    ? members.filter(member => member.id !== currentUser?.id) // Exclude current user (host)
+    : members.filter(member => member.department === filterDepartment && member.id !== currentUser?.id);
 
   // Further filter by search term
   const searchFilteredMembers = filteredMembers.filter(member =>

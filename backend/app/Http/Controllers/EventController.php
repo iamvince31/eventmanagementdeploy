@@ -110,8 +110,16 @@ class EventController extends Controller
         }
 
         if ($request->member_ids) {
-            $memberData = collect($request->member_ids)->mapWithKeys(fn($id) => [$id => ['status' => 'pending']])->all();
-            $event->members()->attach($memberData);
+            // Filter out the host's ID to prevent self-invitation
+            $memberIds = collect($request->member_ids)
+                ->filter(fn($id) => $id != $request->user()->id)
+                ->unique()
+                ->values();
+            
+            if ($memberIds->isNotEmpty()) {
+                $memberData = $memberIds->mapWithKeys(fn($id) => [$id => ['status' => 'pending']])->all();
+                $event->members()->attach($memberData);
+            }
         }
 
         $event->load(['host', 'members', 'images']);
@@ -182,9 +190,15 @@ class EventController extends Controller
         }
 
         if ($request->has('member_ids')) {
+            // Filter out the host's ID to prevent self-invitation
+            $memberIds = collect($request->member_ids)
+                ->filter(fn($id) => $id != $request->user()->id)
+                ->unique()
+                ->values();
+            
             // Keep existing statuses for members that remain, set 'pending' for new ones
             $existingMembers = $event->members()->pluck('status', 'users.id')->all();
-            $syncData = collect($request->member_ids)->mapWithKeys(function ($id) use ($existingMembers) {
+            $syncData = $memberIds->mapWithKeys(function ($id) use ($existingMembers) {
                 return [$id => ['status' => $existingMembers[$id] ?? 'pending']];
             })->all();
             $event->members()->sync($syncData);

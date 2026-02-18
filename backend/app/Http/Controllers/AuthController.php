@@ -68,16 +68,34 @@ class AuthController extends Controller
         $ip = $request->ip();
         $key = 'login_attempts:' . md5($email . $ip);
         $lockoutKey = 'login_lockout:' . md5($email . $ip);
+        $lockoutCountKey = 'login_lockout_count:' . md5($email . $ip);
 
+        // Check if user exists first
         $user = User::where('email', $email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        // If user doesn't exist, return specific error without locking
+        if (!$user) {
+            Log::warning('Login attempt for non-existent account', [
+                'email' => $email,
+                'ip' => $ip,
+                'user_agent' => $request->userAgent(),
+                'timestamp' => now(),
+            ]);
+            
+            throw ValidationException::withMessages([
+                'email' => ['This account does not exist. Please check your email or register.'],
+            ]);
+        }
+
+        // User exists - check password
+        if (!Hash::check($request->password, $user->password)) {
             // Get current attempts and increment
             $attempts = Cache::get($key, 0) + 1;
             
-            // Log failed attempt
-            Log::warning('Failed login attempt', [
+            // Log failed attempt for existing account
+            Log::warning('Failed login attempt for existing account', [
                 'email' => $email,
+                'user_id' => $user->id,
                 'ip' => $ip,
                 'attempts' => $attempts,
                 'user_agent' => $request->userAgent(),
@@ -86,19 +104,32 @@ class AuthController extends Controller
             
             // Check if this is the 3rd attempt - lock immediately
             if ($attempts >= 3) {
+                // Get lockout count to determine duration (progressive lockout)
+                $lockoutCount = Cache::get($lockoutCountKey, 0);
+                
+                // Progressive lockout: 1st = 3 mins, 2nd+ = 5 mins
+                $lockoutMinutes = $lockoutCount === 0 ? 3 : 5;
+                $lockoutSeconds = $lockoutMinutes * 60;
+                
                 // Lock out the user
-                $lockoutUntil = now()->addMinutes(5)->timestamp;
-                Cache::put($lockoutKey, $lockoutUntil, 300);
+                $lockoutUntil = now()->addMinutes($lockoutMinutes)->timestamp;
+                Cache::put($lockoutKey, $lockoutUntil, $lockoutSeconds);
                 Cache::forget($key); // Clear attempts counter
+                
+                // Increment lockout count (persists for 1 hour)
+                Cache::put($lockoutCountKey, $lockoutCount + 1, 3600);
                 
                 Log::warning('Account locked due to failed attempts', [
                     'email' => $email,
+                    'user_id' => $user->id,
                     'ip' => $ip,
+                    'lockout_count' => $lockoutCount + 1,
+                    'lockout_minutes' => $lockoutMinutes,
                     'locked_until' => date('Y-m-d H:i:s', $lockoutUntil),
                 ]);
                 
                 throw ValidationException::withMessages([
-                    'email' => ['Too many failed attempts. Your account has been locked for 5 minutes.'],
+                    'email' => ["Too many failed attempts. Your account has been locked for {$lockoutMinutes} minutes."],
                 ]);
             }
             
@@ -107,13 +138,14 @@ class AuthController extends Controller
             $remainingAttempts = 3 - $attempts;
             
             throw ValidationException::withMessages([
-                'email' => ["Invalid email or password. {$remainingAttempts} attempt(s) remaining."],
+                'email' => ["Invalid password. {$remainingAttempts} attempt(s) remaining before lockout."],
             ]);
         }
 
-        // Successful login - clear attempts
+        // Successful login - clear attempts and lockout count
         Cache::forget($key);
         Cache::forget($lockoutKey);
+        Cache::forget($lockoutCountKey);
         
         // Log successful login
         Log::info('Successful login', [

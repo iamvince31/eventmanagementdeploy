@@ -3,7 +3,6 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\AvailabilityController;
 use App\Http\Controllers\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,16 +26,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/events', [EventController::class, 'store']);
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
-    Route::get('/events/{event}/users/{user}/availability', [EventController::class, 'availability']);
     Route::post('/events/{event}/respond', [EventController::class, 'respondToInvitation']);
     
     // Users
     Route::get('/users', [UserController::class, 'index']);
     Route::put('/user/profile', [UserController::class, 'update']);
-    
-    // Availability
-    Route::get('/availabilities', [AvailabilityController::class, 'index']);
-    Route::post('/availabilities', [AvailabilityController::class, 'store']);
     
     // Schedules
     Route::get('/schedules', [ScheduleController::class, 'index']);

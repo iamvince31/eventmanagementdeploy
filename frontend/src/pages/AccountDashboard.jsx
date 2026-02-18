@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from '../components/NotificationBell';
+import logo from '../assets/CEIT-LOGO.png';
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [events, setEvents] = useState([]);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -44,10 +47,31 @@ export default function AccountDashboard() {
         email: user.email || '',
         department: user.department || '',
       });
-      // Fetch schedule without blocking UI
+      // Fetch schedule and events without blocking UI
       fetchSchedule();
+      fetchEvents();
     }
   }, [user]);
+
+  const fetchEvents = async () => {
+    try {
+      const response = await fetch('http://localhost:8000/api/events', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+      
+      const data = await response.json();
+      setEvents(data.events || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      setEvents([]);
+    }
+  };
 
   const fetchSchedule = async () => {
     setScheduleLoading(true);
@@ -254,17 +278,24 @@ export default function AccountDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 gap-4">
             <div className="flex items-center space-x-3 flex-1">
-              <button className="p-2 rounded-lg hover:bg-white/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-700" aria-label="Event Management System home">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </button>
+              {/* CEIT Logo */}
+              <img 
+                src={logo} 
+                alt="CEIT Logo" 
+                className="h-10 w-auto"
+              />
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">Event Management</h1>
                 <p className="text-xs text-green-200 font-medium">Account Settings</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Notifications Bell */}
+              <NotificationBell 
+                events={events} 
+                user={user}
+              />
+
               <div className="hidden sm:flex items-center space-x-3" role="img" aria-label={`User: ${user?.username}`}>
                 <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm" aria-hidden="true">
                   {user?.username?.charAt(0).toUpperCase()}
@@ -665,6 +696,11 @@ export default function AccountDashboard() {
                   ) : (
                     <div className="space-y-6">
                       <div className="pb-6 border-b border-gray-200">
+                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
+                        <p className="text-lg text-gray-900 font-medium">February 2026</p>
+                      </div>
+
+                      <div className="pb-6 border-b border-gray-200">
                         <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Username</p>
                         <p className="text-2xl font-bold text-gray-900">{user.username}</p>
                       </div>
@@ -678,6 +714,8 @@ export default function AccountDashboard() {
                         <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Department</p>
                         <p className="text-lg text-gray-900 font-medium">{user.department || 'Not specified'}</p>
                       </div>
+
+                      
 
                       <button
                         onClick={() => setEditMode(true)}
@@ -693,45 +731,10 @@ export default function AccountDashboard() {
 
             {/* Quick Actions */}
             <div className="space-y-4">
-              {/* Account Status */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                <div className="bg-gradient-to-r from-green-500 to-emerald-600 px-6 py-4">
-                  <h3 className="text-lg font-bold text-white">Account Status</h3>
-                </div>
-                <div className="px-6 py-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex-shrink-0">
-                      <div className="flex items-center justify-center h-14 w-14 rounded-full bg-gradient-to-br from-green-100 to-green-50 group-hover:scale-110 transition-transform duration-300">
-                        <svg className="w-7 h-7 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Status</p>
-                      <p className="text-xl font-bold text-green-600">Active</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Quick Stats */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
-                <div className="bg-gradient-to-r from-green-700 to-green-800 px-6 py-4">
-                  <h3 className="text-lg font-bold text-white">Account Info</h3>
-                </div>
-                <div className="px-6 py-6 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold text-gray-600">Member Since</span>
-                    <span className="text-sm font-bold text-gray-900">February 2026</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Account Settings */}
               <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
                 <div className="bg-gradient-to-r from-green-700 to-green-800 px-6 py-4">
-                  <h3 className="text-lg font-bold text-white">Quick Actions</h3>
+                  <h3 className="text-lg font-bold text-white">Account Settings</h3>
                 </div>
                 <div className="px-6 py-6 space-y-2">
                   <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
@@ -739,18 +742,6 @@ export default function AccountDashboard() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
                     </svg>
                     Change Password
-                  </button>
-                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
-                    <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                    Notifications
-                  </button>
-                  <button className="w-full px-4 py-3 text-sm font-semibold text-green-700 hover:text-green-800 hover:bg-green-100 rounded-lg transition-all duration-300 text-left flex items-center group">
-                    <svg className="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                    </svg>
-                    Security Settings
                   </button>
                   <button
                     onClick={handleLogout}

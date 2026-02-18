@@ -5,7 +5,9 @@ import api from '../services/api';
 import Calendar from '../components/Calendar';
 import EventDetails from '../components/EventDetails';
 import Modal from '../components/Modal';
+import NotificationBell from '../components/NotificationBell';
 import { getFixedImageUrl } from '../utils/image';
+import logo from "../assets/CEIT-LOGO.png";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -256,7 +258,7 @@ export default function Dashboard() {
     setIsMembersModalOpen(true);
   };
 
-  const handleTotalEventsClick = () => {
+  const handleYourEventsClick = () => {
     setIsEventsListModalOpen(true);
   };
 
@@ -278,12 +280,6 @@ export default function Dashboard() {
     return grouped;
   };
 
-  const sortedEvents = [...events].sort((a, b) => {
-    const dateA = new Date(a.date + 'T' + a.time);
-    const dateB = new Date(b.date + 'T' + b.time);
-    return dateA - dateB;
-  });
-
   // Compute stats
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -291,6 +287,9 @@ export default function Dashboard() {
     const eventDate = new Date(event.date + 'T00:00:00');
     return eventDate >= today;
   });
+
+  // Get events hosted by current user
+  const hostedEvents = events.filter(event => event.host.id === user?.id);
 
   const handleAddEventClick = () => {
     if (!hasSchedule) {
@@ -300,18 +299,6 @@ export default function Dashboard() {
     }
     navigate('/add-event', { state: { selectedDate } });
   };
-
-  // Show loading while checking schedule status OR loading initial data
-  if (scheduleLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-green-300 border-t-green-700 rounded-full animate-spin"></div>
-          <p className="text-gray-500 font-medium">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
@@ -325,18 +312,25 @@ export default function Dashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 gap-4">
             <div className="flex items-center space-x-3 flex-1">
-              {/* Calendar Icon */}
-              <button className="p-2 rounded-lg hover:bg-white/20 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-green-700" aria-label="Event Management home">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </button>
+              {/* CEIT Logo */}
+              <img 
+                src={logo} 
+                alt="CEIT Logo"  
+                className="h-10 w-auto"
+              />
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">Event Management</h1>
                 <p className="text-xs text-green-200 font-medium">Dashboard</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              {/* Notifications Bell */}
+              <NotificationBell 
+                events={events} 
+                user={user} 
+                onNotificationClick={handleViewEvent}
+              />
+
               <button
                 onClick={() => navigate('/account')}
                 className="hidden sm:flex items-center space-x-3"
@@ -356,63 +350,82 @@ export default function Dashboard() {
       <main className="flex-1 max-w-7xl w-full mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Stats Bar */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          {/* Total Events */}
-          <button
-            onClick={handleTotalEventsClick}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-br from-green-200 to-green-100 rounded-xl p-4 group-hover:from-green-300 group-hover:to-green-200 transition-colors duration-300">
-                <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Events</p>
-                <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{events.length}</p>
-              </div>
-            </div>
-          </button>
+          {loading ? (
+            // Skeleton for stats cards
+            <>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-pulse">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gray-200 rounded-xl w-16 h-16"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              {/* Your Events (Hosted by User) */}
+              <button
+                onClick={handleYourEventsClick}
+                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left"
+              >
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-br from-green-200 to-green-100 rounded-xl p-4 group-hover:from-green-300 group-hover:to-green-200 transition-colors duration-300">
+                    <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Events</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{hostedEvents.length}</p>
+                  </div>
+                </div>
+              </button>
 
-          {/* Upcoming Events */}
-          <button
-            onClick={handleUpcomingClick}
-            disabled={upcomingEvents.length === 0}
-            className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${upcomingEvents.length > 0
-              ? 'hover:shadow-2xl hover:scale-105 cursor-pointer'
-              : 'opacity-50 cursor-not-allowed'
-              }`}
-          >
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
-                <svg className="w-7 h-7 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Upcoming</p>
-                <p className="text-3xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{upcomingEvents.length}</p>
-              </div>
-            </div>
-          </button>
+              {/* Upcoming Events */}
+              <button
+                onClick={handleUpcomingClick}
+                disabled={upcomingEvents.length === 0}
+                className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${upcomingEvents.length > 0
+                  ? 'hover:shadow-2xl hover:scale-105 cursor-pointer'
+                  : 'opacity-50 cursor-not-allowed'
+                  }`}
+              >
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                    <svg className="w-7 h-7 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Upcoming</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{upcomingEvents.length}</p>
+                  </div>
+                </div>
+              </button>
 
-          {/* Total Members */}
-          <button
-            onClick={handleMembersClick}
-            className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left"
-          >
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
-                <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Members</p>
-                <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{members.length}</p>
-              </div>
-            </div>
-          </button>
+              {/* Total Members */}
+              <button
+                onClick={handleMembersClick}
+                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left"
+              >
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                    <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Members</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{members.length}</p>
+                  </div>
+                </div>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Section Header */}
@@ -450,22 +463,51 @@ export default function Dashboard() {
         {/* Calendar + Event Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300">
-            <Calendar
-              events={events}
-              onDateSelect={handleDateSelect}
-              highlightedDate={highlightedDate}
-            />
+            {loading ? (
+              // Skeleton for calendar
+              <div className="animate-pulse">
+                <div className="h-8 bg-gray-200 rounded w-32 mb-4"></div>
+                <div className="grid grid-cols-7 gap-2 mb-2">
+                  {[...Array(7)].map((_, i) => (
+                    <div key={i} className="h-8 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-2">
+                  {[...Array(35)].map((_, i) => (
+                    <div key={i} className="h-16 bg-gray-100 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Calendar
+                events={events}
+                onDateSelect={handleDateSelect}
+                highlightedDate={highlightedDate}
+              />
+            )}
           </div>
           <div>
-            <EventDetails
-              date={selectedDate}
-              events={selectedDateEvents}
-              members={members}
-              currentUser={user}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onView={handleViewEvent}
-            />
+            {loading ? (
+              // Skeleton for event details
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-20 bg-gray-100 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <EventDetails
+                date={selectedDate}
+                events={selectedDateEvents}
+                members={members}
+                currentUser={user}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onView={handleViewEvent}
+              />
+            )}
           </div>
         </div>
       </main>
@@ -848,57 +890,93 @@ export default function Dashboard() {
         </div>
       </Modal>
 
-      {/* Events List Modal */}
+      {/* Events List Modal - Shows only events hosted by current user */}
       <Modal
         isOpen={isEventsListModalOpen}
         onClose={() => setIsEventsListModalOpen(false)}
-        title="All Events"
+        title="Your Events"
       >
         <div className="space-y-3 max-h-96 overflow-y-auto">
-          {sortedEvents.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">No events scheduled</p>
-          ) : (
-            sortedEvents.map(event => (
+          {hostedEvents.length === 0 ? (
+            <div className="text-center py-8">
+              <svg className="w-16 h-16 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-gray-500 font-medium">You haven't created any events yet</p>
               <button
-                key={event.id}
                 onClick={() => {
                   setIsEventsListModalOpen(false);
-                  handleViewEvent(event);
+                  handleAddEventClick();
                 }}
-                className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-green-100 hover:border-green-300 border border-gray-200 transition-all duration-200"
+                className="mt-4 inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
               >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1">{event.title}</h4>
-                    <div className="flex items-center text-sm text-gray-600 space-x-4">
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {event.date}
-                      </span>
-                      <span className="flex items-center">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        {event.time}
-                      </span>
-                    </div>
-                    {event.location && (
-                      <p className="text-xs text-gray-500 mt-1 flex items-center">
-                        <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        </svg>
-                        {event.location}
-                      </p>
-                    )}
-                  </div>
-                  <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Your First Event
               </button>
-            ))
+            </div>
+          ) : (
+            hostedEvents
+              .sort((a, b) => {
+                const dateA = new Date(a.date + 'T' + a.time);
+                const dateB = new Date(b.date + 'T' + b.time);
+                return dateA - dateB;
+              })
+              .map(event => (
+                <button
+                  key={event.id}
+                  onClick={() => {
+                    setIsEventsListModalOpen(false);
+                    handleViewEvent(event);
+                  }}
+                  className="w-full text-left p-4 bg-gray-50 rounded-lg hover:bg-green-100 hover:border-green-300 border border-gray-200 transition-all duration-200"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-semibold text-gray-900">{event.title}</h4>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                          Host
+                        </span>
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 space-x-4">
+                        <span className="flex items-center">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          {event.date}
+                        </span>
+                        <span className="flex items-center">
+                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          {event.time}
+                        </span>
+                      </div>
+                      {event.location && (
+                        <p className="text-xs text-gray-500 mt-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                          {event.location}
+                        </p>
+                      )}
+                      {event.members && event.members.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-1 flex items-center">
+                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {event.members.length} invited member{event.members.length !== 1 ? 's' : ''}
+                        </p>
+                      )}
+                    </div>
+                    <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </button>
+              ))
           )}
         </div>
       </Modal>
