@@ -5,4 +5,6 @@
 9:00 - 10:00 :  Improvement/Debugging on account locking features on no account side
 10:00 - 11:00 : Added notification bell for ease of access / Improving UI on dashboard where instead of total events, just by your events only
 11:00 - 12:00 : Lunch break / Replaced loading screen to skeleton screen as buffer
-12:00 - 1:00 :
+12:00 - 1:00 : Added features for the /account, Improving the calendar event limitations
+1:00 - 2:00 : Tested interface / cleanup bugs 
+2:00 - 3:00 : Implementing supabase as Authentication for accounts

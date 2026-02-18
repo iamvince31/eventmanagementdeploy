@@ -12,25 +12,31 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Check if we're at the boundaries of 2026
-  const isAtStartOf2026 = year === 2026 && month === 0; // January 2026
-  const isAtEndOf2026 = year === 2026 && month === 11; // December 2026
+  // Calculate date boundaries: 2 months in the past, 1 year in the future
+  const today = new Date();
+  const minDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+  const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), 0); // Last day of same month next year
+
+  // Check if we're at the boundaries
+  const currentMonthDate = new Date(year, month, 1);
+  const isAtMinDate = currentMonthDate <= minDate;
+  const isAtMaxDate = currentMonthDate >= maxDate;
 
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const prevMonth = () => {
     const newDate = new Date(year, month - 1, 1);
-    // Restrict to 2026 only - don't go before January 2026
-    if (newDate.getFullYear() >= 2026) {
+    // Don't go before 2 months in the past
+    if (newDate >= minDate) {
       setCurrentDate(newDate);
     }
   };
 
   const nextMonth = () => {
     const newDate = new Date(year, month + 1, 1);
-    // Restrict to 2026 only - don't go after December 2026
-    if (newDate.getFullYear() <= 2026) {
+    // Don't go beyond 1 year in the future
+    if (newDate <= maxDate) {
       setCurrentDate(newDate);
     }
   };
@@ -149,9 +155,9 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
       <div className="flex justify-between items-center mb-5">
         <button
           onClick={prevMonth}
-          disabled={isAtStartOf2026}
+          disabled={isAtMinDate}
           className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
-            isAtStartOf2026
+            isAtMinDate
               ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
           }`}
@@ -165,9 +171,9 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
         </h2>
         <button
           onClick={nextMonth}
-          disabled={isAtEndOf2026}
+          disabled={isAtMaxDate}
           className={`w-9 h-9 flex items-center justify-center rounded-lg transition-colors ${
-            isAtEndOf2026
+            isAtMaxDate
               ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
               : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
           }`}
