@@ -1,52 +1,70 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import AuthBackground from '../components/AuthBackground';
 
 export default function Register() {
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [department, setDepartment] = useState('');
-  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: '',
+    password_confirmation: '',
+    department: ''
+  });
+  const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
-  const { register } = useAuth();
+  const [success, setSuccess] = useState('');
+  
   const navigate = useNavigate();
 
   const departments = [
-    'Department of Information Technology',
-    'Department of Agriculture and Food Engineering',
-    'Department of Civil Engineering',
-    'Department of Computer, Electronics, and Electrical Engineering',
-    'Department of Industrial Engineering and Technology'
+    'Department of Agricultural and Food Engineering',
+    'Department of Civil and Environmental Engineering and Energy', 
+    'Department of Computer Engineering and Architecture',
+    'Department of Industrial and Electrical Technology',
+    'Department of Information Technology'
   ];
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Clear error when user starts typing
+    if (errors[name]) {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (!department) {
-      setError('Please select a department');
-      return;
-    }
-
+    setErrors({});
     setLoading(true);
+    setSuccess('');
 
     try {
-      await register(username, email, password, department);
-      navigate('/login');
+      await api.post('/register', formData);
+      
+      setSuccess('Registration successful! You can now sign in with your account.');
+      
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
+      
     } catch (err) {
-      setError(
-        err.response?.data?.message || 
-        err.response?.data?.errors?.email?.[0] || 
-        'Registration failed'
-      );
+      if (err.response?.data?.errors) {
+        setErrors(err.response.data.errors);
+      } else {
+        setErrors({ 
+          general: err.response?.data?.message || 'Registration failed. Please try again.' 
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -55,144 +73,189 @@ export default function Register() {
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden py-12 px-4 sm:px-6 lg:px-8">
       <AuthBackground />
-      
-      {/* Register Form - Above background */}
+
+      {/* Registration Form - Above background */}
       <div className="max-w-md w-full space-y-8 relative z-10">
         {/* Card with backdrop blur */}
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Create your account
+              Create Your Account
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Join the Event Management System
             </p>
           </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          {error && (
-            <div className="rounded-md bg-red-50 p-4">
-              <p className="text-sm text-red-800">{error}</p>
-            </div>
-          )}
-          <div className="rounded-md shadow-sm space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-600 focus:border-green-600 sm:text-sm"
-                placeholder="Your name"
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                pattern="^main\.[A-Za-z]+\.[A-Za-z]+@cvsu\.edu\.ph$"
-                title="Use this format: main.firstname.lastname@cvsu.edu.ph"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-600 focus:border-green-600 sm:text-sm"
-                placeholder="main.firstname.lastname@cvsu.edu.ph"
-              />
-            </div>
-            <div>
-              <label htmlFor="department" className="block text-sm font-medium text-gray-700">
-                Department
-              </label>
-              <div className="relative">
+
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+            {success && (
+              <div className="rounded-md bg-green-50 p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-800">{success}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {errors.general && (
+              <div className="rounded-md bg-red-50 p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-800">{errors.general}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                  Username
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  required
+                  value={formData.username}
+                  onChange={handleChange}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  placeholder="Enter your username"
+                />
+                {errors.username && (
+                  <p className="mt-1 text-sm text-red-600">{errors.username[0]}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                  CVSU Email Address
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  pattern="^main\.[^.]+\.[^.]+@cvsu\.edu\.ph$"
+                  title="Use this format: main.(anything).(anything)@cvsu.edu.ph"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  placeholder="main.firstname.lastname@cvsu.edu.ph"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email[0]}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                  Department
+                </label>
                 <select
                   id="department"
                   name="department"
                   required
-                  value={department}
-                  onChange={(e) => setDepartment(e.target.value)}
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md text-gray-900 invalid:text-gray-500 focus:outline-none focus:ring-green-600 focus:border-green-600 sm:text-sm"
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm leading-5 text-gray-900"
+                  style={{ 
+                    minHeight: '42px',
+                    lineHeight: '1.5'
+                  }}
                 >
-                  <option value="" disabled hidden className="text-gray-500">
-                    Select a department
-                  </option>
+                  <option value="" className="py-2">Select your department</option>
                   {departments.map((dept) => (
-                    <option key={dept} value={dept} className="text-gray-900">
+                    <option key={dept} value={dept} className="py-2 px-3 text-gray-900 whitespace-normal">
                       {dept}
                     </option>
                   ))}
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-900">
-                  <svg
-                    className="h-4 w-4"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.24 4.24a.75.75 0 01-1.06 0L5.21 8.29a.75.75 0 01.02-1.08z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
+                {errors.department && (
+                  <p className="mt-1 text-sm text-red-600">{errors.department[0]}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  required
+                  minLength="8"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  placeholder="Enter your password (min. 8 characters)"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password[0]}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="password_confirmation" className="block text-sm font-medium text-gray-700">
+                  Confirm Password
+                </label>
+                <input
+                  id="password_confirmation"
+                  name="password_confirmation"
+                  type="password"
+                  required
+                  value={formData.password_confirmation}
+                  onChange={handleChange}
+                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                  placeholder="Confirm your password"
+                />
+                {errors.password_confirmation && (
+                  <p className="mt-1 text-sm text-red-600">{errors.password_confirmation[0]}</p>
+                )}
               </div>
             </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-600 focus:border-green-600 sm:text-sm"
-                placeholder="Password (min 6 characters)"
-              />
-            </div>
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-600 focus:border-green-600 sm:text-sm"
-                placeholder="Confirm password"
-              />
-            </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-700 hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50"
-            >
-              {loading ? 'Creating account...' : 'Register'}
-            </button>
-          </div>
+            <div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating account...
+                  </span>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+            </div>
 
-          <div className="text-center">
-            <Link to="/login" className="font-medium text-green-700 hover:text-green-600">
-              Already have an account? Sign in
-            </Link>
-          </div>
-        </form>
+            <div className="text-center">
+              <Link 
+                to="/login" 
+                className="font-medium text-green-600 hover:text-green-500"
+              >
+                Already have an account? Sign in
+              </Link>
+            </div>
+          </form>
         </div>
       </div>
     </div>

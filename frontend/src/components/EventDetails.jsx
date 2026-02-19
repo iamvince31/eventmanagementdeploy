@@ -11,7 +11,7 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
 
   if (!date || events.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full flex flex-col">
+      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 h-full flex flex-col">
         <h2 className="text-lg font-bold text-gray-900 mb-1">Events</h2>
         <p className="text-xs text-gray-400 mb-6">
           {date ? formatDate(date) : 'No date selected'}
@@ -34,7 +34,7 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col max-h-[600px]">
+    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 h-full flex flex-col">
       {/* Header */}
       <div className="mb-4 flex-shrink-0">
         <div className="flex items-center justify-between">

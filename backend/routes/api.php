@@ -4,8 +4,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
-use App\Http\Controllers\SupabaseAuthController;
-use App\Http\Controllers\EmailVerificationController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes with login attempt throttling
@@ -19,21 +17,6 @@ Route::post('/request-otp', [AuthController::class, 'requestOtp']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password-otp', [AuthController::class, 'resetPasswordWithOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-
-// Supabase Authentication Routes
-Route::prefix('auth/supabase')->group(function () {
-    Route::get('/status', [SupabaseAuthController::class, 'status']);
-    Route::post('/verify-token', [SupabaseAuthController::class, 'verifyToken']);
-    Route::post('/send-password-reset', [SupabaseAuthController::class, 'sendPasswordResetEmail']);
-    Route::post('/verify-otp', [SupabaseAuthController::class, 'verifyOTP']);
-    Route::post('/get-user-by-email', [SupabaseAuthController::class, 'getUserByEmail']);
-});
-
-// Email Verification Routes
-Route::prefix('email')->group(function () {
-    Route::post('/verify', [EmailVerificationController::class, 'verifyEmail']);
-    Route::post('/quick-check', [EmailVerificationController::class, 'quickCheck']);
-});
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

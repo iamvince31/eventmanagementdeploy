@@ -288,13 +288,13 @@ export default function AccountDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50">
       {/* Navigation Bar */}
       <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 gap-4">
-            <div className="flex items-center space-x-3 flex-1">
-              {/* CEIT Logo */}
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Left corner - Logo and Title */}
+            <div className="flex items-center space-x-3">
               <button 
                 onClick={() => navigate('/dashboard')}
-                className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80"
+                className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
                 aria-label="Go to dashboard"
               >
                 <img 
@@ -308,24 +308,28 @@ export default function AccountDashboard() {
                 <p className="text-xs text-green-200 font-medium">Account Settings</p>
               </div>
             </div>
+
+            {/* Right corner - Notifications and Account */}
             <div className="flex items-center space-x-4">
               {/* Notifications Bell */}
-              <NotificationBell 
-                events={events} 
-                user={user}
-              />
+              <div className="relative">
+                <NotificationBell 
+                  events={events} 
+                  user={user}
+                />
+              </div>
 
               {/* Account Dropdown */}
               <div className="relative account-dropdown-container">
                 <button
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  className="hidden sm:flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
                   aria-label="Account menu"
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {user?.username?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-white">{user?.username}</span>
+                  <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
                   <svg 
                     className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} 
                     fill="none" 
@@ -374,7 +378,7 @@ export default function AccountDashboard() {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-8 sm:px-6 lg:px-8">
+      <main className="w-full py-8 sm:px-6 lg:px-8">
         <div className="px-4 py-2 sm:px-0">
           {/* Header */}
           <div className="mb-8 flex justify-between items-center">
@@ -416,10 +420,12 @@ export default function AccountDashboard() {
             </div>
           )}
 
-          {/* Class Schedule Section */}
-          <div className="mb-8">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6 flex justify-between items-center">
+          {/* Horizontal Layout: Class Schedule (3/5) + Account Information (2/5) */}
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
+            {/* Class Schedule Section - 3/5 width */}
+            <div className="lg:col-span-3">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
+                <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6 flex justify-between items-center">
                 <div>
                   <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -659,11 +665,9 @@ export default function AccountDashboard() {
             </div>
           </div>
 
-          {/* Main Content Grid */}
-          <div className="mb-8">
-            {/* Profile Card */}
+            {/* Account Information Section - 2/5 width */}
             <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
                 <div className="bg-gradient-to-r from-green-700 via-green-700 to-green-800 px-8 py-6">
                   <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                     {editMode ? (
@@ -781,8 +785,6 @@ export default function AccountDashboard() {
                         <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Department</p>
                         <p className="text-lg text-gray-900 font-medium">{user.department || 'Not specified'}</p>
                       </div>
-
-                      
 
                       <button
                         onClick={() => setEditMode(true)}

@@ -30,7 +30,24 @@ class EmailVerificationService
             ];
         }
 
-        // Verify email exists at Google
+        // SMTP verification to Google is unreliable due to:
+        // - Port 25 often blocked by ISPs
+        // - Google blocking verification attempts
+        // - Timeout issues
+        // 
+        // For production, consider:
+        // 1. Using Supabase email verification (send OTP to email)
+        // 2. Using a third-party email verification API
+        // 3. Just validating format (current approach)
+        
+        // For now, just validate format and trust the user
+        return [
+            'valid' => true,
+            'message' => 'Email format verified'
+        ];
+
+        // Uncomment below to enable SMTP verification (not recommended)
+        /*
         try {
             $exists = $this->checkEmailExistsAtGoogle($email);
             
@@ -48,14 +65,13 @@ class EmailVerificationService
         } catch (\Exception $e) {
             Log::error('Email verification error: ' . $e->getMessage());
             
-            // If verification fails, allow registration but log the error
-            // This prevents blocking legitimate users if the verification service is down
             return [
                 'valid' => true,
                 'message' => 'Email verification service unavailable, proceeding with registration',
                 'warning' => true
             ];
         }
+        */
     }
 
     /**

@@ -79,46 +79,94 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Empty cells before first day
-    for (let i = 0; i < firstDayOfMonth; i++) {
-      days.push(
-        <div key={`empty-${i}`} className="min-h-[72px] bg-gray-50/50 rounded-lg"></div>
-      );
-    }
+    // Calculate previous month info
+    const prevMonth = month === 0 ? 11 : month - 1;
+    const prevYear = month === 0 ? year - 1 : year;
+    const daysInPrevMonth = new Date(prevYear, prevMonth + 1, 0).getDate();
 
-    // Days of the month
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dayEvents = getEventsForDate(day);
-      const isCurrentDay = isToday(day);
-      const selected = isSelected(day);
-      const highlighted = isHighlighted(day);
+    // Calculate next month info
+    const nextMonth = month === 11 ? 0 : month + 1;
+    const nextYear = month === 11 ? year + 1 : year;
 
-      const cellDate = new Date(year, month, day);
+    // Always render exactly 42 cells (6 rows × 7 days)
+    for (let i = 0; i < 42; i++) {
+      let cellDay, cellMonth, cellYear, isCurrentMonth, isOtherMonth;
+
+      if (i < firstDayOfMonth) {
+        // Previous month days
+        cellDay = daysInPrevMonth - (firstDayOfMonth - 1 - i);
+        cellMonth = prevMonth;
+        cellYear = prevYear;
+        isCurrentMonth = false;
+        isOtherMonth = true;
+      } else if (i < firstDayOfMonth + daysInMonth) {
+        // Current month days
+        cellDay = i - firstDayOfMonth + 1;
+        cellMonth = month;
+        cellYear = year;
+        isCurrentMonth = true;
+        isOtherMonth = false;
+      } else {
+        // Next month days
+        cellDay = i - firstDayOfMonth - daysInMonth + 1;
+        cellMonth = nextMonth;
+        cellYear = nextYear;
+        isCurrentMonth = false;
+        isOtherMonth = true;
+      }
+
+      const cellDate = new Date(cellYear, cellMonth, cellDay);
       cellDate.setHours(0, 0, 0, 0);
       const isPast = cellDate < today;
 
-      const eventCount = !isPast ? dayEvents.length : 0;
+      const isCurrentDay = (
+        cellDay === today.getDate() &&
+        cellMonth === today.getMonth() &&
+        cellYear === today.getFullYear()
+      );
+
+      const dateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, '0')}-${String(cellDay).padStart(2, '0')}`;
+      const selected = selectedDate === dateStr;
+      const highlighted = highlightedDate === dateStr;
+
+      // Get events for this date (only for current month to avoid confusion)
+      const dayEvents = isCurrentMonth ? events.filter(event => event.date === dateStr) : [];
+      const eventCount = !isPast && isCurrentMonth ? dayEvents.length : 0;
 
       days.push(
         <div
-          key={day}
-          onClick={() => handleDateClick(day)}
+          key={`${cellYear}-${cellMonth}-${cellDay}`}
+          onClick={() => {
+            if (isCurrentMonth) {
+              const dateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, '0')}-${String(cellDay).padStart(2, '0')}`;
+              setSelectedDate(dateStr);
+              if (onDateSelect) {
+                onDateSelect(dateStr, dayEvents);
+              }
+            }
+          }}
           className={`
-            min-h-[72px] p-2 rounded-lg cursor-pointer transition-all duration-200 relative group
-            ${isCurrentDay
-              ? 'bg-green-100 border-2 border-green-600 shadow-sm'
-              : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'}
+            h-16 p-2 rounded-lg transition-all duration-200 relative group flex flex-col
+            ${isCurrentMonth 
+              ? `cursor-pointer ${isCurrentDay
+                  ? 'bg-green-100 border-2 border-green-600 shadow-sm'
+                  : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'}`
+              : 'bg-gray-50/30 border border-gray-100 cursor-default'
+            }
             ${selected ? 'ring-2 ring-green-500 ring-offset-1' : ''}
             ${highlighted ? 'ring-4 ring-green-400 ring-offset-2 animate-pulse bg-green-50' : ''}
-            ${isPast ? 'opacity-40 cursor-default' : ''}
+            ${isPast && isCurrentMonth ? 'opacity-40' : ''}
+            ${isOtherMonth ? 'opacity-30' : ''}
           `}
         >
           <div className={`
-            text-sm font-semibold
-            ${isCurrentDay ? 'text-green-800' : 'text-gray-700'}
-            ${selected ? 'text-green-700' : ''}
+            text-sm font-semibold flex-shrink-0
+            ${isCurrentMonth 
+              ? (isCurrentDay ? 'text-green-800' : (selected ? 'text-green-700' : 'text-gray-700'))
+              : 'text-gray-400'
+            }
           `}>
-            {day}
+            {cellDay}
           </div>
 
           {isCurrentDay && (
@@ -128,17 +176,23 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
           )}
 
           {eventCount > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1">
-              {dayEvents.slice(0, 3).map((event, idx) => (
+            <div className="mt-1 flex flex-wrap gap-1 flex-1">
+              {dayEvents.slice(0, 2).map((event, idx) => (
                 <div
                   key={idx}
-                  className={`w-2 h-2 rounded-full ${event.has_pending_reschedule_requests ? 'bg-orange-500' : (event.is_open ? 'bg-blue-500' : (idx === 0 ? 'bg-green-600' : idx === 1 ? 'bg-green-500' : 'bg-green-400'))}
-                    }`}
+                  className={`w-2 h-2 rounded-full ${
+                    event.has_pending_reschedule_requests 
+                      ? 'bg-orange-500' 
+                      : (event.is_open 
+                          ? 'bg-blue-500' 
+                          : (idx === 0 ? 'bg-green-600' : 'bg-green-500')
+                        )
+                  }`}
                   title={event.title}
                 />
               ))}
-              {eventCount > 3 && (
-                <span className="text-[10px] text-gray-500 font-medium">+{eventCount - 3}</span>
+              {eventCount > 2 && (
+                <span className="text-[10px] text-gray-500 font-medium">+{eventCount - 2}</span>
               )}
             </div>
           )}
@@ -150,9 +204,9 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 h-full">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 h-full flex flex-col">
       {/* Month Navigation */}
-      <div className="flex justify-between items-center mb-5">
+      <div className="flex justify-between items-center mb-5 flex-shrink-0">
         <button
           onClick={prevMonth}
           disabled={isAtMinDate}
@@ -185,7 +239,7 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
       </div>
 
       {/* Day Headers */}
-      <div className="grid grid-cols-7 gap-1.5 mb-1.5">
+      <div className="grid grid-cols-7 gap-1.5 mb-1.5 flex-shrink-0">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
           <div
             key={day}
@@ -196,8 +250,8 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
         ))}
       </div>
 
-      {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1.5">
+      {/* Calendar Grid - Fixed 6 rows */}
+      <div className="grid grid-cols-7 grid-rows-6 gap-1.5 flex-1">
         {renderCalendarDays()}
       </div>
     </div>

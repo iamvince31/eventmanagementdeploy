@@ -107,9 +107,9 @@ export default function AddEvent() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
         {/* Navbar */}
         <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16 gap-4">
-              <div className="flex items-center space-x-3 flex-1">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center space-x-3">
                 <button 
                   onClick={() => navigate('/dashboard')}
                   className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80"
@@ -130,7 +130,7 @@ export default function AddEvent() {
         </nav>
 
         {/* Page Header Skeleton */}
-        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+        <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
           <div className="flex justify-between items-center">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
@@ -142,7 +142,7 @@ export default function AddEvent() {
 
         {/* Form Skeleton */}
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
             <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
               <div className="space-y-6">
                 <div>
@@ -191,13 +191,13 @@ export default function AddEvent() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
       {/* Navbar */}
       <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16 gap-4">
-            <div className="flex items-center space-x-3 flex-1">
-              {/* CEIT Logo */}
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            {/* Left corner - Logo and Title */}
+            <div className="flex items-center space-x-3">
               <button 
                 onClick={() => navigate('/dashboard')}
-                className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80"
+                className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
                 aria-label="Go to dashboard"
               >
                 <img 
@@ -211,24 +211,28 @@ export default function AddEvent() {
                 <p className="text-xs text-green-200 font-medium">{editingEvent ? 'Edit Event' : 'Add Event'}</p>
               </div>
             </div>
+
+            {/* Right corner - Notifications and Account */}
             <div className="flex items-center space-x-4">
               {/* Notifications Bell */}
-              <NotificationBell 
-                events={events} 
-                user={user}
-              />
+              <div className="relative">
+                <NotificationBell 
+                  events={events} 
+                  user={user}
+                />
+              </div>
 
               {/* Account Dropdown */}
               <div className="relative account-dropdown-container">
                 <button
                   onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  className="hidden sm:flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
                   aria-label="Account menu"
                 >
                   <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                     {user?.username?.charAt(0).toUpperCase()}
                   </div>
-                  <span className="text-sm font-medium text-white">{user?.username}</span>
+                  <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
                   <svg 
                     className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} 
                     fill="none" 
@@ -279,7 +283,7 @@ export default function AddEvent() {
       </nav>
 
       {/* Page Header */}
-      <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
@@ -304,7 +308,7 @@ export default function AddEvent() {
 
       {/* Form */}
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <EventForm
             members={members}
             onEventCreated={handleEventCreated}

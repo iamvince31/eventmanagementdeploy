@@ -17,10 +17,26 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, userFromOtp = null, tokenFromOtp = null) => {
+    // If called from OTP verification, use provided user and token
+    if (userFromOtp && tokenFromOtp) {
+      localStorage.setItem('token', tokenFromOtp);
+      localStorage.setItem('user', JSON.stringify(userFromOtp));
+      setUser(userFromOtp);
+      return { user: userFromOtp, token: tokenFromOtp };
+    }
+
+    // Normal login flow
     const response = await api.post('/login', { email, password });
-    const { user, token } = response.data;
     
+    // Check if 2FA is required
+    if (response.data.requires_otp) {
+      // Return the response data for handling in the component
+      return response.data;
+    }
+    
+    // Normal login success
+    const { user, token } = response.data;
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
     setUser(user);

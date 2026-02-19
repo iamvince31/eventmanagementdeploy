@@ -1,0 +1,8 @@
+7:00 - Time in
+
+7:00 - 8:00 : Fixing inconsistency on supabase auth / Improving UI on /accounts
+8:00 - 9:00 : Improving UI on /dashboard event details
+9:00 - 10:00 : Debugging Authentication API comparing Laravel / Supabase
+10:00 - 11:00 : Implementing dual login for testing purposes
+11:00 - 12:00 : Lunch break, Still refactoring dual login
+12:00 - 1:00 : Reimplementing back past changes for presentation
