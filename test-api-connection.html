@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover { background-color: #0056b3; }
+        pre {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Schedule API Connection Test</h1>
+    
+    <div class="test-section info">
+        <h3>Instructions:</h3>
+        <ol>
+            <li>Make sure your backend server is running on http://localhost:8000</li>
+            <li>Login to your application first to get a valid token</li>
+            <li>Paste your token below (from localStorage)</li>
+            <li>Click "Test Connection" to verify the API is accessible</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 1: Get Your Token</h3>
+        <p>Open browser console (F12) and run:</p>
+        <pre>localStorage.getItem('token')</pre>
+        <input type="text" id="token" placeholder="Paste your token here" style="width: 100%; padding: 8px;">
+    </div>
+
+    <div class="test-section">
+        <h3>Step 2: Test Backend Connection</h3>
+        <button onclick="testBackend()">Test Backend Server</button>
+        <div id="backend-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 3: Test Schedule Fetch</h3>
+        <button onclick="testScheduleFetch()">Test GET /api/schedules</button>
+        <div id="fetch-result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 4: Test Schedule Save</h3>
+        <button onclick="testScheduleSave()">Test POST /api/schedules</button>
+        <div id="save-result"></div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000';
+
+        function getToken() {
+            const token = document.getElementById('token').value.trim();
+            if (!token) {
+                alert('Please enter your token first!');
+                return null;
+            }
+            return token;
+        }
+
+        async function testBackend() {
+            const resultDiv = document.getElementById('backend-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/user`, {
+                    headers: {
+                        'Authorization': `Bearer ${getToken()}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✓ Backend is running!</h4>
+                            <p>Logged in as: ${data.username || data.name}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>✗ Authentication failed</h4>
+                            <p>Status: ${response.status}</p>
+                            <p>Make sure your token is valid</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ Cannot connect to backend</h4>
+                        <p>Error: ${error.message}</p>
+                        <p>Make sure the backend server is running on http://localhost:8000</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testScheduleFetch() {
+            const token = getToken();
+            if (!token) return;
+
+            const resultDiv = document.getElementById('fetch-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/schedules`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✓ Schedule fetch successful!</h4>
+                            <p>Schedule initialized: ${data.initialized}</p>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>✗ Schedule fetch failed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(errorData, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ Request failed</h4>
+                        <p>Error: ${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        async function testScheduleSave() {
+            const token = getToken();
+            if (!token) return;
+
+            const resultDiv = document.getElementById('save-result');
+            resultDiv.innerHTML = '<p>Testing...</p>';
+            
+            const testSchedule = {
+                schedule: {
+                    Monday: [
+                        {
+                            id: Date.now(),
+                            startTime: '09:00',
+                            endTime: '10:00',
+                            description: 'Test Class'
+                        }
+                    ],
+                    Tuesday: [],
+                    Wednesday: [],
+                    Thursday: [],
+                    Friday: [],
+                    Saturday: [],
+                    Sunday: []
+                }
+            };
+
+            console.log('Sending schedule:', testSchedule);
+            
+            try {
+                const response = await fetch(`${API_URL}/api/schedules`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(testSchedule)
+                });
+                
+                console.log('Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✓ Schedule save successful!</h4>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>✗ Schedule save failed</h4>
+                            <p>Status: ${response.status}</p>
+                            <pre>${JSON.stringify(errorData, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>✗ Request failed</h4>
+                        <p>Error: ${error.message}</p>
+                        <p>This usually means the backend is not running or CORS is blocking the request</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

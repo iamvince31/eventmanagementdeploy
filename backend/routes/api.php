@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DefaultEventController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
@@ -18,6 +19,9 @@ Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password-otp', [AuthController::class, 'resetPasswordWithOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/verify-email-link', [AuthController::class, 'verifyEmailLink']);
+
+// Public routes - Default Events (academic calendar)
+Route::get('/default-events', [DefaultEventController::class, 'index']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {

@@ -9,6 +9,7 @@ import Dashboard from './pages/Dashboard';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
 import Admin from './pages/Admin';
+import DefaultEvents from './pages/DefaultEvents';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -82,6 +83,11 @@ function App() {
           <Route path="/admin" element={
             <ProtectedRoute>
               <Admin />
+            </ProtectedRoute>
+          } />
+          <Route path="/default-events" element={
+            <ProtectedRoute>
+              <DefaultEvents />
             </ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/dashboard" />} />

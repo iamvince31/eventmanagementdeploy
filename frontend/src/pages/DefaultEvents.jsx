@@ -1,22 +1,27 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Calendar from '../components/Calendar';
 import NotificationBell from '../components/NotificationBell';
 import logo from '../assets/CEIT-LOGO.png';
 import api from '../services/api';
 
-const Dashboard = () => {
+const DefaultEvents = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [events, setEvents] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
 
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
   useEffect(() => {
-    fetchEvents();
+    fetchDefaultEvents();
+    fetchAllEvents();
   }, []);
 
   // Close account dropdown when clicking outside
@@ -31,21 +36,27 @@ const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
 
-  const fetchEvents = async () => {
+  const fetchDefaultEvents = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/events');
-      setEvents(response.data.events || []);
-    } catch (error) {
-      console.error('Error fetching events:', error);
+      const response = await api.get('/default-events');
+      setEvents(response.data.events);
+      setError('');
+    } catch (err) {
+      setError('Failed to load default events');
+      console.error('Error fetching default events:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDateSelect = (date, eventsForDate) => {
-    setSelectedDate(date);
-    setSelectedEvents(eventsForDate);
+  const fetchAllEvents = async () => {
+    try {
+      const response = await api.get('/events');
+      setAllEvents(response.data.events || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
   };
 
   const handleLogout = async () => {
@@ -53,12 +64,25 @@ const Dashboard = () => {
     navigate('/login');
   };
 
+  const groupEventsByMonth = () => {
+    const grouped = {};
+    events.forEach(event => {
+      if (!grouped[event.month]) {
+        grouped[event.month] = [];
+      }
+      grouped[event.month].push(event);
+    });
+    return grouped;
+  };
+
+  const eventsByMonth = groupEventsByMonth();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
         <div className="flex flex-col items-center space-y-4">
           <div className="w-16 h-16 border-4 border-green-300 border-t-green-700 rounded-full animate-spin"></div>
-          <p className="text-gray-600 font-medium text-lg">Loading events...</p>
+          <p className="text-gray-600 font-medium text-lg">Loading academic calendar...</p>
         </div>
       </div>
     );
@@ -85,7 +109,7 @@ const Dashboard = () => {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">Event Management</h1>
-                <p className="text-xs text-green-200 font-medium">Dashboard</p>
+                <p className="text-xs text-green-200 font-medium">Academic Calendar</p>
               </div>
             </div>
 
@@ -94,7 +118,7 @@ const Dashboard = () => {
               {/* Notifications Bell */}
               <div className="relative">
                 <NotificationBell 
-                  events={events} 
+                  events={allEvents} 
                   user={user}
                 />
               </div>
@@ -165,116 +189,89 @@ const Dashboard = () => {
           {/* Header */}
           <div className="mb-8 flex justify-between items-center">
             <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-2">Event Calendar</h2>
-              <p className="text-lg text-gray-600 font-medium">View and manage your events</p>
+              <h2 className="text-4xl font-bold text-gray-900 mb-2">Academic Calendar</h2>
+              <p className="text-lg text-gray-600 font-medium">Default events throughout the academic year</p>
             </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate('/default-events')}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Academic Calendar
-              </button>
-              <button
-                onClick={() => navigate('/add-event')}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Event
-              </button>
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  Admin
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => navigate('/dashboard')}
+              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+              aria-label="Go back to dashboard"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Dashboard
+            </button>
           </div>
 
-          {/* Calendar and Event Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Calendar Section */}
-            <div>
-              <Calendar 
-                events={events} 
-                onDateSelect={handleDateSelect}
-                highlightedDate={selectedDate}
-              />
-            </div>
-
-            {/* Event Details Section */}
-            <div>
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
-                <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6">
-                  <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Event Details
-                  </h3>
-                  <p className="text-green-200 text-sm mt-1">
-                    {selectedDate ? `Events on ${selectedDate}` : 'Select a date to view events'}
-                  </p>
-                </div>
-
-                <div className="p-8">
-                  {selectedDate && selectedEvents.length > 0 ? (
-                    <div className="space-y-4">
-                      {selectedEvents.map(event => (
-                        <div key={event.id} className="border-2 border-gray-200 rounded-lg p-5 hover:border-green-400 hover:shadow-md transition-all duration-200">
-                          <h4 className="font-bold text-xl text-gray-900 mb-2">{event.title}</h4>
-                          <div className="flex items-center text-sm text-gray-600 mb-3">
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {event.time}
-                          </div>
-                          {event.description && (
-                            <p className="text-sm text-gray-700 mb-3">{event.description}</p>
-                          )}
-                          {event.location && (
-                            <div className="flex items-center text-sm text-gray-600 mb-3">
-                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                              {event.location}
-                            </div>
-                          )}
-                          <button
-                            onClick={() => navigate('/add-event', { state: { event, selectedDate } })}
-                            className="mt-3 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            View Details
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 text-gray-500">
-                      <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <p className="text-lg font-medium">
-                        {selectedDate 
-                          ? 'No events scheduled for this date' 
-                          : 'Select a date on the calendar to view events'}
-                      </p>
-                    </div>
-                  )}
-                </div>
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 bg-red-50/80 text-red-800 border-red-300 shadow-lg shadow-red-500/20">
+              <div className="flex items-center">
+                <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                <span className="font-semibold">{error}</span>
               </div>
             </div>
+          )}
+
+          {/* Events Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {monthNames.map((monthName, index) => {
+              const monthNumber = index + 1;
+              const monthEvents = eventsByMonth[monthNumber] || [];
+              
+              return (
+                <div
+                  key={monthNumber}
+                  className={`bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 ${
+                    monthEvents.length === 0 ? 'opacity-60' : ''
+                  }`}
+                >
+                  {/* Month Header */}
+                  <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 text-white p-5">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {monthName}
+                    </h3>
+                    <p className="text-sm text-green-200 mt-1">
+                      {monthEvents.length} {monthEvents.length === 1 ? 'event' : 'events'}
+                    </p>
+                  </div>
+
+                  {/* Events List */}
+                  <div className="p-5">
+                    {monthEvents.length > 0 ? (
+                      <ul className="space-y-3">
+                        {monthEvents.map((event, idx) => (
+                          <li
+                            key={event.id}
+                            className="flex items-start space-x-3 p-3 rounded-lg bg-green-50 hover:bg-green-100 border border-green-200 transition-all duration-200"
+                          >
+                            <span className="flex-shrink-0 w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                              {idx + 1}
+                            </span>
+                            <span className="text-gray-800 text-sm leading-relaxed font-medium flex-1">
+                              {event.name}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="text-center py-12 text-gray-400">
+                        <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-sm font-medium">No events scheduled</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </main>
@@ -282,4 +279,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default DefaultEvents;

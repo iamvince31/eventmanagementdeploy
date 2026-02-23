@@ -696,7 +696,7 @@ export default function AccountDashboard() {
                             type="submit"
                             className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 shadow-lg hover:shadow-xl"
                           >
-                            ? Save Changes
+                            Save Changes
                           </button>
                           <button
                             type="button"
@@ -710,7 +710,7 @@ export default function AccountDashboard() {
                             }}
                             className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-300"
                           >
-                            ? Cancel
+                            Cancel
                           </button>
                         </div>
                       </div>
@@ -741,7 +741,7 @@ export default function AccountDashboard() {
                         onClick={() => setEditMode(true)}
                         className="mt-8 w-full px-6 py-3 bg-gradient-to-r from-green-700 to-green-800 text-white font-semibold rounded-lg hover:from-green-800 hover:to-green-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 transition-all duration-300 shadow-lg hover:shadow-xl"
                       >
-                        ? Edit Profile
+                        Edit Profile
                       </button>
                     </div>
                   )}

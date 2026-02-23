@@ -133,9 +133,6 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
       const dayEvents = isCurrentMonth ? events.filter(event => event.date === dateStr) : [];
       const eventCount = !isPast && isCurrentMonth ? dayEvents.length : 0;
 
-      // Check if this date has ACADEMIC CALENDAR events (for green highlighting)
-      const hasAcademicEvents = isCurrentMonth && dayEvents.some(event => event.is_academic_calendar === true);
-
       days.push(
         <div
           key={`${cellYear}-${cellMonth}-${cellDay}`}
@@ -153,9 +150,7 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
             ${isCurrentMonth 
               ? `cursor-pointer ${isCurrentDay
                   ? 'bg-green-100 border-2 border-green-600 shadow-sm'
-                  : hasAcademicEvents
-                    ? 'bg-green-50 border border-green-300 hover:border-green-500 hover:shadow-md hover:bg-green-100'
-                    : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'
+                  : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'
                 }`
               : 'bg-gray-50/30 border border-gray-100 cursor-default'
             }
@@ -170,9 +165,7 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
             ${isCurrentMonth 
               ? (isCurrentDay 
                   ? 'text-green-800' 
-                  : hasAcademicEvents 
-                    ? 'text-green-700' 
-                    : (selected ? 'text-green-700' : 'text-gray-700')
+                  : (selected ? 'text-green-700' : 'text-gray-700')
                 )
               : 'text-gray-400'
             }

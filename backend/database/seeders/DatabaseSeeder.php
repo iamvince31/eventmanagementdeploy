@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
         // Seed academic calendar events
         $this->call([
             AcademicCalendarSeeder::class,
+            DefaultEventSeeder::class,
         ]);
     }
 }

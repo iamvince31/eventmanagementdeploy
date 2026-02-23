@@ -52,3 +52,60 @@ Email API Key: SG.dypGFaHBTGyYrx7CkPo7Ow.V7NjKQMAkkub-17-I_Im_NhTZeY1Z7YqHnAt7dB
 VITE_SUPABASE_URL=https://kprmqdikdrbmjayxzszk.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtwcm1xZGlrZHJibWpheXh6c3prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzODY5NjEsImV4cCI6MjA4Njk2Mjk2MX0.qf0SZl_4-91O0lydaeICzhMkzcl-d_u_aA9bykolqNI
 VITE_API_URL=http://localhost:8000/api
+
+
+Sept:
+Beginning of Classes
+Registraion Period
+Last Day of Adding/Changing Subj
+
+Oct:
+Last Day of Filing Application for Graduation
+Midterm Exam
+
+Nov:
+Student Evaluation for Teachers
+
+Dec:
+Last Day for Thesis Final Defense
+Last Day of Settlement of Deficiencies for Grad Students
+Christmas Break
+
+Jan:
+Final Exam (Graduating)
+Final Exam (Non-Grad)
+Last Day of Submission and Uploading of Grades
+Removal Examination
+Submission of Graduation Clearance
+Semestral Break
+
+Feb:
+Registration Period
+Beginning of Classes
+Last Day of Adding/Changing Subj
+
+Mar:
+College Academic Student Council
+Last day of filing application for graduation
+Submission of Graduation Candidates List
+
+Apr:
+Midterm Exam
+Submission of Qualified Candidates for Graduation
+Student Evaluation for Teachers and Classroom Observation
+U-Games
+
+May:
+Last Day of Settlement of Deficiencies for Graduating Students
+Last Day for Thesis Final Defense
+Final Examination for Graduating
+
+June:
+Final Examination for Non-Graduating
+Last Day of Submission and Uploading of Grades
+Removal Examination
+Last Day of Submission of Report of Completion
+Submission of Manuscript
+Submission of Graduation Clearance
+College Academic Council Meeting
+Start of Vacation
