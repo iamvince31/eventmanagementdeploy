@@ -34,5 +34,10 @@ class DatabaseSeeder extends Seeder
             'role' => 'teacher',
             'email_verified_at' => now(),
         ]);
+
+        // Seed academic calendar events
+        $this->call([
+            AcademicCalendarSeeder::class,
+        ]);
     }
 }

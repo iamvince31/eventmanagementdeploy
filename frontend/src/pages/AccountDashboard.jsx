@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import NotificationBell from '../components/NotificationBell';
 import logo from '../assets/CEIT-LOGO.png';
+import api from '../services/api';
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
@@ -68,18 +69,8 @@ export default function AccountDashboard() {
 
   const fetchEvents = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/events', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch events');
-      }
-      
-      const data = await response.json();
-      setEvents(data.events || []);
+      const response = await api.get('/events');
+      setEvents(response.data.events || []);
     } catch (error) {
       console.error('Error fetching events:', error);
       setEvents([]);
@@ -89,17 +80,9 @@ export default function AccountDashboard() {
   const fetchSchedule = async () => {
     setScheduleLoading(true);
     try {
-      const response = await fetch('http://localhost:8000/api/schedules', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
+      const response = await api.get('/schedules');
+      const data = response.data;
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch schedule');
-      }
-      
-      const data = await response.json();
       if (data.schedule) {
         // Convert the API response to the format expected by the component
         const formattedSchedule = {};
@@ -137,30 +120,13 @@ export default function AccountDashboard() {
   const handleSaveChanges = async (e) => {
     e.preventDefault();
     try {
-      const apiUrl = 'http://localhost:8000/api/user/profile';
-      const token = localStorage.getItem('token');
-      
-      const response = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update profile.');
-      }
-
-      const data = await response.json();
+      const response = await api.put('/user/profile', formData);
       
       // Update the user in context with the response data
       updateUser({
-        username: data.user.username,
-        email: data.user.email,
-        department: data.user.department,
+        username: response.data.user.username,
+        email: response.data.user.email,
+        department: response.data.user.department,
       });
       
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
@@ -170,7 +136,7 @@ export default function AccountDashboard() {
         setMessage({ type: '', text: '' });
       }, 3000);
     } catch (error) {
-      setMessage({ type: 'error', text: error.message || 'Failed to update profile.' });
+      setMessage({ type: 'error', text: error.response?.data?.message || 'Failed to update profile.' });
     }
   };
 
@@ -207,25 +173,9 @@ export default function AccountDashboard() {
     setScheduleSaving(true);
     try {
       console.log('Saving schedule:', schedule);
-      const response = await fetch('http://localhost:8000/api/schedules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify({ schedule }),
-      });
-
-      console.log('Response status:', response.status);
+      const response = await api.post('/schedules', { schedule });
       
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Save failed:', errorData);
-        throw new Error(errorData.message || 'Failed to save schedule');
-      }
-
-      const data = await response.json();
-      console.log('Save successful:', data);
+      console.log('Save successful:', response.data);
 
       setMessage({ type: 'success', text: 'Schedule saved! You can now create events.' });
       
@@ -249,7 +199,8 @@ export default function AccountDashboard() {
       window.dispatchEvent(new CustomEvent('scheduleChanged', { detail: { hasSchedule: true } }));
     } catch (error) {
       console.error('Error saving schedule:', error);
-      setMessage({ type: 'error', text: 'Failed to save schedule. Please try again.' });
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to save schedule. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
     } finally {
       setScheduleSaving(false);
     }

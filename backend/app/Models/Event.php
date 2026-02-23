@@ -15,11 +15,13 @@ class Event extends Model
         'is_open',
         'host_id',
         'auto_accept_reschedule',
+        'is_academic_calendar',
     ];
 
     protected $casts = [
         'is_open' => 'boolean',
         'auto_accept_reschedule' => 'boolean',
+        'is_academic_calendar' => 'boolean',
     ];
 
     public function host()
