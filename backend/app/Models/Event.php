@@ -12,14 +12,10 @@ class Event extends Model
         'location',
         'date',
         'time',
-        'is_open',
         'host_id',
-        'auto_accept_reschedule',
     ];
 
     protected $casts = [
-        'is_open' => 'boolean',
-        'auto_accept_reschedule' => 'boolean',
     ];
 
     public function host()

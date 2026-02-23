@@ -31,6 +31,10 @@ export default function Dashboard() {
   const [isEventsListModalOpen, setIsEventsListModalOpen] = useState(false);
   const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  
+  // Event Details Modal State
+  const [isMembersDropdownOpen, setIsMembersDropdownOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   // Reschedule State
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -234,6 +238,8 @@ export default function Dashboard() {
     setIsModalOpen(false);
     setSelectedEvent(null);
     setEventConflicts([]);
+    setIsMembersDropdownOpen(false);
+    setCurrentImageIndex(0);
   };
 
   const handleDateSelect = (date, events) => {
@@ -598,6 +604,7 @@ export default function Dashboard() {
                 events={events}
                 onDateSelect={handleDateSelect}
                 highlightedDate={highlightedDate}
+                currentUser={user}
               />
             )}
           </div>
@@ -740,63 +747,160 @@ export default function Dashboard() {
                     <p className="text-gray-500 text-sm">{selectedEvent.host.email}</p>
                   </div>
                 </div>
-                {selectedEvent.is_open && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                    Open Event
-                  </span>
-                )}
               </div>
             </div>
 
-            {/* Images */}
+            {/* Images Carousel */}
             {selectedEvent.images && selectedEvent.images.length > 0 && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Event Images</h4>
-                {selectedEvent.images.length === 1 ? (
-                  <img
-                    src={getFixedImageUrl(selectedEvent.images[0])}
-                    alt={selectedEvent.title}
-                    className="w-full h-64 object-cover rounded-xl shadow-sm"
-                  />
-                ) : (
-                  <div className="grid grid-cols-2 gap-3">
-                    {selectedEvent.images.map((image, index) => (
-                      <img
-                        key={index}
-                        src={getFixedImageUrl(image)}
-                        alt={`${selectedEvent.title} ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-xl shadow-sm"
-                      />
-                    ))}
+                <h4 className="font-semibold text-gray-900 mb-3">Event Images ({selectedEvent.images.length})</h4>
+                <div className="relative">
+                  {/* Main Image Display */}
+                  <div className="relative w-full h-64 bg-gray-100 rounded-xl overflow-hidden">
+                    <img
+                      src={getFixedImageUrl(selectedEvent.images[currentImageIndex])}
+                      alt={`${selectedEvent.title} ${currentImageIndex + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    
+                    {/* Navigation Arrows */}
+                    {selectedEvent.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex(prev => 
+                            prev === 0 ? selectedEvent.images.length - 1 : prev - 1
+                          )}
+                          className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                          aria-label="Previous image"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setCurrentImageIndex(prev => 
+                            prev === selectedEvent.images.length - 1 ? 0 : prev + 1
+                          )}
+                          className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+                          aria-label="Next image"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                    
+                    {/* Image Counter */}
+                    {selectedEvent.images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        {currentImageIndex + 1} / {selectedEvent.images.length}
+                      </div>
+                    )}
                   </div>
-                )}
+                  
+                  {/* Thumbnail Strip */}
+                  {selectedEvent.images.length > 1 && (
+                    <div className="flex space-x-2 mt-3 overflow-x-auto pb-2">
+                      {selectedEvent.images.map((image, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                            index === currentImageIndex 
+                              ? 'border-green-500' 
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          <img
+                            src={getFixedImageUrl(image)}
+                            alt={`Thumbnail ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Members */}
+            {/* Members Dropdown */}
             {selectedEvent.members && selectedEvent.members.length > 0 && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Invited Members ({selectedEvent.members.length})</h4>
-                <div className="space-y-2">
-                  {selectedEvent.members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2">
-                      <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">
+                <button
+                  onClick={() => setIsMembersDropdownOpen(!isMembersDropdownOpen)}
+                  className="w-full flex items-center justify-between bg-gray-50 hover:bg-gray-100 rounded-xl p-4 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-green-100 rounded-lg p-2">
+                      <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    </div>
+                    <div className="text-left">
+                      <h4 className="font-semibold text-gray-900">Invited Members</h4>
+                      <p className="text-sm text-gray-500">{selectedEvent.members.length} member{selectedEvent.members.length !== 1 ? 's' : ''} invited</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {/* Member avatars preview */}
+                    <div className="flex -space-x-2">
+                      {selectedEvent.members.slice(0, 3).map((member, index) => (
+                        <div
+                          key={member.id}
+                          className="w-8 h-8 rounded-full bg-green-100 border-2 border-white flex items-center justify-center text-green-700 font-bold text-xs"
+                          style={{ zIndex: 10 - index }}
+                        >
                           {member.username.charAt(0).toUpperCase()}
                         </div>
-                        <span className="text-sm text-gray-700 font-medium">{member.username}</span>
-                      </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${member.status === 'accepted'
-                        ? 'bg-green-100 text-green-800'
-                        : member.status === 'declined'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                        {member.status === 'accepted' ? 'Accepted' : member.status === 'declined' ? 'Declined' : 'Pending'}
-                      </span>
+                      ))}
+                      {selectedEvent.members.length > 3 && (
+                        <div className="w-8 h-8 rounded-full bg-gray-100 border-2 border-white flex items-center justify-center text-gray-600 font-bold text-xs">
+                          +{selectedEvent.members.length - 3}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
+                    <svg 
+                      className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                        isMembersDropdownOpen ? 'rotate-180' : ''
+                      }`} 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                
+                {/* Dropdown Content */}
+                {isMembersDropdownOpen && (
+                  <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                    {selectedEvent.members.map((member) => (
+                      <div key={member.id} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-gray-100 hover:border-gray-200 transition-colors">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-sm">
+                            {member.username.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">{member.username}</p>
+                            <p className="text-xs text-gray-500">{member.email}</p>
+                          </div>
+                        </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${
+                          member.status === 'accepted'
+                            ? 'bg-green-100 text-green-800'
+                            : member.status === 'declined'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {member.status === 'accepted' ? '✓ Accepted' : member.status === 'declined' ? '✗ Declined' : '⏳ Pending'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -955,6 +1059,132 @@ export default function Dashboard() {
                 </svg>
                 You must set up your schedule to access the dashboard
               </p>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Members Modal */}
+      <Modal
+        isOpen={isMembersModalOpen}
+        onClose={() => setIsMembersModalOpen(false)}
+        title="All Members"
+        maxWidth="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">Total members: {members.length}</p>
+          <div className="max-h-96 overflow-y-auto space-y-3">
+            {members.map((member) => (
+              <div key={member.id} className="flex items-center justify-between bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-lg">
+                    {member.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">{member.username}</p>
+                    <p className="text-sm text-gray-500">{member.email}</p>
+                    <p className="text-xs text-gray-400">{member.department}</p>
+                  </div>
+                </div>
+                {member.id === user?.id && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    You
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          {members.length === 0 && (
+            <div className="text-center py-8">
+              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <p className="text-gray-500">No members found</p>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Your Events Modal */}
+      <Modal
+        isOpen={isEventsListModalOpen}
+        onClose={() => setIsEventsListModalOpen(false)}
+        title="Your Events"
+        maxWidth="max-w-3xl"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">Events you're hosting: {hostedEvents.length}</p>
+          <div className="max-h-96 overflow-y-auto space-y-4">
+            {hostedEvents.map((event) => (
+              <div key={event.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 mb-2">{event.title}</h4>
+                    <div className="space-y-1 text-sm text-gray-600">
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {event.date} at {event.time}
+                      </div>
+                      {event.location && (
+                        <div className="flex items-center">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {event.location}
+                        </div>
+                      )}
+                      {event.members && event.members.length > 0 && (
+                        <div className="flex items-center">
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                          </svg>
+                          {event.members.length} member{event.members.length !== 1 ? 's' : ''} invited
+                        </div>
+                      )}
+                    </div>
+                    {event.description && (
+                      <p className="text-sm text-gray-500 mt-2 line-clamp-2">{event.description}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2 ml-4">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Host
+                    </span>
+                    <button
+                      onClick={() => {
+                        setIsEventsListModalOpen(false);
+                        handleViewEvent(event);
+                      }}
+                      className="px-3 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {hostedEvents.length === 0 && (
+            <div className="text-center py-8">
+              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p className="text-gray-500 mb-4">You haven't created any events yet</p>
+              <button
+                onClick={() => {
+                  setIsEventsListModalOpen(false);
+                  handleAddEventClick();
+                }}
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Create Your First Event
+              </button>
             </div>
           )}
         </div>

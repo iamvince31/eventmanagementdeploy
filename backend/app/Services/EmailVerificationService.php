@@ -36,8 +36,9 @@ class EmailVerificationService
         // - Timeout issues
         // 
         // For production, consider:
-        // 1. Using a third-party email verification API
-        // 2. Just validating format (current approach)
+        // 1. Using email OTP verification (send OTP to email)
+        // 2. Using a third-party email verification API
+        // 3. Just validating format (current approach)
         
         // For now, just validate format and trust the user
         return [

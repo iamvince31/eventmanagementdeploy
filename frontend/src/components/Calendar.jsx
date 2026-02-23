@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function Calendar({ events, onDateSelect, highlightedDate }) {
+export default function Calendar({ events, onDateSelect, highlightedDate, currentUser }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -176,23 +176,25 @@ export default function Calendar({ events, onDateSelect, highlightedDate }) {
           )}
 
           {eventCount > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1 flex-1">
-              {dayEvents.slice(0, 2).map((event, idx) => (
-                <div
-                  key={idx}
-                  className={`w-2 h-2 rounded-full ${
-                    event.has_pending_reschedule_requests 
-                      ? 'bg-orange-500' 
-                      : (event.is_open 
-                          ? 'bg-blue-500' 
-                          : (idx === 0 ? 'bg-green-600' : 'bg-green-500')
-                        )
-                  }`}
-                  title={event.title}
-                />
-              ))}
-              {eventCount > 2 && (
-                <span className="text-[10px] text-gray-500 font-medium">+{eventCount - 2}</span>
+            <div className="mt-1 flex flex-wrap gap-1 flex-1 items-start">
+              {dayEvents.slice(0, 3).map((event, idx) => {
+                const isHosted = currentUser && event.host && event.host.id === currentUser.id;
+                return (
+                  <div
+                    key={idx}
+                    className={`w-2 h-2 rounded-full ${
+                      isHosted 
+                        ? 'bg-red-500' 
+                        : 'bg-blue-500'
+                    }`}
+                    title={`${event.title} (${isHosted ? 'Hosting' : 'Invited'})`}
+                  />
+                );
+              })}
+              {eventCount > 3 && (
+                <span className="text-[10px] text-gray-600 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">
+                  +{eventCount - 3}
+                </span>
               )}
             </div>
           )}

@@ -6,3 +6,7 @@
 10:00 - 11:00 : Implementing dual login for testing purposes
 11:00 - 12:00 : Lunch break, Still refactoring dual login
 12:00 - 1:00 : Reimplementing back past changes for presentation
+1:00 - 2:00 : Testing changes
+2:00 - 3:00 : Testing other interfaces for implementing on login
+3:00 - 4:00 : Improving other UIs
+4:00 - 5:00 : Meet with Coordinator on Status of System.

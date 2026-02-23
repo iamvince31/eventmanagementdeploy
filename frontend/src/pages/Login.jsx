@@ -106,7 +106,7 @@ export default function Login() {
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl p-8">
           <div>
             <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              Event Management System
+              CEIT Event Management System
             </h2>
             <p className="mt-2 text-center text-sm text-gray-600">
               Sign in to your account

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import AuthBackground from '../components/AuthBackground';
+import { useEffect } from 'react';
 
 export default function Register() {
   const [formData, setFormData] = useState({
@@ -14,7 +15,8 @@ export default function Register() {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-
+  const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
+  
   const navigate = useNavigate();
 
   const departments = [
@@ -24,6 +26,18 @@ export default function Register() {
     'Department of Industrial and Electrical Technology',
     'Department of Information Technology'
   ];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isDepartmentDropdownOpen && !event.target.closest('.department-dropdown-container')) {
+        setIsDepartmentDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDepartmentDropdownOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -37,6 +51,22 @@ export default function Register() {
       setErrors(prev => ({
         ...prev,
         [name]: ''
+      }));
+    }
+  };
+
+  const handleDepartmentSelect = (department) => {
+    setFormData(prev => ({
+      ...prev,
+      department: department
+    }));
+    setIsDepartmentDropdownOpen(false);
+    
+    // Clear error when user selects
+    if (errors.department) {
+      setErrors(prev => ({
+        ...prev,
+        department: ''
       }));
     }
   };
@@ -171,29 +201,68 @@ export default function Register() {
                 )}
               </div>
 
-              <div>
+              <div className="department-dropdown-container">
                 <label htmlFor="department" className="block text-sm font-medium text-gray-700">
                   Department
                 </label>
-                <select
-                  id="department"
-                  name="department"
-                  required
-                  value={formData.department}
-                  onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm leading-5 text-gray-900"
-                  style={{
-                    minHeight: '42px',
-                    lineHeight: '1.5'
-                  }}
-                >
-                  <option value="" className="py-2">Select your department</option>
-                  {departments.map((dept) => (
-                    <option key={dept} value={dept} className="py-2 px-3 text-gray-900 whitespace-normal">
-                      {dept}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsDepartmentDropdownOpen(!isDepartmentDropdownOpen)}
+                    className={`relative w-full bg-white border rounded-md shadow-sm pl-4 pr-10 py-4 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
+                      errors.department 
+                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                        : 'border-gray-300 hover:border-gray-400'
+                    }`}
+                    aria-haspopup="listbox"
+                    aria-expanded={isDepartmentDropdownOpen}
+                  >
+                    <span className={`block truncate text-sm ${
+                      formData.department ? 'text-gray-900' : 'text-gray-500'
+                    }`}>
+                      {formData.department || 'Select your department'}
+                    </span>
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                      <svg 
+                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                          isDepartmentDropdownOpen ? 'rotate-180' : ''
+                        }`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </span>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {isDepartmentDropdownOpen && (
+                    <div className="absolute z-10 mt-1 w-full bg-white shadow-xl max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none border border-gray-200">
+                      {departments.map((dept) => (
+                        <button
+                          key={dept}
+                          type="button"
+                          onClick={() => handleDepartmentSelect(dept)}
+                          className={`w-full text-left px-4 py-3 text-sm hover:bg-green-50 hover:text-green-900 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0 ${
+                            formData.department === dept 
+                              ? 'bg-green-50 text-green-900 font-medium' 
+                              : 'text-gray-900'
+                          }`}
+                        >
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 w-2 h-2 mr-3">
+                              {formData.department === dept && (
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              )}
+                            </div>
+                            <span className="block leading-6">{dept}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {errors.department && (
                   <p className="mt-1 text-sm text-red-600">{errors.department[0]}</p>
                 )}
