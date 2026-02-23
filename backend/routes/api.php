@@ -17,6 +17,7 @@ Route::post('/request-otp', [AuthController::class, 'requestOtp']);
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/reset-password-otp', [AuthController::class, 'resetPasswordWithOtp']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/verify-email-link', [AuthController::class, 'verifyEmailLink']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -33,6 +34,8 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Users
     Route::get('/users', [UserController::class, 'index']);
+    Route::get('/users/all', [UserController::class, 'all']);
+    Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
     Route::put('/user/profile', [UserController::class, 'update']);
     
     // Schedules

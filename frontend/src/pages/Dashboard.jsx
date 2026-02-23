@@ -409,6 +409,26 @@ export default function Dashboard() {
                         </svg>
                         <span className="font-medium">Settings</span>
                       </button>
+                      
+                      {/* Admin Panel Link - Only for admin users */}
+                      {user?.role === 'admin' && (
+                        <>
+                          <div className="border-t border-gray-100"></div>
+                          <button
+                            onClick={() => {
+                              setIsAccountDropdownOpen(false);
+                              navigate('/admin');
+                            }}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
+                          >
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span className="font-medium">Admin Panel</span>
+                          </button>
+                        </>
+                      )}
+                      
                       <div className="border-t border-gray-100"></div>
                       <button
                         onClick={async () => {
@@ -524,8 +544,8 @@ export default function Dashboard() {
               onClick={handleAddEventClick}
               disabled={!hasSchedule}
               className={`inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group ${hasSchedule
-                  ? 'bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? 'bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
             >
               <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,0 +1,12 @@
+7:00 - 8:00 set up and testing identifying what to do and improve
+8:00 - 9:00 add indicator for open events
+9:00 - 10:00 thinking what concept to add in reschedule and creating initial concept
+10:00 - 11:00 creating the reschedule ui 
+11:00 - 12:00lunch break and make the request and accept reschedule function to work and testing it
+12:00 - 1:00 continue testing and identifying what to do and improve
+1:00 - 2:00 debugging and improving the reschedule function
+2:00 - 3:00 adding highlight for the events in the calendar that ope
+n and reschedule
+3:00 - 4:00 merging testing and debugging merge Conflict
+4:00 - 5:00 checking if reschedule function is working and if not debugging and improving it and  cleaning the desk
+

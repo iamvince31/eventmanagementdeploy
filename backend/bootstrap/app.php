@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom middleware aliases
         $middleware->alias([
             'throttle.login' => \App\Http\Middleware\ThrottleLoginAttempts::class,
+            'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

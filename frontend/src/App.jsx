@@ -3,12 +3,12 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
-import VerifyOtp from './pages/VerifyOtp';
-import ResetPasswordOtp from './pages/ResetPasswordOtp';
 import ResetPassword from './pages/ResetPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
+import Admin from './pages/Admin';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -58,16 +58,7 @@ function App() {
               <ForgotPassword />
             </PublicRoute>
           } />
-          <Route path="/verify-otp" element={
-            <PublicRoute>
-              <VerifyOtp />
-            </PublicRoute>
-          } />
-          <Route path="/reset-password-otp" element={
-            <PublicRoute>
-              <ResetPasswordOtp />
-            </PublicRoute>
-          } />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route path="/reset-password" element={
             <PublicRoute>
               <ResetPassword />
@@ -86,6 +77,11 @@ function App() {
           <Route path="/add-event" element={
             <ProtectedRoute>
               <AddEvent />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <ProtectedRoute>
+              <Admin />
             </ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/dashboard" />} />

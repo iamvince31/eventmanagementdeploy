@@ -149,12 +149,10 @@ export default function Login() {
                 name="email"
                 type="email"
                 required
-                pattern="^main\.[^.]+\.[^.]+@cvsu\.edu\.ph$"
-                title="Use this format: main.(anything).(anything)@cvsu.edu.ph"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-green-500 focus:border-green-500 focus:z-10 sm:text-sm"
-                placeholder="main.firstname.lastname@cvsu.edu.ph"
+                placeholder="yourname@cvsu.edu.ph"
               />
             </div>
             <div>

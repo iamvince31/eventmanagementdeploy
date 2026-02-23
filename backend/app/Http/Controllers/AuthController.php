@@ -14,43 +14,45 @@ use Illuminate\Validation\ValidationException;
 class AuthController extends Controller
 {
     public function register(Request $request)
-    {
-        $request->validate([
-            'username' => 'required|string|max:255',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'unique:users',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
-            ],
-            'password' => 'required|string|min:6',
-            'department' => 'required|string',
-        ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph'
-        ]);
+        {
+            $request->validate([
+                'username' => 'required|string|max:255',
+                'email' => [
+                    'required',
+                    'string',
+                    'email',
+                    'unique:users',
+                    'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
+                ],
+                'password' => 'required|string|min:6',
+                'department' => 'required|string',
+            ], [
+                'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
+            ]);
 
-        $user = User::create([
-            'name' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'department' => $request->department,
-        ]);
+            $user = User::create([
+                'name' => $request->username,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'department' => $request->department,
+                'role' => 'teacher',
+            ]);
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+            $token = $user->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
-            'message' => 'Registered successfully',
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->name,
-                'email' => $user->email,
-                'department' => $user->department,
-                'schedule_initialized' => false,
-            ],
-            'token' => $token,
-        ], 201);
-    }
+            return response()->json([
+                'message' => 'Registered successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'username' => $user->name,
+                    'email' => $user->email,
+                    'department' => $user->department,
+                    'role' => $user->role,
+                    'schedule_initialized' => false,
+                ],
+                'token' => $token,
+            ], 201);
+        }
 
     public function login(Request $request)
     {
@@ -58,11 +60,11 @@ class AuthController extends Controller
             'email' => [
                 'required',
                 'email',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
             'password' => 'required',
         ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph'
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
         ]);
 
         $email = $request->email;
@@ -165,6 +167,7 @@ class AuthController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'role' => $user->role ?? 'teacher',
                 'schedule_initialized' => $user->schedule_initialized ?? false,
             ],
             'token' => $token,
@@ -188,6 +191,7 @@ class AuthController extends Controller
                 'username' => $request->user()->name,
                 'email' => $request->user()->email,
                 'department' => $request->user()->department,
+                'role' => $request->user()->role ?? 'teacher',
                 'schedule_initialized' => $request->user()->schedule_initialized ?? false,
             ],
         ]);
@@ -199,10 +203,10 @@ class AuthController extends Controller
             'email' => [
                 'required',
                 'email',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
         ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph'
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -247,10 +251,10 @@ class AuthController extends Controller
             'email' => [
                 'required',
                 'email',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
         ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph'
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
         ]);
 
         $email = strtolower($request->email);
@@ -322,11 +326,11 @@ class AuthController extends Controller
             'email' => [
                 'required',
                 'email',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
             'otp' => 'required|string|size:6|regex:/^\d{6}$/',
         ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph',
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
             'otp.regex' => 'OTP must be a 6-digit number.',
         ]);
 
@@ -392,12 +396,12 @@ class AuthController extends Controller
             'email' => [
                 'required',
                 'email',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
             'reset_token' => 'required|string',
             'password' => 'required|string|min:8|confirmed',
         ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph',
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
             'password.confirmed' => 'Passwords do not match.',
             'password.min' => 'Password must be at least 8 characters.',
         ]);
@@ -483,18 +487,64 @@ class AuthController extends Controller
         }
     }
 
+    public function verifyEmailLink(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'token' => 'required|string',
+        ]);
+
+        $email = strtolower($request->email);
+
+        $record = DB::table('email_verification_otps')
+            ->where('email', $email)
+            ->where('otp', $request->token)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'message' => 'Invalid or expired verification link.',
+            ], 400);
+        }
+
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not found.',
+            ], 404);
+        }
+
+        // Mark email as verified if not already
+        if (!$user->email_verified_at) {
+            $user->update(['email_verified_at' => now()]);
+        }
+
+        // Delete the used verification record
+        DB::table('email_verification_otps')->where('email', $email)->delete();
+
+        Log::info('Email verified via link', ['email' => $email, 'timestamp' => now()]);
+
+        return response()->json([
+            'message' => 'Email verified successfully! You can now log in.',
+        ]);
+    }
+
     public function resetPassword(Request $request)
     {
         $request->validate([
             'email' => [
                 'required',
                 'email',
-                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
             'token' => 'required',
             'password' => 'required|string|min:8|confirmed',
         ], [
-            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph',
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
             'password.confirmed' => 'Passwords do not match.',
         ]);
 
