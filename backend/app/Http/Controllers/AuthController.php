@@ -2,175 +2,60 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\LoginRequest;
+use App\Http\Requests\RegisterRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
+use App\Services\AuthService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    public function register(Request $request)
-        {
-            $request->validate([
-                'username' => 'required|string|max:255',
-                'email' => [
-                    'required',
-                    'string',
-                    'email',
-                    'unique:users',
-                    'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-                ],
-                'password' => 'required|string|min:6',
-                'department' => 'required|string',
-            ], [
-                'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
-            ]);
+    protected $authService;
 
-            $user = User::create([
-                'name' => $request->username,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'department' => $request->department,
-                'role' => 'teacher',
-            ]);
+    public function __construct(AuthService $authService)
+    {
+        $this->authService = $authService;
+    }
 
-            $token = $user->createToken('auth-token')->plainTextToken;
+    public function register(RegisterRequest $request)
+    {
+        try {
+            $result = $this->authService->register($request->validated());
 
             return response()->json([
                 'message' => 'Registered successfully',
-                'user' => [
-                    'id' => $user->id,
-                    'username' => $user->name,
-                    'email' => $user->email,
-                    'department' => $user->department,
-                    'role' => $user->role,
-                    'schedule_initialized' => false,
-                ],
-                'token' => $token,
+                'user' => $this->authService->formatUserResponse($result['user']),
+                'token' => $result['token'],
             ], 201);
-        }
+        } catch (\Exception $e) {
+            Log::error('Registration failed', [
+                'email' => $request->validated()['email'],
+                'error' => $e->getMessage(),
+            ]);
 
-    public function login(Request $request)
+            return response()->json([
+                'message' => 'Registration failed. Please try again.',
+            ], 500);
+        }
+    }
+
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => [
-                'required',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-            ],
-            'password' => 'required',
-        ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
-        ]);
-
-        $email = $request->email;
-        $ip = $request->ip();
-        $key = 'login_attempts:' . md5($email . $ip);
-        $lockoutKey = 'login_lockout:' . md5($email . $ip);
-        $lockoutCountKey = 'login_lockout_count:' . md5($email . $ip);
-
-        // Check if user exists first
-        $user = User::where('email', $email)->first();
-
-        // If user doesn't exist, return specific error without locking
-        if (!$user) {
-            Log::warning('Login attempt for non-existent account', [
-                'email' => $email,
-                'ip' => $ip,
-                'user_agent' => $request->userAgent(),
-                'timestamp' => now(),
-            ]);
-            
-            throw ValidationException::withMessages([
-                'email' => ['This account does not exist. Please check your email or register.'],
-            ]);
-        }
-
-        // User exists - check password
-        if (!Hash::check($request->password, $user->password)) {
-            // Get current attempts and increment
-            $attempts = Cache::get($key, 0) + 1;
-            
-            // Log failed attempt for existing account
-            Log::warning('Failed login attempt for existing account', [
-                'email' => $email,
-                'user_id' => $user->id,
-                'ip' => $ip,
-                'attempts' => $attempts,
-                'user_agent' => $request->userAgent(),
-                'timestamp' => now(),
-            ]);
-            
-            // Check if this is the 3rd attempt - lock immediately
-            if ($attempts >= 3) {
-                // Get lockout count to determine duration (progressive lockout)
-                $lockoutCount = Cache::get($lockoutCountKey, 0);
-                
-                // Progressive lockout: 1st = 3 mins, 2nd+ = 5 mins
-                $lockoutMinutes = $lockoutCount === 0 ? 3 : 5;
-                $lockoutSeconds = $lockoutMinutes * 60;
-                
-                // Lock out the user
-                $lockoutUntil = now()->addMinutes($lockoutMinutes)->timestamp;
-                Cache::put($lockoutKey, $lockoutUntil, $lockoutSeconds);
-                Cache::forget($key); // Clear attempts counter
-                
-                // Increment lockout count (persists for 1 hour)
-                Cache::put($lockoutCountKey, $lockoutCount + 1, 3600);
-                
-                Log::warning('Account locked due to failed attempts', [
-                    'email' => $email,
-                    'user_id' => $user->id,
-                    'ip' => $ip,
-                    'lockout_count' => $lockoutCount + 1,
-                    'lockout_minutes' => $lockoutMinutes,
-                    'locked_until' => date('Y-m-d H:i:s', $lockoutUntil),
-                ]);
-                
-                throw ValidationException::withMessages([
-                    'email' => ["Too many failed attempts. Your account has been locked for {$lockoutMinutes} minutes."],
-                ]);
-            }
-            
-            // Store the incremented attempts
-            Cache::put($key, $attempts, 300); // Store for 5 minutes
-            $remainingAttempts = 3 - $attempts;
-            
-            throw ValidationException::withMessages([
-                'email' => ["Invalid password. {$remainingAttempts} attempt(s) remaining before lockout."],
-            ]);
-        }
-
-        // Successful login
-        Cache::forget($key);
-        Cache::forget($lockoutKey);
-        Cache::forget($lockoutCountKey);
-        
-        // Log successful login
-        Log::info('Successful login', [
-            'user_id' => $user->id,
-            'email' => $user->email,
-            'ip' => $ip,
-            'timestamp' => now(),
-        ]);
-
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $result = $this->authService->authenticate(
+            $request->validated()['email'],
+            $request->validated()['password'],
+            $request->ip()
+        );
 
         return response()->json([
             'message' => 'Logged in successfully',
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->name,
-                'email' => $user->email,
-                'department' => $user->department,
-                'role' => $user->role ?? 'teacher',
-                'schedule_initialized' => $user->schedule_initialized ?? false,
-            ],
-            'token' => $token,
+            'user' => $this->authService->formatUserResponse($result['user']),
+            'token' => $result['token'],
         ]);
     }
 
@@ -186,78 +71,22 @@ class AuthController extends Controller
     public function user(Request $request)
     {
         return response()->json([
-            'user' => [
-                'id' => $request->user()->id,
-                'username' => $request->user()->name,
-                'email' => $request->user()->email,
-                'department' => $request->user()->department,
-                'role' => $request->user()->role ?? 'teacher',
-                'schedule_initialized' => $request->user()->schedule_initialized ?? false,
-            ],
+            'user' => $this->authService->formatUserResponse($request->user()),
         ]);
     }
 
-    public function forgotPassword(Request $request)
+    public function forgotPassword(ForgotPasswordRequest $request)
     {
-        $request->validate([
-            'email' => [
-                'required',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-            ],
-        ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'If an account exists with this email, a password reset link will be sent.',
-            ]);
-        }
-
-        if (app()->environment(['local', 'testing'])) {
-            $token = Password::broker()->createToken($user);
-            $user->sendPasswordResetNotification($token);
-
-            $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/');
-
-            return response()->json([
-                'message' => 'Password reset link sent to your email.',
-                'reset_url' => $frontendUrl.'/reset-password?'.http_build_query([
-                    'token' => $token,
-                    'email' => $user->email,
-                ]),
-            ]);
-        }
-
-        $status = Password::sendResetLink($request->only('email'));
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json([
-                'message' => 'Password reset link sent to your email.',
-            ]);
-        }
-
+        // Security: Don't reveal if email exists
+        // This endpoint is deprecated in favor of OTP flow
         return response()->json([
-            'message' => 'Unable to send reset link. Please try again.',
-        ], 400);
+            'message' => 'If an account exists with this email, a password reset link will be sent.',
+        ]);
     }
 
-    public function requestOtp(Request $request)
+    public function requestOtp(ForgotPasswordRequest $request)
     {
-        $request->validate([
-            'email' => [
-                'required',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-            ],
-        ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
-        ]);
-
-        $email = strtolower($request->email);
+        $email = $request->validated()['email'];
         $user = User::where('email', $email)->first();
 
         if (!$user) {
@@ -322,23 +151,23 @@ class AuthController extends Controller
 
     public function verifyOtp(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'email' => [
                 'required',
                 'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
+                'regex:/^main\..+\..+@cvsu\.edu\.ph$/i'
             ],
             'otp' => 'required|string|size:6|regex:/^\d{6}$/',
         ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
+            'email.regex' => 'Email must be in format main.(anything).(anything)@cvsu.edu.ph',
             'otp.regex' => 'OTP must be a 6-digit number.',
         ]);
 
-        $email = strtolower($request->email);
+        $email = strtolower($validated['email']);
 
         $otpRecord = DB::table('password_reset_otps')
             ->where('email', $email)
-            ->where('otp', $request->otp)
+            ->where('otp', $validated['otp'])
             ->where('used', false)
             ->where('expires_at', '>', now())
             ->first();
@@ -390,27 +219,14 @@ class AuthController extends Controller
         }
     }
 
-    public function resetPasswordWithOtp(Request $request)
+    public function resetPasswordWithOtp(ResetPasswordRequest $request)
     {
-        $request->validate([
-            'email' => [
-                'required',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-            ],
-            'reset_token' => 'required|string',
-            'password' => 'required|string|min:8|confirmed',
-        ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
-            'password.confirmed' => 'Passwords do not match.',
-            'password.min' => 'Password must be at least 8 characters.',
-        ]);
-
-        $email = strtolower($request->email);
+        $validated = $request->validated();
+        $email = $validated['email'];
 
         $otpRecord = DB::table('password_reset_otps')
             ->where('email', $email)
-            ->where('reset_token', $request->reset_token)
+            ->where('reset_token', $validated['reset_token'])
             ->where('used', true)
             ->first();
 
@@ -453,7 +269,7 @@ class AuthController extends Controller
         try {
             // Update password
             $user->update([
-                'password' => Hash::make($request->password),
+                'password' => Hash::make($validated['password']),
             ]);
 
             // Log password reset success (in production, you would send confirmation email)
@@ -487,84 +303,5 @@ class AuthController extends Controller
         }
     }
 
-    public function verifyEmailLink(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'token' => 'required|string',
-        ]);
 
-        $email = strtolower($request->email);
-
-        $record = DB::table('email_verification_otps')
-            ->where('email', $email)
-            ->where('otp', $request->token)
-            ->where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
-            ->first();
-
-        if (!$record) {
-            return response()->json([
-                'message' => 'Invalid or expired verification link.',
-            ], 400);
-        }
-
-        $user = User::where('email', $email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not found.',
-            ], 404);
-        }
-
-        // Mark email as verified if not already
-        if (!$user->email_verified_at) {
-            $user->update(['email_verified_at' => now()]);
-        }
-
-        // Delete the used verification record
-        DB::table('email_verification_otps')->where('email', $email)->delete();
-
-        Log::info('Email verified via link', ['email' => $email, 'timestamp' => now()]);
-
-        return response()->json([
-            'message' => 'Email verified successfully! You can now log in.',
-        ]);
-    }
-
-    public function resetPassword(Request $request)
-    {
-        $request->validate([
-            'email' => [
-                'required',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-            ],
-            'token' => 'required',
-            'password' => 'required|string|min:8|confirmed',
-        ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
-            'password.confirmed' => 'Passwords do not match.',
-        ]);
-
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function ($user, $password) {
-                $user->forceFill([
-                    'password' => Hash::make($password),
-                ])->save();
-            }
-        );
-
-        if ($status === Password::PASSWORD_RESET) {
-            return response()->json([
-                'message' => 'Password reset successfully.',
-            ]);
-        }
-
-        return response()->json([
-            'message' => 'Invalid reset token or email.',
-        ], 400);
-    }
 }

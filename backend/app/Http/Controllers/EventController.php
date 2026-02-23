@@ -39,6 +39,7 @@ class EventController extends Controller
                     'time' => $event->time,
                     'is_open' => $event->is_open,
                     'auto_accept_reschedule' => $event->auto_accept_reschedule,
+                    'is_academic_calendar' => $event->is_academic_calendar ?? false,
                     'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
                     'host' => [
                         'id' => $event->host->id,

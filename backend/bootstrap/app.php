@@ -12,14 +12,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->api(prepend: [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-        ]);
-        
         // Register custom middleware aliases
         $middleware->alias([
             'throttle.login' => \App\Http\Middleware\ThrottleLoginAttempts::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+        ]);
+        
+        // Disable CSRF for API routes (using token-based auth)
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

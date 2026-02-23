@@ -43,6 +43,7 @@ class ScheduleController extends Controller
     {
         $user = Auth::user();
         
+        // Basic validation - detailed validation happens in the loop
         $request->validate([
             'schedule' => 'required|array',
             'schedule.*' => 'array'
@@ -60,18 +61,44 @@ class ScheduleController extends Controller
             $now = now();
             
             foreach ($request->schedule as $day => $classes) {
-                foreach ($classes as $class) {
-                    if (!empty($class['startTime']) && !empty($class['endTime'])) {
-                        $schedules[] = [
-                            'user_id' => $user->id,
-                            'day' => $day,
-                            'start_time' => $class['startTime'],
-                            'end_time' => $class['endTime'],
-                            'description' => $class['description'] ?? '',
-                            'created_at' => $now,
-                            'updated_at' => $now
-                        ];
+                // Validate day name
+                if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
+                    continue;
+                }
+                
+                foreach ($classes as $index => $class) {
+                    // Skip if both times are empty (user didn't fill this slot)
+                    if (empty($class['startTime']) && empty($class['endTime'])) {
+                        continue;
                     }
+                    
+                    // Check if one time is filled but not the other
+                    if (empty($class['startTime']) || empty($class['endTime'])) {
+                        throw new \Exception("Both start and end times are required for {$day}");
+                    }
+                    
+                    // Trim whitespace
+                    $startTime = trim($class['startTime']);
+                    $endTime = trim($class['endTime']);
+                    
+                    // Normalize times to 24-hour format
+                    $normalizedStart = $this->normalizeTime($startTime, $day, 'start');
+                    $normalizedEnd = $this->normalizeTime($endTime, $day, 'end');
+                    
+                    // Validate that start time is before end time
+                    if ($normalizedStart >= $normalizedEnd) {
+                        throw new \Exception("Start time must be before end time for {$day} (Start: {$normalizedStart}, End: {$normalizedEnd})");
+                    }
+                    
+                    $schedules[] = [
+                        'user_id' => $user->id,
+                        'day' => $day,
+                        'start_time' => $normalizedStart,
+                        'end_time' => $normalizedEnd,
+                        'description' => $class['description'] ?? '',
+                        'created_at' => $now,
+                        'updated_at' => $now
+                    ];
                 }
             }
 
@@ -87,14 +114,73 @@ class ScheduleController extends Controller
             \DB::commit();
 
             return response()->json([
-                'message' => 'Schedule saved successfully'
+                'message' => 'Schedule saved successfully',
+                'count' => count($schedules)
             ]);
         } catch (\Exception $e) {
             \DB::rollBack();
+            \Log::error('Schedule save failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'request_data' => $request->all(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
-                'message' => 'Failed to save schedule'
+                'message' => 'Failed to save schedule',
+                'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Normalize time to 24-hour format (HH:MM)
+     * Accepts both 24-hour (13:00) and 12-hour (1:00 PM) formats
+     * Also handles times with seconds (HH:MM:SS)
+     */
+    private function normalizeTime($time, $day, $type)
+    {
+        // Check for 12-hour format with AM/PM
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM|am|pm)$/i', $time, $matches)) {
+            $hour = (int)$matches[1];
+            $minute = $matches[2];
+            $ampm = strtoupper($matches[3]);
+            
+            // Validate hour range for 12-hour format
+            if ($hour < 1 || $hour > 12) {
+                throw new \Exception("Invalid hour '{$hour}' in {$type} time for {$day}. Hour must be 1-12 for 12-hour format.");
+            }
+            
+            // Convert to 24-hour format
+            if ($ampm === 'PM' && $hour !== 12) {
+                $hour += 12;
+            } elseif ($ampm === 'AM' && $hour === 12) {
+                $hour = 0;
+            }
+            
+            return sprintf('%02d:%s', $hour, $minute);
+        }
+        
+        // Check for 24-hour format (with or without seconds)
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $time, $matches)) {
+            $hour = (int)$matches[1];
+            $minute = $matches[2];
+            // Ignore seconds if present
+            
+            // Validate hour range for 24-hour format
+            if ($hour < 0 || $hour > 23) {
+                throw new \Exception("Invalid hour '{$hour}' in {$type} time for {$day}. Hour must be 0-23 for 24-hour format.");
+            }
+            
+            // Validate minute range
+            if ((int)$minute < 0 || (int)$minute > 59) {
+                throw new \Exception("Invalid minute '{$minute}' in {$type} time for {$day}. Minute must be 0-59.");
+            }
+            
+            return sprintf('%02d:%02d', $hour, (int)$minute);
+        }
+        
+        // Invalid format
+        throw new \Exception("Invalid time format '{$time}' for {$day} {$type} time. Expected HH:MM (24-hour) or HH:MM AM/PM (12-hour).");
     }
 
     public function destroy($id)
