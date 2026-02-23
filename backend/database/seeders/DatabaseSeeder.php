@@ -25,13 +25,13 @@ class DatabaseSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        // Create Teacher User
+        // Create Faculty User
         User::create([
-            'name' => 'Teacher',
-            'email' => 'teacher@example.com',
-            'password' => bcrypt('teacher123'),
+            'name' => 'Faculty',
+            'email' => 'Faculty@example.com',
+            'password' => bcrypt('Faculty123'),
             'department' => 'IT',
-            'role' => 'teacher',
+            'role' => 'Faculty',
             'email_verified_at' => now(),
         ]);
 

@@ -64,8 +64,8 @@ Password: admin123
 
 ### Test Non-Admin Access:
 ```
-Email: teacher@example.com
-Password: teacher123
+Email: Faculty@example.com
+Password: Faculty123
 ```
 - Should NOT see "Admin Panel" in dropdown
 - Redirected to `/dashboard` if accessing `/admin`
@@ -80,7 +80,7 @@ Password: teacher123
 
 2. **Role-based Access**:
    - Only `admin` role has access
-   - Other roles (dean, chairperson, program_coordinator, teacher) are blocked
+   - Other roles (dean, chairperson, program_coordinator, Faculty) are blocked
 
 3. **API Protection**:
    - Admin endpoints require authentication + admin role

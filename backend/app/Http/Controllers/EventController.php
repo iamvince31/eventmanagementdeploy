@@ -19,9 +19,7 @@ class EventController extends Controller
                     // Or user is a member/invited
                     ->orWhereHas('members', function ($q) use ($user) {
                         $q->where('users.id', $user->id);
-                    })
-                    // Or event is open
-                    ->orWhere('is_open', true);
+                    });
             })
             ->orderBy('date')
             ->orderBy('time')
@@ -37,8 +35,6 @@ class EventController extends Controller
                     'images' => $event->images->map(fn($img) => asset('storage/' . $img->image_path)),
                     'date' => $event->date,
                     'time' => $event->time,
-                    'is_open' => $event->is_open,
-                    'auto_accept_reschedule' => $event->auto_accept_reschedule,
                     'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
                     'host' => [
                         'id' => $event->host->id,
@@ -67,8 +63,6 @@ class EventController extends Controller
             'date' => 'required|date',
             'time' => 'required',
             'member_ids' => 'nullable|array',
-            'is_open' => 'boolean',
-            'auto_accept_reschedule' => 'boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 images.',
             'images.*.image' => 'Each file must be an image.',
@@ -82,8 +76,6 @@ class EventController extends Controller
             'location' => $request->location,
             'date' => $request->date,
             'time' => $request->time,
-            'is_open' => $request->is_open ?? false,
-            'auto_accept_reschedule' => $request->auto_accept_reschedule ?? false,
             'host_id' => $request->user()->id,
         ]);
 
@@ -149,8 +141,6 @@ class EventController extends Controller
             'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
-            'is_open' => 'boolean',
-            'auto_accept_reschedule' => 'boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 images.',
             'images.*.image' => 'Each file must be an image.',
@@ -158,7 +148,7 @@ class EventController extends Controller
             'images.*.max' => 'Each image must not exceed 2MB in size.',
         ]);
 
-        $event->update($request->only(['title', 'description', 'location', 'date', 'time', 'is_open', 'auto_accept_reschedule']));
+        $event->update($request->only(['title', 'description', 'location', 'date', 'time']));
 
         // Handle new images
         if ($request->hasFile('images')) {

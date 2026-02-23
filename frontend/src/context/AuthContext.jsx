@@ -29,6 +29,11 @@ export const AuthProvider = ({ children }) => {
     // Normal login flow
     const response = await api.post('/login', { email, password });
     
+    // Check if email verification is required
+    if (response.data.requires_verification) {
+      return response.data;
+    }
+    
     // Check if 2FA is required
     if (response.data.requires_otp) {
       // Return the response data for handling in the component

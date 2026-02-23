@@ -44,7 +44,7 @@ class UserController extends Controller
     public function updateRole(Request $request, $id)
     {
         $validated = $request->validate([
-            'role' => 'required|in:admin,dean,chairperson,program_coordinator,teacher',
+            'role' => 'required|in:admin,dean,chairperson,program_coordinator,Faculty',
         ]);
 
         $user = User::findOrFail($id);

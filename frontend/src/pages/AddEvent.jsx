@@ -212,8 +212,19 @@ export default function AddEvent() {
               </div>
             </div>
 
-            {/* Right corner - Notifications and Account */}
+            {/* Right corner - Home Icon, Notifications and Account */}
             <div className="flex items-center space-x-4">
+              {/* Home Icon */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                aria-label="Go to dashboard"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+
               {/* Notifications Bell */}
               <div className="relative">
                 <NotificationBell 
@@ -260,6 +271,26 @@ export default function AddEvent() {
                         </svg>
                         <span className="font-medium">Settings</span>
                       </button>
+                      
+                      {/* Admin Panel Link - Only for admin users */}
+                      {user?.role === 'admin' && (
+                        <>
+                          <div className="border-t border-gray-100"></div>
+                          <button
+                            onClick={() => {
+                              setIsAccountDropdownOpen(false);
+                              navigate('/admin');
+                            }}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
+                          >
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span className="font-medium">Admin Panel</span>
+                          </button>
+                        </>
+                      )}
+                      
                       <div className="border-t border-gray-100"></div>
                       <button
                         onClick={async () => {
@@ -284,25 +315,13 @@ export default function AddEvent() {
 
       {/* Page Header */}
       <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-        <div className="flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">
-              {editingEvent ? 'Edit Event' : 'Create New Event'}
-            </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {editingEvent ? 'Update the event details below' : 'Fill in the details to create a new event'}
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-            aria-label="Go back to dashboard"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Dashboard
-          </button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {editingEvent ? 'Edit Event' : 'Create New Event'}
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {editingEvent ? 'Update the event details below' : 'Fill in the details to create a new event'}
+          </p>
         </div>
       </div>
 

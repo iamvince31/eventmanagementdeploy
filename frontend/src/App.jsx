@@ -5,6 +5,7 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
+import EmailVerification from './pages/EmailVerification';
 import Dashboard from './pages/Dashboard';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
@@ -59,7 +60,7 @@ function App() {
               <ForgotPassword />
             </PublicRoute>
           } />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/verify-email" element={<EmailVerification />} />
           <Route path="/reset-password" element={
             <PublicRoute>
               <ResetPassword />

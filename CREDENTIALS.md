@@ -8,10 +8,10 @@
 - **Access:** Full access to admin panel and all features
 - **Status:** ✅ Email Verified
 
-## Teacher Account
-- **Email:** teacher@example.com
-- **Password:** teacher123
-- **Role:** Teacher
+## Faculty Account
+- **Email:** Faculty@example.com
+- **Password:** Faculty123
+- **Role:** Faculty
 - **Department:** IT
 - **Access:** Standard user features (create events, view calendar, etc.)
 
@@ -38,9 +38,9 @@ The system supports the following roles:
 - **dean** - Department head level access
 - **chairperson** - Department chair level access
 - **program_coordinator** - Program coordinator level access
-- **teacher** - Standard faculty member access (default for all new registrations)
+- **Faculty** - Standard faculty member access (default for all new registrations)
 
-**Note:** All new user registrations are automatically assigned the **teacher** role. Only admins can change user roles through the Admin Panel.
+**Note:** All new user registrations are automatically assigned the **Faculty** role. Only admins can change user roles through the Admin Panel.
 
 ---
 
@@ -57,7 +57,7 @@ The system supports the following roles:
 - All standard user features
 - **Note:** Admin users are NOT shown in member lists and cannot be invited to events
 
-## Teacher Features
+## Faculty Features
 - Create and manage events
 - View calendar
 - Invite members to events
@@ -75,4 +75,4 @@ cd backend
 php artisan migrate:fresh --seed
 ```
 
-This will drop all tables, recreate them, and seed the default admin and teacher accounts.
+This will drop all tables, recreate them, and seed the default admin and Faculty accounts.

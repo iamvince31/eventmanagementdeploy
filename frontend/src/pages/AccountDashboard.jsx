@@ -260,8 +260,19 @@ export default function AccountDashboard() {
               </div>
             </div>
 
-            {/* Right corner - Notifications and Account */}
+            {/* Right corner - Home Icon, Notifications and Account */}
             <div className="flex items-center space-x-4">
+              {/* Home Icon */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                aria-label="Go to dashboard"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+
               {/* Notifications Bell */}
               <div className="relative">
                 <NotificationBell 
@@ -332,21 +343,9 @@ export default function AccountDashboard() {
       <main className="w-full py-8 sm:px-6 lg:px-8">
         <div className="px-4 py-2 sm:px-0">
           {/* Header */}
-          <div className="mb-8 flex justify-between items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-2">Account Dashboard</h2>
-              <p className="text-lg text-gray-600 font-medium">Manage your account information and settings</p>
-            </div>
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-              aria-label="Go back to dashboard"
-            >
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Dashboard
-            </button>
+          <div className="mb-8">
+            <h2 className="text-4xl font-bold text-gray-900 mb-2">Account Dashboard</h2>
+            <p className="text-lg text-gray-600 font-medium">Manage your account information and settings</p>
           </div>
 
           {/* Success/Error Messages */}

@@ -12,16 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Update all existing users (except admin) to have 'teacher' role
+        // Update all existing users (except admin) to have 'Faculty' role
         DB::table('users')
             ->where('role', '!=', 'admin')
             ->whereNotNull('role')
-            ->update(['role' => 'teacher']);
+            ->update(['role' => 'Faculty']);
             
-        // Update users with null role to 'teacher'
+        // Update users with null role to 'Faculty'
         DB::table('users')
             ->whereNull('role')
-            ->update(['role' => 'teacher']);
+            ->update(['role' => 'Faculty']);
     }
 
     /**
@@ -31,7 +31,7 @@ return new class extends Migration
     {
         // Optionally revert back to 'user' role
         DB::table('users')
-            ->where('role', 'teacher')
+            ->where('role', 'Faculty')
             ->update(['role' => 'user']);
     }
 };

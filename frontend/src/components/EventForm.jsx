@@ -10,8 +10,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
-  const [isOpen, setIsOpen] = useState(false);
-  const [autoAcceptReschedule, setAutoAcceptReschedule] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -38,8 +36,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setDate(editingEvent.date);
       setTime(editingEvent.time);
       setSelectedMembers(editingEvent.members.map(m => m.id));
-      setIsOpen(editingEvent.is_open);
-      setAutoAcceptReschedule(editingEvent.auto_accept_reschedule || false);
     }
   }, [editingEvent]);
 
@@ -56,8 +52,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       formData.append('location', location);
       formData.append('date', date);
       formData.append('time', time);
-      formData.append('is_open', isOpen ? '1' : '0');
-      formData.append('auto_accept_reschedule', autoAcceptReschedule ? '1' : '0');
 
       images.forEach((image) => {
         formData.append('images[]', image);
@@ -99,8 +93,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setDate(now.toISOString().split('T')[0]);
     setTime(now.toTimeString().slice(0, 5));
     setSelectedMembers([]);
-    setIsOpen(false);
-    setAutoAcceptReschedule(false);
   };
 
   const handleCancel = () => {
@@ -342,36 +334,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                     className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={isOpen}
-                    onChange={(e) => setIsOpen(e.target.checked)}
-                    className="h-4 w-4 text-green-700 focus:ring-green-600 border-gray-300 rounded"
-                  />
-                  <span className="ml-2.5 text-sm text-gray-700 font-medium">
-                    Open Event
-                  </span>
-                  <span className="ml-1 text-xs text-gray-400">(everyone can join)</span>
-                </label>
-              </div>
-
-              <div>
-                <label className="flex items-center p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                  <input
-                    type="checkbox"
-                    checked={autoAcceptReschedule}
-                    onChange={(e) => setAutoAcceptReschedule(e.target.checked)}
-                    className="h-4 w-4 text-green-700 focus:ring-green-600 border-gray-300 rounded"
-                  />
-                  <span className="ml-2.5 text-sm text-gray-700 font-medium">
-                    Auto-accept reschedule requests
-                  </span>
-                  <span className="ml-1 text-xs text-gray-400">(approve changes automatically)</span>
-                </label>
               </div>
             </div>
           </div>
