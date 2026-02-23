@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 import Calendar from '../components/Calendar';
 import EventDetails from '../components/EventDetails';
 import NotificationBell from '../components/NotificationBell';
-import logo from '../assets/CEIT-LOGO.png';
-import api from '../services/api';
+import logo from "../assets/CEIT-LOGO.png";
 
-const Dashboard = () => {
+export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [events, setEvents] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+  const [highlightedDate, setHighlightedDate] = useState(null);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
 
   useEffect(() => {
-    fetchEvents();
+    fetchData();
+    
+    // Auto-select today's date
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
+    setSelectedDate(todayStr);
   }, []);
 
   // Close account dropdown when clicking outside
@@ -32,21 +39,26 @@ const Dashboard = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
 
-  const fetchEvents = async () => {
+  const fetchData = async () => {
     try {
-      setLoading(true);
-      const response = await api.get('/events');
-      setEvents(response.data.events || []);
+      const [eventsRes, membersRes] = await Promise.all([
+        api.get('/events'),
+        api.get('/users'),
+      ]);
+      const fetchedEvents = eventsRes.data.events;
+      setEvents(fetchedEvents);
+      setMembers(membersRes.data.members);
+
+      // Auto-select today's events
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+      const todayEvents = fetchedEvents.filter(event => event.date === todayStr);
+      setSelectedDateEvents(todayEvents);
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleDateSelect = (date, eventsForDate) => {
-    setSelectedDate(date);
-    setSelectedEvents(eventsForDate);
   };
 
   const handleEdit = (event) => {
@@ -60,10 +72,10 @@ const Dashboard = () => {
 
     try {
       await api.delete(`/events/${event.id}`);
-      await fetchEvents();
+      await fetchData();
       if (selectedDate === event.date) {
-        const updatedEvents = selectedEvents.filter(e => e.id !== event.id);
-        setSelectedEvents(updatedEvents);
+        const updatedEvents = selectedDateEvents.filter(e => e.id !== event.id);
+        setSelectedDateEvents(updatedEvents);
       }
     } catch (error) {
       console.error('Error deleting event:', error);
@@ -72,41 +84,53 @@ const Dashboard = () => {
   };
 
   const handleViewEvent = (event) => {
-    navigate('/add-event', { state: { event, selectedDate } });
+    navigate('/add-event', { state: { event } });
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
+  const handleDateSelect = (date, events) => {
+    setSelectedDate(date);
+    setSelectedDateEvents(events);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-16 h-16 border-4 border-green-300 border-t-green-700 rounded-full animate-spin"></div>
-          <p className="text-gray-600 font-medium text-lg">Loading events...</p>
-        </div>
-      </div>
-    );
-  }
+  const handleUpcomingClick = () => {
+    if (upcomingEvents.length > 0) {
+      const nextEvent = upcomingEvents[0];
+      setHighlightedDate(nextEvent.date);
+      const eventsOnDate = events.filter(e => e.date === nextEvent.date);
+      handleDateSelect(nextEvent.date, eventsOnDate);
+
+      setTimeout(() => {
+        setHighlightedDate(null);
+      }, 2000);
+    }
+  };
+
+  // Compute stats
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const upcomingEvents = events.filter(event => {
+    const eventDate = new Date(event.date + 'T00:00:00');
+    return eventDate >= today;
+  });
+
+  const hostedEvents = events.filter(event => event.host.id === user?.id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50">
-      {/* Navigation Bar */}
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
+      {/* Navbar */}
       <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             {/* Left corner - Logo and Title */}
             <div className="flex items-center space-x-3">
-              <button 
+              <button
                 onClick={() => navigate('/dashboard')}
                 className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
                 aria-label="Go to dashboard"
               >
-                <img 
-                  src={logo} 
-                  alt="CEIT Logo" 
+                <img
+                  src={logo}
+                  alt="CEIT Logo"
                   className="h-10 w-auto cursor-pointer"
                 />
               </button>
@@ -116,13 +140,25 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Right corner - Notifications and Account */}
+            {/* Right corner - Home Icon, Notifications and Account */}
             <div className="flex items-center space-x-4">
+              {/* Home Icon */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                aria-label="Go to dashboard"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+
               {/* Notifications Bell */}
               <div className="relative">
-                <NotificationBell 
-                  events={events} 
+                <NotificationBell
+                  events={events}
                   user={user}
+                  onNotificationClick={handleViewEvent}
                 />
               </div>
 
@@ -137,10 +173,10 @@ const Dashboard = () => {
                     {user?.username?.charAt(0).toUpperCase()}
                   </div>
                   <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
-                  <svg 
-                    className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
+                  <svg
+                    className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none"
+                    stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -164,11 +200,31 @@ const Dashboard = () => {
                         </svg>
                         <span className="font-medium">Settings</span>
                       </button>
+
+                      {/* Admin Panel Link - Only for admin users */}
+                      {user?.role === 'admin' && (
+                        <>
+                          <div className="border-t border-gray-100"></div>
+                          <button
+                            onClick={() => {
+                              setIsAccountDropdownOpen(false);
+                              navigate('/admin');
+                            }}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
+                          >
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                            <span className="font-medium">Admin Panel</span>
+                          </button>
+                        </>
+                      )}
+
                       <div className="border-t border-gray-100"></div>
                       <button
                         onClick={async () => {
                           setIsAccountDropdownOpen(false);
-                          await handleLogout();
+                          await logout();
                         }}
                         className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
                       >
@@ -187,75 +243,150 @@ const Dashboard = () => {
       </nav>
 
       {/* Main Content */}
-      <main className="w-full py-8 sm:px-6 lg:px-8">
-        <div className="px-4 py-2 sm:px-0">
-          {/* Header */}
-          <div className="mb-8 flex justify-between items-center">
-            <div>
-              <h2 className="text-4xl font-bold text-gray-900 mb-2">Event Calendar</h2>
-              <p className="text-lg text-gray-600 font-medium">View and manage your events</p>
-            </div>
-            <div className="flex items-center space-x-3">
+      <main className="flex-1 w-full py-8 px-4 sm:px-6 lg:px-8">
+        {/* Stats Bar */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
+          {loading ? (
+            // Skeleton for stats cards
+            <>
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-pulse">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-gray-200 rounded-xl w-16 h-16"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                      <div className="h-8 bg-gray-200 rounded w-16"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              {/* Your Events (Hosted by User) */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-br from-green-200 to-green-100 rounded-xl p-4 group-hover:from-green-300 group-hover:to-green-200 transition-colors duration-300">
+                    <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Events</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{hostedEvents.length}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Upcoming Events */}
               <button
-                onClick={() => navigate('/default-events')}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                onClick={handleUpcomingClick}
+                disabled={upcomingEvents.length === 0}
+                className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${upcomingEvents.length > 0
+                  ? 'hover:shadow-2xl hover:scale-105 cursor-pointer'
+                  : 'opacity-50 cursor-not-allowed'
+                  }`}
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Academic Calendar
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                    <svg className="w-7 h-7 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Upcoming</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{upcomingEvents.length}</p>
+                  </div>
+                </div>
               </button>
-              <button
-                onClick={() => navigate('/add-event')}
-                className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-green-700 hover:bg-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Add Event
-              </button>
-              {user?.role === 'admin' && (
-                <button
-                  onClick={() => navigate('/admin')}
-                  className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                  </svg>
-                  Admin
-                </button>
-              )}
-            </div>
+
+              {/* Total Members */}
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                    <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Members</p>
+                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{members.length}</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Calendar View</h2>
+            <p className="text-sm text-gray-600 mt-1.5 font-medium">Click a date to view or manage your events</p>
           </div>
+          <button
+            onClick={() => navigate('/add-event', { state: { selectedDate } })}
+            className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
+          >
+            <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Event
+          </button>
+        </div>
 
-          {/* Calendar and Event Details Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Calendar Section */}
-            <div>
-              <Calendar 
-                events={events} 
+        {/* Calendar + Event Details */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300 h-full">
+            {loading ? (
+              // Skeleton for calendar
+              <div className="animate-pulse h-full flex flex-col">
+                <div className="h-8 bg-gray-200 rounded w-32 mb-4 flex-shrink-0"></div>
+                <div className="grid grid-cols-7 gap-2 mb-2 flex-shrink-0">
+                  {[...Array(7)].map((_, i) => (
+                    <div key={i} className="h-8 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 grid-rows-6 gap-2 flex-1">
+                  {[...Array(42)].map((_, i) => (
+                    <div key={i} className="bg-gray-100 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <Calendar
+                events={events}
                 onDateSelect={handleDateSelect}
-                highlightedDate={selectedDate}
+                highlightedDate={highlightedDate}
+                currentUser={user}
               />
-            </div>
-
-            {/* Event Details Section */}
-            <div>
+            )}
+          </div>
+          <div className="h-full">
+            {loading ? (
+              // Skeleton for event details
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-pulse h-full flex flex-col">
+                <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
+                <div className="flex-1 space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="h-20 bg-gray-100 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            ) : (
               <EventDetails
                 date={selectedDate}
-                events={selectedEvents}
-                members={[]}
+                events={selectedDateEvents}
+                members={members}
                 currentUser={user}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onView={handleViewEvent}
               />
-            </div>
+            )}
           </div>
         </div>
       </main>
     </div>
   );
-};
-
-export default Dashboard;
+}
