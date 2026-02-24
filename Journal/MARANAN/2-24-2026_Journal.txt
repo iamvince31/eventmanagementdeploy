@@ -4,3 +4,5 @@
 8:00 - 9:00 : Implementing Role based access on different accounts
 9:00 - 10:00 : Improving Notifications, Notification of declining event, fixing bugs
 10:00 - 11:00 : Improving calendar features on create, and setting events
+11:00 - 12:00 : Lunch Break
+12:00 - 1:00 : Fixing bugs on /add-event on event files not showing the pdf /Testing implementations on emails

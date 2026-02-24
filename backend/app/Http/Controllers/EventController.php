@@ -32,7 +32,10 @@ class EventController extends Controller
                     'title' => $event->title,
                     'description' => $event->description,
                     'location' => $event->location,
-                    'images' => $event->images->map(fn($img) => asset('storage/' . $img->image_path)),
+                    'images' => $event->images->map(fn($img) => [
+                        'url' => asset('storage/' . $img->image_path),
+                        'original_filename' => $img->original_filename,
+                    ]),
                     'date' => $event->date,
                     'time' => $event->time,
                     'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
@@ -59,7 +62,7 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'location' => 'required|string|max:255',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:5120',
+            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:25600',
             'date' => 'required|date|after_or_equal:today',
             'time' => 'required',
             'member_ids' => 'nullable|array',
@@ -67,7 +70,7 @@ class EventController extends Controller
             'images.max' => 'You can upload a maximum of 5 files.',
             'images.*.file' => 'Each upload must be a valid file.',
             'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
-            'images.*.max' => 'Each file must not exceed 5MB in size.',
+            'images.*.max' => 'Each file must not exceed 25MB in size.',
             'date.after_or_equal' => 'Event date cannot be in the past.',
         ]);
 
@@ -101,16 +104,19 @@ class EventController extends Controller
                     ], 400);
                 }
                 
-                // Check file size (5MB)
-                if ($image->getSize() > 5120 * 1024) {
+                // Check file size (25MB)
+                if ($image->getSize() > 25600 * 1024) {
                     return response()->json([
-                        'error' => 'File size must not exceed 5MB.'
+                        'error' => 'File size must not exceed 25MB.'
                     ], 400);
                 }
                 
                 $imagePath = $image->store('events', 'public');
+                $originalFilename = $image->getClientOriginalName();
+                
                 $event->images()->create([
                     'image_path' => $imagePath,
+                    'original_filename' => $originalFilename,
                     'order' => $index,
                 ]);
             }
@@ -148,7 +154,7 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'location' => 'sometimes|required|string|max:255',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:5120',
+            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:25600',
             'date' => 'sometimes|required|date|after_or_equal:today',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
@@ -156,7 +162,7 @@ class EventController extends Controller
             'images.max' => 'You can upload a maximum of 5 files.',
             'images.*.file' => 'Each upload must be a valid file.',
             'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
-            'images.*.max' => 'Each file must not exceed 5MB in size.',
+            'images.*.max' => 'Each file must not exceed 25MB in size.',
             'date.after_or_equal' => 'Event date cannot be in the past.',
         ]);
 
@@ -185,9 +191,9 @@ class EventController extends Controller
                     ], 400);
                 }
                 
-                if ($image->getSize() > 5120 * 1024) {
+                if ($image->getSize() > 25600 * 1024) {
                     return response()->json([
-                        'error' => 'File size must not exceed 5MB.'
+                        'error' => 'File size must not exceed 25MB.'
                     ], 400);
                 }
             }
@@ -201,8 +207,11 @@ class EventController extends Controller
             // Add new images
             foreach ($request->file('images') as $index => $image) {
                 $imagePath = $image->store('events', 'public');
+                $originalFilename = $image->getClientOriginalName();
+                
                 $event->images()->create([
                     'image_path' => $imagePath,
+                    'original_filename' => $originalFilename,
                     'order' => $index,
                 ]);
             }

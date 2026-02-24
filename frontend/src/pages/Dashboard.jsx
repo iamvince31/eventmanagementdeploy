@@ -755,24 +755,58 @@ export default function Dashboard() {
                 <div className="relative">
                   {/* Main File Display */}
                   <div className="relative w-full h-64 bg-gray-100 rounded-xl overflow-hidden">
-                    {getFixedImageUrl(selectedEvent.images[currentImageIndex]).toLowerCase().endsWith('.pdf') ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-50">
+                    {(typeof selectedEvent.images[currentImageIndex] === 'string' 
+                      ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
+                      : selectedEvent.images[currentImageIndex].url
+                    ).toLowerCase().endsWith('.pdf') ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-4">
                         <svg className="w-20 h-20 text-red-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                         </svg>
-                        <p className="text-gray-700 font-medium mb-2">PDF Document</p>
-                        <a
-                          href={getFixedImageUrl(selectedEvent.images[currentImageIndex])}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
-                        >
-                          Open PDF
-                        </a>
+                        <p className="text-gray-700 font-medium mb-1">PDF Document</p>
+                        <p className="text-sm text-gray-600 mb-4 text-center break-all px-4">
+                          {typeof selectedEvent.images[currentImageIndex] === 'object' && selectedEvent.images[currentImageIndex].original_filename
+                            ? selectedEvent.images[currentImageIndex].original_filename
+                            : decodeURIComponent((typeof selectedEvent.images[currentImageIndex] === 'string' 
+                                ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
+                                : selectedEvent.images[currentImageIndex].url
+                              ).split('/').pop())}
+                        </p>
+                        <div className="flex gap-2">
+                          <a
+                            href={typeof selectedEvent.images[currentImageIndex] === 'string' 
+                              ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
+                              : selectedEvent.images[currentImageIndex].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Open PDF
+                          </a>
+                          <a
+                            href={typeof selectedEvent.images[currentImageIndex] === 'string' 
+                              ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
+                              : selectedEvent.images[currentImageIndex].url}
+                            download={typeof selectedEvent.images[currentImageIndex] === 'object' && selectedEvent.images[currentImageIndex].original_filename
+                              ? selectedEvent.images[currentImageIndex].original_filename
+                              : undefined}
+                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download
+                          </a>
+                        </div>
                       </div>
                     ) : (
                       <img
-                        src={getFixedImageUrl(selectedEvent.images[currentImageIndex])}
+                        src={typeof selectedEvent.images[currentImageIndex] === 'string' 
+                          ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
+                          : selectedEvent.images[currentImageIndex].url}
                         alt={`${selectedEvent.title} ${currentImageIndex + 1}`}
                         className="w-full h-full object-cover"
                       />
@@ -817,31 +851,47 @@ export default function Dashboard() {
                   {/* Thumbnail Strip */}
                   {selectedEvent.images.length > 1 && (
                     <div className="flex space-x-2 mt-3 overflow-x-auto pb-2">
-                      {selectedEvent.images.map((image, index) => (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentImageIndex(index)}
-                          className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-colors ${
-                            index === currentImageIndex 
-                              ? 'border-green-500' 
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                        >
-                          {getFixedImageUrl(image).toLowerCase().endsWith('.pdf') ? (
-                            <div className="w-full h-full flex items-center justify-center bg-red-50">
-                              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                              </svg>
-                            </div>
-                          ) : (
-                            <img
-                              src={getFixedImageUrl(image)}
-                              alt={`Thumbnail ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          )}
-                        </button>
-                      ))}
+                      {selectedEvent.images.map((image, index) => {
+                        const imageUrl = typeof image === 'string' ? getFixedImageUrl(image) : image.url;
+                        const isPdf = imageUrl.toLowerCase().endsWith('.pdf');
+                        const filename = isPdf 
+                          ? (typeof image === 'object' && image.original_filename 
+                              ? image.original_filename 
+                              : decodeURIComponent(imageUrl.split('/').pop()))
+                          : '';
+                        
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
+                              isPdf ? 'w-24 h-20' : 'w-16 h-16'
+                            } ${
+                              index === currentImageIndex 
+                                ? 'border-green-500' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            title={isPdf ? filename : `Image ${index + 1}`}
+                          >
+                            {isPdf ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-1">
+                                <svg className="w-6 h-6 text-red-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <span className="text-xs text-red-700 font-medium truncate w-full text-center px-1">
+                                  {filename.length > 14 ? filename.substring(0, 14) + '...' : filename}
+                                </span>
+                              </div>
+                            ) : (
+                              <img
+                                src={imageUrl}
+                                alt={`Thumbnail ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
