@@ -13,9 +13,11 @@ class Event extends Model
         'date',
         'time',
         'host_id',
+        'is_special_event',
     ];
 
     protected $casts = [
+        'is_special_event' => 'boolean',
     ];
 
     public function host()

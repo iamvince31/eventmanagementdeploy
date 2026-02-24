@@ -19,7 +19,6 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [userSchedule, setUserSchedule] = useState({});
-  const [eventConflicts, setEventConflicts] = useState([]);
   const [highlightedDate, setHighlightedDate] = useState(null);
   const [hasSchedule, setHasSchedule] = useState(user?.schedule_initialized ?? false);
 
@@ -42,6 +41,11 @@ export default function Dashboard() {
   const [rescheduleTime, setRescheduleTime] = useState('');
   const [rescheduleReason, setRescheduleReason] = useState('');
   const [rescheduleRequests, setRescheduleRequests] = useState([]);
+
+  // Decline Reason State
+  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [decliningEventId, setDecliningEventId] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
@@ -205,12 +209,6 @@ export default function Dashboard() {
 
     await fetchUserSchedule();
 
-    if (event.members && event.members.length > 0) {
-      await checkEventConflicts(event);
-    } else {
-      setEventConflicts([]);
-    }
-
     if (user && event.host.id === user.id) {
       fetchRescheduleRequests(event.id);
     } else {
@@ -218,26 +216,9 @@ export default function Dashboard() {
     }
   };
 
-  const checkEventConflicts = async (event) => {
-    try {
-      const memberIds = event.members.map(m => m.id);
-      const response = await api.post('/schedules/check-conflicts', {
-        user_ids: memberIds,
-        date: event.date,
-        time: event.time
-      });
-
-      setEventConflicts(response.data.conflicts || []);
-    } catch (error) {
-      console.error('Error checking conflicts:', error);
-      setEventConflicts([]);
-    }
-  };
-
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedEvent(null);
-    setEventConflicts([]);
     setIsMembersDropdownOpen(false);
     setCurrentImageIndex(0);
   };
@@ -318,6 +299,43 @@ export default function Dashboard() {
     }
   };
 
+  const handleDeclineWithReason = async () => {
+    if (!declineReason.trim()) {
+      alert('Please provide a reason for declining');
+      return;
+    }
+
+    try {
+      // Decline the event
+      await api.post(`/events/${decliningEventId}/respond`, { status: 'declined' });
+      
+      // Send decline reason message to host
+      const event = events.find(e => e.id === decliningEventId);
+      if (event && event.host) {
+        await api.post('/messages', {
+          recipient_id: event.host.id,
+          event_id: decliningEventId,
+          type: 'decline_reason',
+          message: declineReason
+        });
+      }
+
+      // Refresh data
+      await fetchData();
+      const updatedRes = await api.get('/events');
+      const updatedEvent = updatedRes.data.events.find(e => e.id === decliningEventId);
+      if (updatedEvent) setSelectedEvent(updatedEvent);
+
+      // Close modals and reset state
+      setIsDeclineModalOpen(false);
+      setDeclineReason('');
+      setDecliningEventId(null);
+    } catch (error) {
+      console.error('Error declining invitation:', error);
+      alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
+    }
+  };
+
   // Compute stats
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -366,7 +384,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Right corner - Home Icon, Notifications and Account */}
+            {/* Right corner - Home Icon, History, Notifications and Account */}
             <div className="flex items-center space-x-4">
               {/* Home Icon */}
               <button
@@ -376,6 +394,17 @@ export default function Dashboard() {
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                </svg>
+              </button>
+
+              {/* History Icon */}
+              <button
+                onClick={() => navigate('/history')}
+                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
+                aria-label="View history"
+              >
+                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </button>
 
@@ -643,38 +672,7 @@ export default function Dashboard() {
       >
         {selectedEvent && (
           <div className="space-y-6">
-            {/* Schedule Conflict Warnings */}
-            {eventConflicts.length > 0 && selectedEvent && user?.id === selectedEvent.host.id && (
-              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-xl">
-                <div className="flex items-start">
-                  <svg className="w-6 h-6 text-yellow-400 mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-yellow-800 mb-2">⚠️ Schedule Conflicts Detected</h4>
-                    <p className="text-sm text-yellow-700 mb-3">
-                      The following invited members have class schedule conflicts:
-                    </p>
-                    <div className="space-y-2">
-                      {eventConflicts.map((conflict, index) => (
-                        <div key={index} className="bg-white/50 rounded-xl p-3 border border-yellow-200">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-700 font-bold text-sm flex-shrink-0">
-                              {conflict.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">{conflict.username}</p>
-                              <p className="text-xs text-gray-600">{conflict.email}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
+            {/* User's Own Schedule Conflict Warning */}
             {checkScheduleConflict(selectedEvent) && (
               <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-xl">
                 <div className="flex items-start">
@@ -750,18 +748,35 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Images Carousel */}
+            {/* Images/Files Carousel */}
             {selectedEvent.images && selectedEvent.images.length > 0 && (
               <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Event Images ({selectedEvent.images.length})</h4>
+                <h4 className="font-semibold text-gray-900 mb-3">Event Files ({selectedEvent.images.length})</h4>
                 <div className="relative">
-                  {/* Main Image Display */}
+                  {/* Main File Display */}
                   <div className="relative w-full h-64 bg-gray-100 rounded-xl overflow-hidden">
-                    <img
-                      src={getFixedImageUrl(selectedEvent.images[currentImageIndex])}
-                      alt={`${selectedEvent.title} ${currentImageIndex + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                    {getFixedImageUrl(selectedEvent.images[currentImageIndex]).toLowerCase().endsWith('.pdf') ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-50">
+                        <svg className="w-20 h-20 text-red-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-gray-700 font-medium mb-2">PDF Document</p>
+                        <a
+                          href={getFixedImageUrl(selectedEvent.images[currentImageIndex])}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
+                        >
+                          Open PDF
+                        </a>
+                      </div>
+                    ) : (
+                      <img
+                        src={getFixedImageUrl(selectedEvent.images[currentImageIndex])}
+                        alt={`${selectedEvent.title} ${currentImageIndex + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                     
                     {/* Navigation Arrows */}
                     {selectedEvent.images.length > 1 && (
@@ -771,7 +786,7 @@ export default function Dashboard() {
                             prev === 0 ? selectedEvent.images.length - 1 : prev - 1
                           )}
                           className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                          aria-label="Previous image"
+                          aria-label="Previous file"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -782,7 +797,7 @@ export default function Dashboard() {
                             prev === selectedEvent.images.length - 1 ? 0 : prev + 1
                           )}
                           className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-                          aria-label="Next image"
+                          aria-label="Next file"
                         >
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -791,7 +806,7 @@ export default function Dashboard() {
                       </>
                     )}
                     
-                    {/* Image Counter */}
+                    {/* File Counter */}
                     {selectedEvent.images.length > 1 && (
                       <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
                         {currentImageIndex + 1} / {selectedEvent.images.length}
@@ -812,11 +827,19 @@ export default function Dashboard() {
                               : 'border-gray-200 hover:border-gray-300'
                           }`}
                         >
-                          <img
-                            src={getFixedImageUrl(image)}
-                            alt={`Thumbnail ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
+                          {getFixedImageUrl(image).toLowerCase().endsWith('.pdf') ? (
+                            <div className="w-full h-full flex items-center justify-center bg-red-50">
+                              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          ) : (
+                            <img
+                              src={getFixedImageUrl(image)}
+                              alt={`Thumbnail ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -932,17 +955,9 @@ export default function Dashboard() {
                         ✓ Accept
                       </button>
                       <button
-                        onClick={async () => {
-                          try {
-                            await api.post(`/events/${selectedEvent.id}/respond`, { status: 'declined' });
-                            await fetchData();
-                            const updatedRes = await api.get('/events');
-                            const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
-                            if (updatedEvent) setSelectedEvent(updatedEvent);
-                          } catch (error) {
-                            console.error('Error declining invitation:', error);
-                            alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
-                          }
+                        onClick={() => {
+                          setDecliningEventId(selectedEvent.id);
+                          setIsDeclineModalOpen(true);
                         }}
                         className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
                       >
@@ -1187,6 +1202,50 @@ export default function Dashboard() {
               </button>
             </div>
           )}
+        </div>
+      </Modal>
+
+      {/* Decline Reason Modal */}
+      <Modal
+        isOpen={isDeclineModalOpen}
+        onClose={() => {
+          setIsDeclineModalOpen(false);
+          setDeclineReason('');
+          setDecliningEventId(null);
+        }}
+        title="Decline Event"
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          <p className="text-gray-600">Please provide a reason for declining this event invitation:</p>
+          <textarea
+            value={declineReason}
+            onChange={(e) => setDeclineReason(e.target.value)}
+            placeholder="Enter your reason here..."
+            className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none"
+            rows="4"
+            maxLength="1000"
+          />
+          <p className="text-xs text-gray-500 text-right">{declineReason.length}/1000</p>
+          <div className="flex gap-3 justify-end pt-4">
+            <button
+              onClick={() => {
+                setIsDeclineModalOpen(false);
+                setDeclineReason('');
+                setDecliningEventId(null);
+              }}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeclineWithReason}
+              disabled={!declineReason.trim()}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Send & Decline
+            </button>
+          </div>
         </div>
       </Modal>
     </div>

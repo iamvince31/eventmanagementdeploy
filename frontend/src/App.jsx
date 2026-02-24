@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
 import Admin from './pages/Admin';
+import History from './pages/History';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -78,6 +79,11 @@ function App() {
           <Route path="/add-event" element={
             <ProtectedRoute>
               <AddEvent />
+            </ProtectedRoute>
+          } />
+          <Route path="/history" element={
+            <ProtectedRoute>
+              <History />
             </ProtectedRoute>
           } />
           <Route path="/admin" element={

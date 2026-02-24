@@ -64,3 +64,98 @@ body {
   scrollbar-width: none;
   /* Firefox */
 }
+
+
+/* ===== Time Picker Green Theme Styling ===== */
+
+/* Time picker icon - green tint */
+input[type="time"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 4px;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+input[type="time"]::-webkit-calendar-picker-indicator:hover {
+  background-color: #dcfce7;
+  opacity: 1;
+}
+
+input[type="time"]:focus::-webkit-calendar-picker-indicator {
+  background-color: #bbf7d0;
+  opacity: 1;
+}
+
+/* Time picker field focus - green highlight */
+input[type="time"]::-webkit-datetime-edit-fields-wrapper {
+  padding: 2px;
+}
+
+input[type="time"]::-webkit-datetime-edit-text {
+  color: #6b7280;
+  padding: 0 2px;
+}
+
+input[type="time"]::-webkit-datetime-edit-hour-field,
+input[type="time"]::-webkit-datetime-edit-minute-field,
+input[type="time"]::-webkit-datetime-edit-ampm-field {
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  color: #374151;
+}
+
+input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+input[type="time"]::-webkit-datetime-edit-minute-field:focus,
+input[type="time"]::-webkit-datetime-edit-ampm-field:focus {
+  background-color: #16a34a !important;
+  color: white !important;
+  outline: none;
+  font-weight: 600;
+}
+
+/* Hover states for time fields */
+input[type="time"]::-webkit-datetime-edit-hour-field:hover,
+input[type="time"]::-webkit-datetime-edit-minute-field:hover,
+input[type="time"]::-webkit-datetime-edit-ampm-field:hover {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+/* Time picker dropdown button */
+input[type="time"]::-webkit-inner-spin-button {
+  display: none;
+}
+
+input[type="time"]::-webkit-clear-button {
+  display: none;
+}
+
+/* Firefox time picker styling */
+input[type="time"]::-moz-focus-inner {
+  border: 0;
+}
+
+input[type="time"]:focus {
+  outline: none;
+}
+
+/* Custom scrollbar for time picker dropdown (if visible) */
+input[type="time"]::-webkit-scrollbar {
+  width: 8px;
+}
+
+input[type="time"]::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+input[type="time"]::-webkit-scrollbar-thumb {
+  background: #16a34a;
+  border-radius: 4px;
+}
+
+input[type="time"]::-webkit-scrollbar-thumb:hover {
+  background: #15803d;
+}

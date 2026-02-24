@@ -55,4 +55,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events/{event}/reschedule-requests', [App\Http\Controllers\EventRescheduleRequestController::class, 'index']);
     Route::post('/events/{event}/reschedule', [App\Http\Controllers\EventRescheduleRequestController::class, 'store']);
     Route::post('/reschedule-requests/{id}/respond', [App\Http\Controllers\EventRescheduleRequestController::class, 'respond']);
+
+    // Messages
+    Route::get('/messages', [App\Http\Controllers\MessageController::class, 'index']);
+    Route::post('/messages', [App\Http\Controllers\MessageController::class, 'store']);
+    Route::post('/messages/{id}/read', [App\Http\Controllers\MessageController::class, 'markAsRead']);
+    Route::get('/messages/unread-count', [App\Http\Controllers\MessageController::class, 'unreadCount']);
+    Route::delete('/messages/{id}', [App\Http\Controllers\MessageController::class, 'destroy']);
 });

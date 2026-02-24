@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
+import DatePicker from './DatePicker';
 
 export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, hasSchedule = true, currentUser }) {
   const [title, setTitle] = useState('');
@@ -27,6 +28,27 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     if (!time) setTime(currentTime);
   }, [defaultDate]);
 
+  const validateDateTime = () => {
+    const now = new Date();
+    const selectedDateTime = new Date(`${date}T${time}`);
+    
+    if (selectedDateTime < now) {
+      setError('Cannot set event date/time in the past');
+      return false;
+    }
+    
+    setError('');
+    return true;
+  };
+
+  const handleDateChange = (newDate) => {
+    setDate(newDate);
+  };
+
+  const handleTimeChange = (newTime) => {
+    setTime(newTime);
+  };
+
   useEffect(() => {
     if (editingEvent) {
       setTitle(editingEvent.title);
@@ -43,6 +65,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    // Validate date/time before submission
+    if (!validateDateTime()) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -134,13 +162,13 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const validateAndAddImages = (files) => {
     setFileError('');
 
-    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    const maxSize = 2 * 1024 * 1024; // 2MB
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+    const maxSize = 5 * 1024 * 1024; // 5MB (increased for PDFs)
     const maxFiles = 5;
 
     // Check if adding these files would exceed the limit
     if (images.length + files.length > maxFiles) {
-      setFileError(`Maximum ${maxFiles} images allowed. You can only add ${maxFiles - images.length} more.`);
+      setFileError(`Maximum ${maxFiles} files allowed. You can only add ${maxFiles - images.length} more.`);
       return;
     }
 
@@ -150,14 +178,14 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     files.forEach(file => {
       // Check file type
       if (!validTypes.includes(file.type)) {
-        errors.push(`"${file.name}" is not a valid image. Only JPG, PNG, GIF, and WebP are allowed.`);
+        errors.push(`"${file.name}" is not a valid file. Only JPG, PNG, GIF, WebP, and PDF are allowed.`);
         return;
       }
 
       // Check file size
       if (file.size > maxSize) {
         const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-        errors.push(`"${file.name}" is too large (${sizeMB}MB). Maximum size is 2MB.`);
+        errors.push(`"${file.name}" is too large (${sizeMB}MB). Maximum size is 5MB.`);
         return;
       }
 
@@ -183,11 +211,17 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setImages(prev => [...prev, ...files]);
 
       files.forEach(file => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setImagePreviews(prev => [...prev, reader.result]);
-        };
-        reader.readAsDataURL(file);
+        // For PDFs, create a special preview
+        if (file.type === 'application/pdf') {
+          setImagePreviews(prev => [...prev, { type: 'pdf', name: file.name }]);
+        } else {
+          // For images, create data URL preview
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            setImagePreviews(prev => [...prev, { type: 'image', url: reader.result }]);
+          };
+          reader.readAsDataURL(file);
+        }
       });
     }
   };
@@ -313,26 +347,26 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-                  <input
-                    type="date"
-                    required
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time</label>
-                  <input
-                    type="time"
-                    required
-                    value={time}
-                    onChange={(e) => setTime(e.target.value)}
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
+                    <DatePicker
+                      selectedDate={date}
+                      onDateSelect={handleDateChange}
+                      minDate={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Time</label>
+                    <input
+                      type="time"
+                      required
+                      value={time}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      className="block w-full px-2 py-1.5 border border-gray-300 rounded-lg shadow-sm text-xs focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
@@ -472,8 +506,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
-                <h3 className="text-base font-bold text-gray-900">Event Images</h3>
-                <span className="text-xs text-gray-400">(Max 5 images, 2MB each)</span>
+                <h3 className="text-base font-bold text-gray-900">Event Files</h3>
+                <span className="text-xs text-gray-400">(Max 5 files, 5MB each - Images & PDFs)</span>
               </div>
 
               {/* File Error Alert */}
@@ -513,7 +547,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               >
                 <input
                   type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,application/pdf"
                   multiple
                   onChange={handleImageChange}
                   className="hidden"
@@ -542,11 +576,20 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   {/* Image Previews */}
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative flex-shrink-0 group">
-                      <img
-                        src={preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-28 h-28 object-cover rounded-xl border border-gray-200"
-                      />
+                      {preview.type === 'pdf' ? (
+                        <div className="w-28 h-28 flex flex-col items-center justify-center bg-red-50 border-2 border-red-200 rounded-xl">
+                          <svg className="w-10 h-10 text-red-600 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-xs text-red-700 font-medium px-2 text-center truncate w-full">PDF</span>
+                        </div>
+                      ) : (
+                        <img
+                          src={preview.url || preview}
+                          alt={`Preview ${index + 1}`}
+                          className="w-28 h-28 object-cover rounded-xl border border-gray-200"
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
@@ -564,7 +607,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               {imagePreviews.length > 0 && (
                 <div className="mt-2 flex items-center justify-between">
                   <p className="text-xs text-gray-400">
-                    {imagePreviews.length} / 5 image{imagePreviews.length !== 1 ? 's' : ''} selected
+                    {imagePreviews.length} / 5 file{imagePreviews.length !== 1 ? 's' : ''} selected
                   </p>
                   {images.length >= 5 && (
                     <p className="text-xs text-amber-600 font-medium">

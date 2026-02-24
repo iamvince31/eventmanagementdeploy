@@ -59,16 +59,27 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'location' => 'required|string|max:255',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:2048',
-            'date' => 'required|date',
+            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:5120',
+            'date' => 'required|date|after_or_equal:today',
             'time' => 'required',
             'member_ids' => 'nullable|array',
         ], [
-            'images.max' => 'You can upload a maximum of 5 images.',
-            'images.*.image' => 'Each file must be an image.',
-            'images.*.mimes' => 'Images must be in JPG, PNG, GIF, or WebP format.',
-            'images.*.max' => 'Each image must not exceed 2MB in size.',
+            'images.max' => 'You can upload a maximum of 5 files.',
+            'images.*.file' => 'Each upload must be a valid file.',
+            'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
+            'images.*.max' => 'Each file must not exceed 5MB in size.',
+            'date.after_or_equal' => 'Event date cannot be in the past.',
         ]);
+
+        // Validate that date/time is not in the past
+        $eventDateTime = new \DateTime($request->date . ' ' . $request->time);
+        $now = new \DateTime();
+        
+        if ($eventDateTime < $now) {
+            return response()->json([
+                'error' => 'Event date and time cannot be in the past.'
+            ], 422);
+        }
 
         $event = Event::create([
             'title' => $request->title,
@@ -79,21 +90,21 @@ class EventController extends Controller
             'host_id' => $request->user()->id,
         ]);
 
-        // Handle multiple images
+        // Handle multiple images/files
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
                 // Additional MIME type validation
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
                 if (!in_array($image->getMimeType(), $allowedMimes)) {
                     return response()->json([
-                        'error' => 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.'
+                        'error' => 'Invalid file type. Only JPG, PNG, GIF, WebP, and PDF files are allowed.'
                     ], 400);
                 }
                 
-                // Check file size
-                if ($image->getSize() > 2048 * 1024) {
+                // Check file size (5MB)
+                if ($image->getSize() > 5120 * 1024) {
                     return response()->json([
-                        'error' => 'Image file size must not exceed 2MB.'
+                        'error' => 'File size must not exceed 5MB.'
                     ], 400);
                 }
                 
@@ -137,33 +148,46 @@ class EventController extends Controller
             'description' => 'nullable|string',
             'location' => 'sometimes|required|string|max:255',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:2048',
-            'date' => 'sometimes|required|date',
+            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:5120',
+            'date' => 'sometimes|required|date|after_or_equal:today',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
         ], [
-            'images.max' => 'You can upload a maximum of 5 images.',
-            'images.*.image' => 'Each file must be an image.',
-            'images.*.mimes' => 'Images must be in JPG, PNG, GIF, or WebP format.',
-            'images.*.max' => 'Each image must not exceed 2MB in size.',
+            'images.max' => 'You can upload a maximum of 5 files.',
+            'images.*.file' => 'Each upload must be a valid file.',
+            'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
+            'images.*.max' => 'Each file must not exceed 5MB in size.',
+            'date.after_or_equal' => 'Event date cannot be in the past.',
         ]);
+
+        // Validate that date/time is not in the past if being updated
+        if ($request->has('date') && $request->has('time')) {
+            $eventDateTime = new \DateTime($request->date . ' ' . $request->time);
+            $now = new \DateTime();
+            
+            if ($eventDateTime < $now) {
+                return response()->json([
+                    'error' => 'Event date and time cannot be in the past.'
+                ], 422);
+            }
+        }
 
         $event->update($request->only(['title', 'description', 'location', 'date', 'time']));
 
-        // Handle new images
+        // Handle new images/files
         if ($request->hasFile('images')) {
             // Validate MIME types
             foreach ($request->file('images') as $image) {
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
                 if (!in_array($image->getMimeType(), $allowedMimes)) {
                     return response()->json([
-                        'error' => 'Invalid file type. Only JPG, PNG, GIF, and WebP images are allowed.'
+                        'error' => 'Invalid file type. Only JPG, PNG, GIF, WebP, and PDF files are allowed.'
                     ], 400);
                 }
                 
-                if ($image->getSize() > 2048 * 1024) {
+                if ($image->getSize() > 5120 * 1024) {
                     return response()->json([
-                        'error' => 'Image file size must not exceed 2MB.'
+                        'error' => 'File size must not exceed 5MB.'
                     ], 400);
                 }
             }
