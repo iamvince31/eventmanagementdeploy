@@ -84,6 +84,10 @@ export default function Dashboard() {
   };
 
   const handleViewEvent = (event) => {
+    // Don't navigate for default events
+    if (event.is_default_event) {
+      return;
+    }
     navigate('/add-event', { state: { event } });
   };
 
@@ -324,15 +328,26 @@ export default function Dashboard() {
             <h2 className="text-3xl font-bold text-gray-900">Calendar View</h2>
             <p className="text-sm text-gray-600 mt-1.5 font-medium">Click a date to view or manage your events</p>
           </div>
-          <button
-            onClick={() => navigate('/add-event', { state: { selectedDate } })}
-            className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
-          >
-            <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Event
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => navigate('/default-events')}
+              className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+            >
+              <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Academic Calendar
+            </button>
+            <button
+              onClick={() => navigate('/add-event', { state: { selectedDate } })}
+              className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
+            >
+              <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add Event
+            </button>
+          </div>
         </div>
 
         {/* Calendar + Event Details */}

@@ -25,30 +25,68 @@ class EventController extends Controller
             ->orderBy('time')
             ->get();
 
+        // Get default events that have dates set
+        $defaultEvents = \App\Models\DefaultEvent::whereNotNull('date')
+            ->orderBy('date')
+            ->get();
+
+        // Transform regular events
+        $transformedEvents = $events->map(function ($event) {
+            return [
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'location' => $event->location,
+                'images' => $event->images->map(fn($img) => asset('storage/' . $img->image_path)),
+                'date' => $event->date,
+                'time' => $event->time,
+                'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
+                'host' => [
+                    'id' => $event->host->id,
+                    'username' => $event->host->name,
+                    'email' => $event->host->email,
+                ],
+                'members' => $event->members->map(fn($m) => [
+                    'id' => $m->id,
+                    'username' => $m->name,
+                    'email' => $m->email,
+                    'status' => $m->pivot->status,
+                ]),
+                'is_default_event' => false,
+            ];
+        });
+
+        // Transform default events
+        $transformedDefaultEvents = $defaultEvents->map(function ($event) {
+            return [
+                'id' => 'default-' . $event->id,
+                'title' => $event->name,
+                'description' => 'Academic Calendar Event',
+                'location' => 'TBD',
+                'images' => [],
+                'date' => $event->date->format('Y-m-d'),
+                'time' => '00:00',
+                'has_pending_reschedule_requests' => false,
+                'host' => [
+                    'id' => 0,
+                    'username' => 'Academic Calendar',
+                    'email' => 'calendar@system',
+                ],
+                'members' => [],
+                'is_default_event' => true,
+            ];
+        });
+
+        // Merge and sort all events by date
+        $allEvents = $transformedEvents->concat($transformedDefaultEvents)
+            ->sortBy([
+                ['date', 'asc'],
+                ['time', 'asc'],
+            ])
+            ->values();
+
         return response()->json([
-            'events' => $events->map(function ($event) {
-                return [
-                    'id' => $event->id,
-                    'title' => $event->title,
-                    'description' => $event->description,
-                    'location' => $event->location,
-                    'images' => $event->images->map(fn($img) => asset('storage/' . $img->image_path)),
-                    'date' => $event->date,
-                    'time' => $event->time,
-                    'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
-                    'host' => [
-                        'id' => $event->host->id,
-                        'username' => $event->host->name,
-                        'email' => $event->host->email,
-                    ],
-                    'members' => $event->members->map(fn($m) => [
-                        'id' => $m->id,
-                        'username' => $m->name,
-                        'email' => $m->email,
-                        'status' => $m->pivot->status,
-                    ]),
-                ];
-            }),
+            'events' => $allEvents,
         ]);
     }
 

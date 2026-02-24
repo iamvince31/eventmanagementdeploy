@@ -10,11 +10,14 @@ class DefaultEvent extends Model
         'name',
         'month',
         'order',
+        'date',
+        'school_year',
     ];
 
     protected $casts = [
         'month' => 'integer',
         'order' => 'integer',
+        'date' => 'date',
     ];
 
     /**

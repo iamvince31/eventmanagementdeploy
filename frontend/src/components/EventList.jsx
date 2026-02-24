@@ -74,8 +74,13 @@ export default function EventList({ events, currentUser, onEdit, onRefresh }) {
                   <h3 className="text-lg font-semibold text-gray-900">
                     {event.title} — {event.date} {event.time}
                   </h3>
+                  {event.is_default_event && (
+                    <span className="inline-block mt-1 px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">
+                      Academic Calendar
+                    </span>
+                  )}
                 </div>
-                {currentUser && event.host.id === currentUser.id && (
+                {currentUser && event.host.id === currentUser.id && !event.is_default_event && (
                   <button
                     onClick={() => onEdit(event)}
                     className="px-3 py-1 text-sm font-medium text-green-700 hover:text-blue-800 hover:bg-green-100 rounded"

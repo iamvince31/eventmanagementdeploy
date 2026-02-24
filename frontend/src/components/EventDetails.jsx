@@ -52,11 +52,13 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
           <div
             key={event.id || idx}
             onClick={() => onView && onView(event)}
-            className={`border rounded-xl p-4 transition-all duration-200 group cursor-pointer ${event.has_pending_reschedule_requests
+            className={`border rounded-xl p-4 transition-all duration-200 group ${event.is_default_event ? 'cursor-default' : 'cursor-pointer'} ${event.has_pending_reschedule_requests
               ? 'bg-orange-50 border-orange-400 hover:bg-orange-100 ring-1 ring-orange-200'
               : event.is_open
                 ? 'bg-blue-50 border-blue-500 hover:bg-blue-100'
-                : 'bg-gray-50 border-gray-100 hover:bg-green-100/50 hover:border-green-300'
+                : event.is_default_event
+                  ? 'bg-blue-50 border-blue-300 hover:bg-blue-100'
+                  : 'bg-gray-50 border-gray-100 hover:bg-green-100/50 hover:border-green-300'
               }`}
           >
             <div className="flex items-start justify-between">
@@ -65,6 +67,11 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
                   <p className="font-semibold text-gray-900 text-sm truncate">
                     {event.title}
                   </p>
+                  {event.is_default_event && (
+                    <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                      Academic
+                    </span>
+                  )}
                   {event.has_pending_reschedule_requests && (
                     <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-100 text-orange-700 border border-orange-200 animate-pulse">
                       Reschedule
@@ -91,8 +98,8 @@ export default function EventDetails({ date, events, members, currentUser, onEdi
               </div>
             </div>
 
-            {/* Action Buttons */}
-            {currentUser && event.host.id === currentUser.id && (
+            {/* Action Buttons - Only for non-default events */}
+            {currentUser && event.host.id === currentUser.id && !event.is_default_event && (
               <div className="flex space-x-2 mt-3 pt-3 border-t border-gray-200/60">
                 <button
                   onClick={(e) => {

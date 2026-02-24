@@ -132,6 +132,7 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
       // Get events for this date (only for current month to avoid confusion)
       const dayEvents = isCurrentMonth ? events.filter(event => event.date === dateStr) : [];
       const eventCount = !isPast && isCurrentMonth ? dayEvents.length : 0;
+      const hasAcademicEvent = dayEvents.some(event => event.is_default_event);
 
       days.push(
         <div
@@ -150,7 +151,9 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
             ${isCurrentMonth 
               ? `cursor-pointer ${isCurrentDay
                   ? 'bg-green-100 border-2 border-green-600 shadow-sm'
-                  : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'
+                  : hasAcademicEvent
+                    ? 'bg-green-50 border border-green-300 hover:border-green-400 hover:shadow-md'
+                    : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'
                 }`
               : 'bg-gray-50/30 border border-gray-100 cursor-default'
             }
@@ -183,15 +186,18 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
             <div className="mt-1 flex flex-wrap gap-1 flex-1 items-start">
               {dayEvents.slice(0, 3).map((event, idx) => {
                 const isHosted = currentUser && event.host && event.host.id === currentUser.id;
+                const isDefault = event.is_default_event;
                 return (
                   <div
                     key={idx}
                     className={`w-2 h-2 rounded-full ${
-                      isHosted 
-                        ? 'bg-red-500' 
-                        : 'bg-blue-500'
+                      isDefault
+                        ? 'bg-blue-500'
+                        : isHosted 
+                          ? 'bg-red-500' 
+                          : 'bg-green-500'
                     }`}
-                    title={`${event.title} (${isHosted ? 'Hosting' : 'Invited'})`}
+                    title={`${event.title} (${isDefault ? 'Academic' : isHosted ? 'Hosting' : 'Invited'})`}
                   />
                 );
               })}

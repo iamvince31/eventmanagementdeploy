@@ -31,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
     
+    // Default Events (protected - for updating dates)
+    Route::put('/default-events/{id}/date', [DefaultEventController::class, 'updateDate']);
+    
     // Events
     Route::get('/events', [EventController::class, 'index']);
     Route::post('/events', [EventController::class, 'store']);

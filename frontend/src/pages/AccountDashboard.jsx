@@ -22,9 +22,7 @@ export default function AccountDashboard() {
     Tuesday: [],
     Wednesday: [],
     Thursday: [],
-    Friday: [],
-    Saturday: [],
-    Sunday: []
+    Friday: []
   });
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [scheduleLoading, setScheduleLoading] = useState(true);
@@ -32,7 +30,7 @@ export default function AccountDashboard() {
   const [scheduleEditMode, setScheduleEditMode] = useState(false);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
   const departments = [
     'Department of Information Technology',

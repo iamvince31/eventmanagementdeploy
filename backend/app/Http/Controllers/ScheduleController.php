@@ -62,7 +62,7 @@ class ScheduleController extends Controller
             
             foreach ($request->schedule as $day => $classes) {
                 // Validate day name
-                if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'])) {
+                if (!in_array($day, ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])) {
                     continue;
                 }
                 
