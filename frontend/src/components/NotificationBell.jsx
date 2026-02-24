@@ -26,12 +26,20 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
   const fetchMessages = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, skipping message fetch');
+        return;
+      }
+      
       const response = await axios.get(`${import.meta.env.VITE_API_URL}/messages`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(response.data);
     } catch (error) {
-      console.error('Error fetching messages:', error);
+      // Only log non-auth errors to avoid console spam
+      if (error.response?.status !== 401) {
+        console.error('Error fetching messages:', error);
+      }
     }
   };
 
@@ -65,18 +73,27 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
     setIsMessageModalOpen(true);
     setIsOpen(false);
 
-    // Mark as read
+    // Mark as read (but don't refetch immediately to avoid UI flicker)
     if (!message.is_read) {
       try {
         const token = localStorage.getItem('token');
+        if (!token) return;
+        
         await axios.post(
           `${import.meta.env.VITE_API_URL}/messages/${message.id}/read`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
-        await fetchMessages();
+        // Update local state instead of refetching
+        setMessages(prevMessages => 
+          prevMessages.map(msg => 
+            msg.id === message.id ? { ...msg, is_read: true } : msg
+          )
+        );
       } catch (error) {
-        console.error('Error marking message as read:', error);
+        if (error.response?.status !== 401) {
+          console.error('Error marking message as read:', error);
+        }
       }
     }
   };
@@ -86,15 +103,32 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
 
     try {
       const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Authentication required. Please log in again.');
+        return;
+      }
+      
       await axios.delete(`${import.meta.env.VITE_API_URL}/messages/${messageId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      await fetchMessages();
+      // Remove from local state
+      setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
       setIsMessageModalOpen(false);
       setSelectedMessage(null);
     } catch (error) {
       console.error('Error deleting message:', error);
+      if (error.response?.status === 401) {
+        alert('Session expired. Please log in again.');
+      } else {
+        alert('Failed to delete message. Please try again.');
+      }
     }
+  };
+
+  const handleCloseMessageModal = () => {
+    // Only close the modal, do NOT delete the message
+    setIsMessageModalOpen(false);
+    setSelectedMessage(null);
   };
 
   const formatDate = (dateString) => {
@@ -249,10 +283,7 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
       {/* Message Detail Modal */}
       <Modal
         isOpen={isMessageModalOpen}
-        onClose={() => {
-          setIsMessageModalOpen(false);
-          setSelectedMessage(null);
-        }}
+        onClose={handleCloseMessageModal}
         title="Decline Reason"
         maxWidth="max-w-lg"
       >
