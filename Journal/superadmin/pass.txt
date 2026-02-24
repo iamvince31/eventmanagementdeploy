@@ -1,0 +1,4 @@
+Login as bootstrap admin:
+
+Email: admin@cvsu.edu.ph
+Password: SetupAdmin2024!

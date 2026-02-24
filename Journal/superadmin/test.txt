@@ -1,0 +1,3 @@
+cd backend
+php artisan tinker --execute="App\Models\User::where('role', 'admin')->delete();"
+php artisan db:seed --class=AdminSeeder

@@ -241,12 +241,13 @@ class AuthController extends Controller
         ]);
 
         $email = strtolower(trim($request->email));
+        $password = $request->password;
         $ip = $request->ip();
         $key = 'login_attempts:' . md5($email . $ip);
         $lockoutKey = 'login_lockout:' . md5($email . $ip);
         $lockoutCountKey = 'login_lockout_count:' . md5($email . $ip);
 
-        // Check if user exists first
+        // Check if user exists in database
         $user = User::where('email', $email)->first();
 
         // If user doesn't exist, return specific error without locking
@@ -364,6 +365,7 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        // Regular user logout
         $request->user()->currentAccessToken()->delete();
 
         return response()->json([
@@ -373,13 +375,14 @@ class AuthController extends Controller
 
     public function user(Request $request)
     {
+        // Regular user from database
         return response()->json([
             'user' => [
                 'id' => $request->user()->id,
                 'username' => $request->user()->name,
                 'email' => $request->user()->email,
                 'department' => $request->user()->department,
-                'role' => $request->user()->role ?? 'Faculty',
+                'role' => $request->user()->role ?? 'teacher',
                 'schedule_initialized' => $request->user()->schedule_initialized ?? false,
             ],
         ]);

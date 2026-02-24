@@ -3,16 +3,21 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import logo from "../assets/CEIT-LOGO.png";
+import NotificationBell from '../components/NotificationBell';
+import CreatePermanentAdminModal from '../components/CreatePermanentAdminModal';
 
 export default function Admin() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [users, setUsers] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUserId, setEditingUserId] = useState(null);
   const [selectedRole, setSelectedRole] = useState('');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
+  const [isBootstrapAdmin, setIsBootstrapAdmin] = useState(false);
+  const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
 
   const roles = [
     { value: 'admin', label: 'Admin', color: 'purple' },
@@ -29,6 +34,8 @@ export default function Admin() {
       return;
     }
     fetchUsers();
+    fetchEvents();
+    checkBootstrapStatus();
   }, [user, navigate]);
 
   // Close account dropdown when clicking outside
@@ -52,6 +59,34 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchEvents = async () => {
+    try {
+      const response = await api.get('/events');
+      setEvents(response.data.events || []);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
+
+  const checkBootstrapStatus = async () => {
+    try {
+      const response = await api.get('/setup/check-bootstrap');
+      setIsBootstrapAdmin(response.data.is_bootstrap);
+    } catch (error) {
+      console.error('Error checking bootstrap status:', error);
+      setIsBootstrapAdmin(false);
+    }
+  };
+
+  const handleCreateAdminSuccess = () => {
+    fetchUsers();
+  };
+
+  const handleViewEvent = (event) => {
+    // Navigate to dashboard to view the event
+    navigate('/dashboard');
   };
 
   const handleLogout = async () => {
@@ -144,11 +179,11 @@ export default function Admin() {
 
               {/* Notifications Bell */}
               <div className="relative">
-                <button className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                  </svg>
-                </button>
+                <NotificationBell
+                  events={events}
+                  user={user}
+                  onNotificationClick={handleViewEvent}
+                />
               </div>
 
               <div className="relative account-dropdown-container">
@@ -230,10 +265,43 @@ export default function Admin() {
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           {/* Header */}
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
-            <p className="text-gray-600 mt-1">View and manage all registered users</p>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
+              <p className="text-gray-600 mt-1">View and manage all registered users</p>
+            </div>
+            
+            {/* Bootstrap Admin - Create Permanent Admin Button */}
+            {isBootstrapAdmin && (
+              <button
+                onClick={() => setShowCreateAdminModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+                <span className="font-semibold">Create Permanent Admin</span>
+              </button>
+            )}
           </div>
+
+          {/* Bootstrap Admin Warning Banner */}
+          {isBootstrapAdmin && (
+            <div className="mb-6 bg-gradient-to-r from-purple-50 to-purple-100 border-l-4 border-purple-500 p-4 rounded-lg shadow-md">
+              <div className="flex items-start">
+                <svg className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                <div className="ml-3">
+                  <h3 className="text-sm font-bold text-purple-900">Bootstrap Admin Account</h3>
+                  <p className="text-sm text-purple-800 mt-1">
+                    You are logged in as a temporary setup admin. Create 2 permanent admin accounts to complete the setup. 
+                    Your bootstrap account will be automatically removed after creating the 2nd admin.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -338,7 +406,6 @@ export default function Admin() {
                             </div>
                             <div className="ml-4">
                               <div className="text-sm font-medium text-gray-900">{u.username}</div>
-                              <div className="text-sm text-gray-500">ID: {u.id}</div>
                             </div>
                           </div>
                         </td>
@@ -418,6 +485,13 @@ export default function Admin() {
           </div>
         </div>
       </main>
+
+      {/* Create Permanent Admin Modal */}
+      <CreatePermanentAdminModal
+        isOpen={showCreateAdminModal}
+        onClose={() => setShowCreateAdminModal(false)}
+        onSuccess={handleCreateAdminSuccess}
+      />
     </div>
   );
 }

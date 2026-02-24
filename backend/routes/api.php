@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\SetupAdminController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes with login attempt throttling
@@ -26,6 +27,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+    
+    // Bootstrap Admin Setup
+    Route::get('/setup/check-bootstrap', [SetupAdminController::class, 'checkBootstrapStatus']);
+    Route::post('/setup/create-admin', [SetupAdminController::class, 'createPermanentAdmin']);
     
     // Events
     Route::get('/events', [EventController::class, 'index']);
