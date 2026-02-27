@@ -50,14 +50,15 @@ class SetupAdminController extends Controller
                 'email' => strtolower(trim($request->email)),
                 'password' => Hash::make($request->password),
                 'department' => $request->department,
-                'role' => 'admin',
+                'role' => 'Admin',
+                'is_validated' => true, // Admins are pre-validated
                 'is_bootstrap' => false, // This is a REAL admin
                 'email_verified_at' => now(), // Pre-verified by bootstrap admin
                 'schedule_initialized' => true,
             ]);
 
             // Count permanent admins
-            $permanentAdminCount = User::where('role', 'admin')
+            $permanentAdminCount = User::where('role', 'Admin')
                 ->where('is_bootstrap', false)
                 ->count();
 

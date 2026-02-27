@@ -18,19 +18,29 @@ export default function Admin() {
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isBootstrapAdmin, setIsBootstrapAdmin] = useState(false);
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
 
   const roles = [
-    { value: 'admin', label: 'Admin', color: 'purple' },
-    { value: 'dean', label: 'Dean', color: 'blue' },
-    { value: 'chairperson', label: 'Chairperson', color: 'indigo' },
-    { value: 'program_coordinator', label: 'Program Coordinator', color: 'cyan' },
-    { value: 'Faculty', label: 'Faculty', color: 'green' },
+    'Admin',
+    'Dean',
+    'Chairperson',
+    'Coordinator',
+    'Faculty Member'
+  ];
+
+  const departments = [
+    'Department of Agricultural and Food Engineering',
+    'Department of Civil and Environmental Engineering and Energy',
+    'Department of Computer Engineering and Architecture',
+    'Department of Industrial and Electrical Technology',
+    'Department of Information Technology'
   ];
 
   useEffect(() => {
-    // Check if user is admin
-    if (user && user.role !== 'admin') {
-      navigate('/dashboard');
+    // Check if user is admin and validated
+    if (user && (user.role !== 'Admin' || !user.is_validated)) {
+      navigate('/account');
       return;
     }
     fetchUsers();
@@ -99,10 +109,31 @@ export default function Admin() {
       // Refresh users list
       await fetchUsers();
       setEditingUserId(null);
-      alert('User role updated successfully!');
     } catch (error) {
       console.error('Error updating role:', error);
-      alert(error.response?.data?.error || 'Failed to update user role');
+      alert('Failed to update role');
+    }
+  };
+
+  const handleValidateUser = async (userId) => {
+    try {
+      await api.post(`/users/${userId}/validate`);
+      // Refresh users list
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error validating user:', error);
+      alert('Failed to validate user');
+    }
+  };
+
+  const handleRevokeValidation = async (userId) => {
+    try {
+      await api.post(`/users/${userId}/revoke-validation`);
+      // Refresh users list
+      await fetchUsers();
+    } catch (error) {
+      console.error('Error revoking validation:', error);
+      alert('Failed to revoke validation');
     }
   };
 
@@ -117,8 +148,38 @@ export default function Admin() {
   };
 
   const getRoleColor = (role) => {
-    const roleConfig = roles.find(r => r.value === role);
-    return roleConfig ? roleConfig.color : 'gray';
+    const colors = {
+      'Admin': 'bg-purple-100 text-purple-800',
+      'Dean': 'bg-blue-100 text-blue-800',
+      'Chairperson': 'bg-indigo-100 text-indigo-800',
+      'Coordinator': 'bg-cyan-100 text-cyan-800',
+      'Faculty Member': 'bg-green-100 text-green-800'
+    };
+    return colors[role] || 'bg-gray-100 text-gray-800';
+  };
+
+  const handleEditUser = (user) => {
+    setEditingUser({
+      ...user,
+      role: user.role || 'Faculty Member',
+      department: user.department || ''
+    });
+    setIsEditUserModalOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      await api.put(`/users/${editingUser.id}/role`, {
+        role: editingUser.role,
+        department: editingUser.department
+      });
+      await fetchUsers();
+      setIsEditUserModalOpen(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Failed to update user');
+    }
   };
 
   // Filter users based on search term
@@ -396,14 +457,17 @@ export default function Admin() {
                       Role
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Status
+                      Validation
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                      Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
                         No users found
                       </td>
                     </tr>
@@ -425,11 +489,11 @@ export default function Admin() {
                         </td>
                         <td className="px-6 py-4">
                           {u.department ? (
-                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                               {u.department}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400">N/A</span>
+                            <span className="text-sm text-red-500 italic">Not assigned</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -441,8 +505,8 @@ export default function Admin() {
                                 className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
                               >
                                 {roles.map(role => (
-                                  <option key={role.value} value={role.value}>
-                                    {role.label}
+                                  <option key={role} value={role}>
+                                    {role}
                                   </option>
                                 ))}
                               </select>
@@ -460,27 +524,64 @@ export default function Admin() {
                               </button>
                             </div>
                           ) : (
-                            <div className="flex items-center space-x-2">
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-${getRoleColor(u.role)}-100 text-${getRoleColor(u.role)}-800`}>
-                                {roles.find(r => r.value === u.role)?.label || u.role}
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(u.role)}`}>
+                              {u.role}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              u.is_validated 
+                                ? 'bg-green-100 text-green-800' 
+                                : 'bg-red-100 text-red-800'
+                            }`}>
+                              {u.is_validated ? 'Validated' : 'Pending'}
+                            </span>
+                            {u.role === 'Admin' && (
+                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                Auto-validated
                               </span>
-                              {user?.id !== u.id && (
+                            )}
+                            {!u.is_validated && u.role !== 'Admin' ? (
+                              <button
+                                onClick={() => handleValidateUser(u.id)}
+                                className="text-green-600 hover:text-green-900 text-xs font-medium"
+                                title="Validate User"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </button>
+                            ) : u.is_validated && u.role !== 'Admin' ? (
+                              <button
+                                onClick={() => handleRevokeValidation(u.id)}
+                                className="text-red-600 hover:text-red-900 text-xs font-medium"
+                                title="Revoke Validation"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                              </button>
+                            ) : null}
+                          </div>
+                        </td>
+                        <td className="px-11 py-4 whitespace-nowrap">
+                          <div className="flex items-center space-x-2">
+                            {user?.id !== u.id && (
+                              <>
                                 <button
-                                  onClick={() => startEditRole(u.id, u.role)}
-                                  className="text-green-600 hover:text-green-900 text-xs"
+                                  onClick={() => handleEditUser(u)}
+                                  className="text-blue-600 hover:text-blue-900 text-xs"
+                                  title="Edit User"
                                 >
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                   </svg>
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                            Active
-                          </span>
+                                </button>                      
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -503,6 +604,83 @@ export default function Admin() {
         onClose={() => setShowCreateAdminModal(false)}
         onSuccess={handleCreateAdminSuccess}
       />
+
+      {/* Edit User Modal */}
+      {isEditUserModalOpen && editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
+              <button
+                onClick={() => setIsEditUserModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">User</label>
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold">
+                    {editingUser.username.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-gray-900">{editingUser.username}</p>
+                    <p className="text-sm text-gray-500">{editingUser.email}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
+                <select
+                  value={editingUser.department}
+                  onChange={(e) => setEditingUser(prev => ({ ...prev, department: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select Department</option>
+                  {departments.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser(prev => ({ ...prev, role: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select Role</option>
+                  {roles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setIsEditUserModalOpen(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdateUser}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

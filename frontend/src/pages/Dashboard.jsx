@@ -44,6 +44,12 @@ export default function Dashboard() {
   const [decliningEventId, setDecliningEventId] = useState(null);
 
   useEffect(() => {
+    // Check if user is validated
+    if (user && !user.is_validated) {
+      navigate('/account');
+      return;
+    }
+    
     fetchData();
     
     // Auto-select today's date
@@ -392,7 +398,7 @@ export default function Dashboard() {
                       </button>
 
                       {/* Admin Panel Link - Only for admin users */}
-                      {user?.role === 'admin' && (
+                      {user?.role === 'Admin' && (
                         <>
                           <div className="border-t border-gray-100"></div>
                           <button
@@ -524,15 +530,47 @@ export default function Dashboard() {
               </svg>
               Academic Calendar
             </button>
-            <button
-              onClick={() => navigate('/add-event', { state: { selectedDate } })}
-              className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
-            >
-              <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-              </svg>
-              Add Event
-            </button>
+            
+            {/* Event Requests Link - Only for Dean, Chairperson, and Admin */}
+            {['Admin', 'Dean', 'Chairperson'].includes(user?.role) && (
+              <button
+                onClick={() => navigate('/event-requests')}
+                className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-blue-700 border-2 border-blue-700 hover:bg-blue-50 focus:ring-blue-600"
+              >
+                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Event Requests
+              </button>
+            )}
+            
+            {/* Role-based Event Creation Buttons */}
+            {user?.role === 'Faculty Member' ? (
+              // Faculty Members cannot create events - no button shown
+              null
+            ) : user?.role === 'Coordinator' ? (
+              // Coordinators can request events
+              <button
+                onClick={() => navigate('/request-event', { state: { selectedDate } })}
+                className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-blue-600 via-blue-600 to-blue-700 text-white hover:from-blue-700 hover:via-blue-700 hover:to-blue-800 focus:ring-blue-600"
+              >
+                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Request Event
+              </button>
+            ) : user?.role === 'Chairperson' || user?.role === 'Dean' || user?.role === 'Admin' ? (
+              // Chairpersons, Deans, and Admins can create events directly
+              <button
+                onClick={() => navigate('/add-event', { state: { selectedDate } })}
+                className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
+              >
+                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Event
+              </button>
+            ) : null}
           </div>
         </div>
 

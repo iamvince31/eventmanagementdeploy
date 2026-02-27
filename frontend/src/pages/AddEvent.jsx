@@ -20,6 +20,12 @@ export default function AddEvent() {
   const selectedDate = location.state?.selectedDate || null;
 
   useEffect(() => {
+    // Check if user is validated
+    if (user && !user.is_validated) {
+      navigate('/account');
+      return;
+    }
+    
     const loadData = async () => {
       await Promise.all([fetchMembers(), fetchUserSchedule(), fetchEvents()]);
     };
@@ -284,7 +290,7 @@ export default function AddEvent() {
                       </button>
                       
                       {/* Admin Panel Link - Only for admin users */}
-                      {user?.role === 'admin' && (
+                      {user?.role === 'Admin' && (
                         <>
                           <div className="border-t border-gray-100"></div>
                           <button

@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DefaultEventController;
 use App\Http\Controllers\EventController;
+use App\Http\Controllers\EventRequestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SetupAdminController;
@@ -39,9 +40,21 @@ Route::middleware('auth:sanctum')->group(function () {
     // Events
     Route::get('/events', [EventController::class, 'index']);
     Route::post('/events', [EventController::class, 'store']);
+    Route::post('/events/validate-hierarchy', [EventController::class, 'validateHierarchy']);
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
     Route::post('/events/{event}/respond', [EventController::class, 'respondToInvitation']);
+    
+    // Event Requests
+    Route::get('/event-requests', [EventRequestController::class, 'index']);
+    Route::post('/event-requests', [EventRequestController::class, 'store']);
+    Route::get('/event-requests/my-requests', [EventRequestController::class, 'myRequests']);
+    Route::post('/event-requests/{eventRequest}/review', [EventRequestController::class, 'review']);
+    Route::delete('/event-requests/{eventRequest}', [EventRequestController::class, 'destroy']);
+    
+    // Hierarchy Approvals
+    Route::post('/hierarchy-approvals/{approval}/review', [EventRequestController::class, 'reviewHierarchyApproval']);
+    Route::get('/hierarchy-approvals/{approval}/details', [EventRequestController::class, 'getApprovalDetails']);
     
     // Default Events (Academic Calendar) - Protected
     Route::put('/default-events/{id}/date', [DefaultEventController::class, 'updateDate']);
@@ -51,6 +64,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/all', [UserController::class, 'all']);
     Route::put('/users/{id}/role', [UserController::class, 'updateRole']);
     Route::put('/user/profile', [UserController::class, 'update']);
+    Route::post('/users/{id}/validate', [UserController::class, 'validateUser']);
+    Route::post('/users/{id}/revoke-validation', [UserController::class, 'revokeValidation']);
     
     // Schedules
     Route::get('/schedules', [ScheduleController::class, 'index']);
@@ -69,4 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/messages/{id}/read', [App\Http\Controllers\MessageController::class, 'markAsRead']);
     Route::get('/messages/unread-count', [App\Http\Controllers\MessageController::class, 'unreadCount']);
     Route::delete('/messages/{id}', [App\Http\Controllers\MessageController::class, 'destroy']);
+
+    // Activity History
+    Route::get('/activities', [App\Http\Controllers\ActivityController::class, 'index']);
 });

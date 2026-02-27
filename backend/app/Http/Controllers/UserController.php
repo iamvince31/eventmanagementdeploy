@@ -9,8 +9,9 @@ class UserController extends Controller
 {
     public function index()
     {
-        // Get all users excluding admins
-        $users = User::where('role', '!=', 'admin')
+        // Get all users excluding admins, with role filtering
+        $users = User::where('role', '!=', 'Admin')
+            ->orderBy('role')
             ->orderBy('name', 'asc')
             ->get();
 
@@ -21,6 +22,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'role' => $user->role,
+                'is_validated' => $user->is_validated,
             ]),
         ]);
     }
@@ -28,7 +30,9 @@ class UserController extends Controller
     public function all()
     {
         // Get all users including admins (for admin panel)
-        $users = User::orderBy('name', 'asc')->get();
+        $users = User::orderBy('role')
+            ->orderBy('name', 'asc')
+            ->get();
 
         return response()->json([
             'members' => $users->map(fn($user) => [
@@ -37,14 +41,68 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'role' => $user->role,
+                'is_validated' => $user->is_validated,
             ]),
+        ]);
+    }
+
+    public function validateUser(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Only admins can validate users
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'error' => 'Only admins can validate users.'
+            ], 403);
+        }
+
+        $user->update(['is_validated' => true]);
+
+        return response()->json([
+            'message' => 'User validated successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'role' => $user->role,
+                'is_validated' => $user->is_validated,
+            ],
+        ]);
+    }
+
+    public function revokeValidation(Request $request, $id)
+    {
+        $user = User::findOrFail($id);
+        
+        // Only admins can revoke validation
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'error' => 'Only admins can revoke user validation.'
+            ], 403);
+        }
+
+        $user->update(['is_validated' => false]);
+
+        return response()->json([
+            'message' => 'User validation revoked successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'role' => $user->role,
+                'is_validated' => $user->is_validated,
+            ],
         ]);
     }
 
     public function updateRole(Request $request, $id)
     {
         $validated = $request->validate([
-            'role' => 'required|in:admin,dean,chairperson,program_coordinator,Faculty',
+            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Faculty Member',
+            'department' => 'sometimes|string|max:255',
         ]);
 
         $user = User::findOrFail($id);
@@ -56,16 +114,22 @@ class UserController extends Controller
             ], 403);
         }
 
-        $user->update(['role' => $validated['role']]);
+        $updateData = ['role' => $validated['role']];
+        if (isset($validated['department'])) {
+            $updateData['department'] = $validated['department'];
+        }
+
+        $user->update($updateData);
 
         return response()->json([
-            'message' => 'User role updated successfully',
+            'message' => 'User updated successfully',
             'user' => [
                 'id' => $user->id,
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
                 'role' => $user->role,
+                'is_validated' => $user->is_validated,
             ],
         ]);
     }
@@ -95,6 +159,8 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'role' => $user->role,
+                'is_validated' => $user->is_validated,
                 'schedule_initialized' => $user->schedule_initialized ?? false,
             ],
         ]);

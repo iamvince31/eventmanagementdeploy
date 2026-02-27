@@ -1,0 +1,11 @@
+7:00 : Time in
+
+7:00 - 8:00 : Finalizing SRS Documentation
+8:00 - 9:00 : Testing implementations
+9:00 - 10:00 : Planning levels of access / Implementing Levels of access between 5 positions
+10:00 - 11:00 : Improving the registering accounts interface to be only handled by the admin
+11:00 - 12:00 : Lunch break / Implementing the cleanup for role based access between admin and cleanup on the tables due to duplicate tables
+12:00 - 1:00 : Added new implementation on role based access wherein the dean, chairperson, coordinator, and faculty have different features
+1:00 - 3:00 : Testing  implementations on the role based access plus implementing complx role based requesting on adding event based on their positions
+3:00 - 4:00 : Tested changes to the hierarchial system on the accounts based on their positions
+4:00 - 5:00 :  Testing implementations in the accounts/history/notifications panel

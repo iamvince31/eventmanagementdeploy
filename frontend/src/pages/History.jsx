@@ -8,30 +8,56 @@ import NotificationBell from '../components/NotificationBell';
 export default function History() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const [events, setEvents] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [events, setEvents] = useState([]); // For NotificationBell
   const [loading, setLoading] = useState(true);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
-  const [filterType, setFilterType] = useState('all'); // all, hosted, invited
-  const [filterStatus, setFilterStatus] = useState('all'); // all, accepted, declined, pending
-  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [filterType, setFilterType] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedActivity, setSelectedActivity] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    per_page: 20,
+    total: 0,
+    last_page: 1,
+  });
 
   useEffect(() => {
-    fetchEvents();
-  }, []);
+    // Check if user is validated
+    if (user && !user.is_validated) {
+      navigate('/account');
+      return;
+    }
+    
+    fetchActivities();
+    fetchEvents(); // For NotificationBell
+  }, [filterType, filterStatus]);
 
   const fetchEvents = async () => {
     try {
       const response = await api.get('/events');
-      // Filter to show only past events
-      const now = new Date();
-      const pastEvents = response.data.events.filter(event => {
-        const eventDateTime = new Date(`${event.date}T${event.time}`);
-        return eventDateTime < now;
-      });
-      setEvents(pastEvents);
+      setEvents(response.data.events);
     } catch (error) {
       console.error('Error fetching events:', error);
+    }
+  };
+
+  const fetchActivities = async (page = 1) => {
+    try {
+      setLoading(true);
+      const response = await api.get('/activities', {
+        params: {
+          type: filterType,
+          status: filterStatus,
+          page: page,
+          per_page: 20
+        }
+      });
+      setActivities(response.data.activities);
+      setPagination(response.data.pagination);
+    } catch (error) {
+      console.error('Error fetching activities:', error);
     } finally {
       setLoading(false);
     }
@@ -46,43 +72,15 @@ export default function History() {
     }
   };
 
-  const handleViewEvent = (event) => {
-    setSelectedEvent(event);
+  const handleViewActivity = (activity) => {
+    setSelectedActivity(activity);
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setSelectedEvent(null);
+    setSelectedActivity(null);
   };
-
-  // Filter events based on selected filters
-  const filteredEvents = events.filter(event => {
-    // Filter by type (hosted/invited)
-    if (filterType === 'hosted' && event.host.id !== user?.id) return false;
-    if (filterType === 'invited' && event.host.id === user?.id) return false;
-
-    // Filter by status
-    if (filterStatus !== 'all') {
-      if (event.host.id === user?.id) {
-        // For hosted events, show all
-        return true;
-      } else {
-        // For invited events, filter by member status
-        const memberStatus = event.members.find(m => m.id === user?.id)?.status;
-        if (filterStatus !== memberStatus) return false;
-      }
-    }
-
-    return true;
-  });
-
-  // Sort by date (most recent first)
-  const sortedEvents = [...filteredEvents].sort((a, b) => {
-    const dateA = new Date(`${a.date}T${a.time}`);
-    const dateB = new Date(`${b.date}T${b.time}`);
-    return dateB - dateA;
-  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -96,34 +94,160 @@ export default function History() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
 
-  const getStatusBadge = (event) => {
-    if (event.host.id === user?.id) {
-      return (
-        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-700">
-          Hosted
-        </span>
-      );
+  const getActivityIcon = (type) => {
+    const iconClasses = "w-5 h-5";
+    
+    switch (type) {
+      case 'event_hosted':
+        return (
+          <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-purple-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+        );
+      case 'event_invited':
+        return (
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-blue-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+        );
+      case 'event_request_submitted':
+        return (
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-green-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            </svg>
+          </div>
+        );
+      case 'event_request_reviewed':
+        return (
+          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-indigo-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        );
+      case 'hierarchy_approval_requested':
+        return (
+          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-amber-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+        );
+      case 'hierarchy_approval_decision':
+        return (
+          <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-teal-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+        );
+      case 'message_sent':
+        return (
+          <div className="w-10 h-10 bg-pink-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-pink-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+          </div>
+        );
+      case 'message_received':
+        return (
+          <div className="w-10 h-10 bg-cyan-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-cyan-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+          </div>
+        );
+      default:
+        return (
+          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className={`${iconClasses} text-gray-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        );
+    }
+  };
+
+  const getActivityTitle = (activity) => {
+    switch (activity.type) {
+      case 'event_hosted':
+        return `Hosted: ${activity.title}`;
+      case 'event_invited':
+        return `Invited to: ${activity.title}`;
+      case 'event_request_submitted':
+        return `Requested: ${activity.title}`;
+      case 'event_request_reviewed':
+        return `Reviewed: ${activity.title}`;
+      case 'hierarchy_approval_requested':
+        return `Approval Requested: ${activity.title}`;
+      case 'hierarchy_approval_decision':
+        return `Approval Decision: ${activity.title}`;
+      case 'message_sent':
+      case 'message_received':
+        return activity.title;
+      default:
+        return activity.title;
+    }
+  };
+
+  const getStatusBadge = (activity) => {
+    const status = activity.status;
+    let badgeClass = '';
+    let statusText = '';
+
+    switch (status) {
+      case 'completed':
+      case 'accepted':
+      case 'approved':
+      case 'read':
+        badgeClass = 'bg-green-100 text-green-700';
+        statusText = status.charAt(0).toUpperCase() + status.slice(1);
+        break;
+      case 'declined':
+      case 'rejected':
+        badgeClass = 'bg-red-100 text-red-700';
+        statusText = status.charAt(0).toUpperCase() + status.slice(1);
+        break;
+      case 'pending':
+      case 'unread':
+        badgeClass = 'bg-yellow-100 text-yellow-700';
+        statusText = status.charAt(0).toUpperCase() + status.slice(1);
+        break;
+      default:
+        badgeClass = 'bg-gray-100 text-gray-700';
+        statusText = status.charAt(0).toUpperCase() + status.slice(1);
+    }
+
+    return (
+      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${badgeClass}`}>
+        {statusText}
+      </span>
+    );
+  };
+
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) {
+      return 'Today';
+    } else if (diffDays === 2) {
+      return 'Yesterday';
+    } else if (diffDays <= 7) {
+      return `${diffDays - 1} days ago`;
     } else {
-      const memberStatus = event.members.find(m => m.id === user?.id)?.status;
-      if (memberStatus === 'accepted') {
-        return (
-          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-            Accepted
-          </span>
-        );
-      } else if (memberStatus === 'declined') {
-        return (
-          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-            Declined
-          </span>
-        );
-      } else {
-        return (
-          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
-            Pending
-          </span>
-        );
-      }
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
     }
   };
 
@@ -181,7 +305,7 @@ export default function History() {
                 <NotificationBell
                   events={events}
                   user={user}
-                  onNotificationClick={handleViewEvent}
+                  onNotificationClick={handleViewActivity}
                 />
               </div>
 
@@ -224,7 +348,7 @@ export default function History() {
                         <span className="font-medium">Settings</span>
                       </button>
                       
-                      {user?.role === 'admin' && (
+                      {user?.role === 'Admin' && (
                         <button
                           onClick={() => {
                             setIsAccountDropdownOpen(false);
@@ -263,46 +387,76 @@ export default function History() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">Event History</h2>
-          <p className="text-gray-600">View all your past events and their status</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">Activity History</h2>
+          <p className="text-gray-600">Complete history of all your interactions, events, approvals, and messages</p>
         </div>
 
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Type Filter */}
+            {/* Activity Type Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Event Type</label>
-              <div className="flex gap-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setFilterType('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterType === 'all'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  All Events
+                  All
                 </button>
                 <button
-                  onClick={() => setFilterType('hosted')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filterType === 'hosted'
+                  onClick={() => setFilterType('event_hosted')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterType === 'event_hosted'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Hosted
+                  Events Hosted
                 </button>
                 <button
-                  onClick={() => setFilterType('invited')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filterType === 'invited'
+                  onClick={() => setFilterType('event_invited')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterType === 'event_invited'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                   }`}
                 >
-                  Invited
+                  Invitations
+                </button>
+                <button
+                  onClick={() => setFilterType('event_request_submitted')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterType === 'event_request_submitted'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Requests
+                </button>
+                <button
+                  onClick={() => setFilterType('hierarchy_approval_requested')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterType === 'hierarchy_approval_requested'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Approvals
+                </button>
+                <button
+                  onClick={() => setFilterType('message_sent')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterType === 'message_sent'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Messages
                 </button>
               </div>
             </div>
@@ -313,7 +467,7 @@ export default function History() {
               <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={() => setFilterStatus('all')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === 'all'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -322,28 +476,8 @@ export default function History() {
                   All
                 </button>
                 <button
-                  onClick={() => setFilterStatus('accepted')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filterStatus === 'accepted'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Accepted
-                </button>
-                <button
-                  onClick={() => setFilterStatus('declined')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filterStatus === 'declined'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Declined
-                </button>
-                <button
                   onClick={() => setFilterStatus('pending')}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                     filterStatus === 'pending'
                       ? 'bg-green-600 text-white'
                       : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -351,141 +485,139 @@ export default function History() {
                 >
                   Pending
                 </button>
+                <button
+                  onClick={() => setFilterStatus('approved')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterStatus === 'approved'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Approved
+                </button>
+                <button
+                  onClick={() => setFilterStatus('rejected')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    filterStatus === 'rejected'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Rejected
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Events List */}
+        {/* Activities List */}
         {loading ? (
           <div className="flex justify-center items-center py-12">
             <div className="w-12 h-12 border-4 border-green-600 border-t-transparent rounded-full animate-spin"></div>
           </div>
-        ) : sortedEvents.length === 0 ? (
+        ) : activities.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
             <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No events found</h3>
-            <p className="text-gray-600">No past events match your current filters</p>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No activities found</h3>
+            <p className="text-gray-600">No activities match your current filters</p>
           </div>
         ) : (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            {/* Table Header */}
-            <div className="bg-gradient-to-r from-green-50 to-green-100 border-b border-green-200">
-              <div className="grid grid-cols-12 gap-4 px-6 py-4 text-sm font-semibold text-gray-700">
-                <div className="col-span-3">Event</div>
-                <div className="col-span-2">Date & Time</div>
-                <div className="col-span-2">Location</div>
-                <div className="col-span-2">Host</div>
-                <div className="col-span-2">Members</div>
-                <div className="col-span-1">Status</div>
-              </div>
-            </div>
-
-            {/* Table Body */}
             <div className="divide-y divide-gray-200">
-              {sortedEvents.map(event => (
+              {activities.map((activity, index) => (
                 <div
-                  key={event.id}
-                  onClick={() => handleViewEvent(event)}
-                  className="grid grid-cols-12 gap-4 px-6 py-4 hover:bg-green-50 transition-colors cursor-pointer items-center"
+                  key={`${activity.type}-${activity.id}-${index}`}
+                  onClick={() => handleViewActivity(activity)}
+                  className="p-6 hover:bg-green-50 transition-colors cursor-pointer"
                 >
-                  {/* Event Title & Description */}
-                  <div className="col-span-3">
-                    <div className="flex items-center space-x-3">
-                      {/* Event Icon/Image */}
-                      <div className="flex-shrink-0">
-                        {event.images && event.images.length > 0 ? (
-                          event.images[0].endsWith('.pdf') ? (
-                            <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
-                              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  <div className="flex items-start space-x-4">
+                    {/* Activity Icon */}
+                    <div className="flex-shrink-0">
+                      {getActivityIcon(activity.type)}
+                    </div>
+
+                    {/* Activity Content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                            {getActivityTitle(activity)}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2 line-clamp-2">
+                            {activity.description}
+                          </p>
+                          <div className="flex items-center space-x-4 text-xs text-gray-500">
+                            <span className="flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
-                            </div>
-                          ) : (
-                            <img
-                              src={event.images[0]}
-                              alt={event.title}
-                              className="w-10 h-10 rounded-lg object-cover"
-                            />
-                          )
-                        ) : (
-                          <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                            <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                              {activity.date} at {activity.time}
+                            </span>
+                            <span className="flex items-center">
+                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                              {activity.location}
+                            </span>
+                            <span>{formatDate(activity.created_at)}</span>
                           </div>
-                        )}
+                        </div>
+                        <div className="flex-shrink-0 ml-4">
+                          {getStatusBadge(activity)}
+                        </div>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-sm font-semibold text-gray-900 truncate">{event.title}</h3>
-                        <p className="text-xs text-gray-500 truncate">{event.description}</p>
-                      </div>
                     </div>
-                  </div>
-
-                  {/* Date & Time */}
-                  <div className="col-span-2">
-                    <div className="text-sm text-gray-900">
-                      {new Date(event.date).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </div>
-                    <div className="text-xs text-gray-500">{event.time}</div>
-                  </div>
-
-                  {/* Location */}
-                  <div className="col-span-2">
-                    <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-1.5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                      <span className="truncate">{event.location}</span>
-                    </div>
-                  </div>
-
-                  {/* Host */}
-                  <div className="col-span-2">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2">
-                        {event.host.username.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm text-gray-700 truncate">{event.host.username}</span>
-                    </div>
-                  </div>
-
-                  {/* Members Count */}
-                  <div className="col-span-2">
-                    <div className="flex items-center text-sm text-gray-700">
-                      <svg className="w-4 h-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      <span>{event.members.length} {event.members.length === 1 ? 'member' : 'members'}</span>
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div className="col-span-1 flex justify-end">
-                    {getStatusBadge(event)}
                   </div>
                 </div>
               ))}
             </div>
+
+            {/* Pagination */}
+            {pagination.last_page > 1 && (
+              <div className="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-700">
+                    Showing {((pagination.current_page - 1) * pagination.per_page) + 1} to {Math.min(pagination.current_page * pagination.per_page, pagination.total)} of {pagination.total} activities
+                  </div>
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => fetchActivities(pagination.current_page - 1)}
+                      disabled={pagination.current_page === 1}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      onClick={() => fetchActivities(pagination.current_page + 1)}
+                      disabled={pagination.current_page === pagination.last_page}
+                      className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Event Details Modal */}
-      {isModalOpen && selectedEvent && (
+      {/* Activity Details Modal */}
+      {isModalOpen && selectedActivity && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
-                <h2 className="text-2xl font-bold text-gray-900">{selectedEvent.title}</h2>
+                <div className="flex items-center space-x-3">
+                  {getActivityIcon(selectedActivity.type)}
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900">{getActivityTitle(selectedActivity)}</h2>
+                    <p className="text-sm text-gray-500 mt-1">{formatDate(selectedActivity.created_at)}</p>
+                  </div>
+                </div>
                 <button
                   onClick={closeModal}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -496,53 +628,211 @@ export default function History() {
                 </button>
               </div>
 
-              {getStatusBadge(selectedEvent)}
+              <div className="mb-4">
+                {getStatusBadge(selectedActivity)}
+              </div>
 
-              <div className="mt-4 space-y-4">
+              <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-semibold text-gray-700 mb-1">Description</h3>
-                  <p className="text-gray-600">{selectedEvent.description}</p>
+                  <p className="text-gray-600">{selectedActivity.description}</p>
                 </div>
 
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Date & Time</h3>
-                  <p className="text-gray-600">
-                    {new Date(selectedEvent.date).toLocaleDateString('en-US', { 
-                      weekday: 'long',
-                      month: 'long', 
-                      day: 'numeric', 
-                      year: 'numeric' 
-                    })} at {selectedEvent.time}
-                  </p>
-                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Date & Time</h3>
+                    <p className="text-gray-600">
+                      {new Date(selectedActivity.date).toLocaleDateString('en-US', { 
+                        weekday: 'long',
+                        month: 'long', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })} at {selectedActivity.time}
+                    </p>
+                  </div>
 
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Location</h3>
-                  <p className="text-gray-600">{selectedEvent.location}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Host</h3>
-                  <p className="text-gray-600">{selectedEvent.host.username}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-gray-700 mb-2">Members ({selectedEvent.members.length})</h3>
-                  <div className="space-y-2">
-                    {selectedEvent.members.map(member => (
-                      <div key={member.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-700">{member.username}</span>
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
-                          member.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                          member.status === 'declined' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {member.status}
-                        </span>
-                      </div>
-                    ))}
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Location</h3>
+                    <p className="text-gray-600">{selectedActivity.location}</p>
                   </div>
                 </div>
+
+                {/* Activity-specific details */}
+                {selectedActivity.type === 'event_hosted' && selectedActivity.details && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Event Statistics</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-3 bg-gray-50 rounded-lg">
+                        <div className="text-lg font-bold text-gray-900">{selectedActivity.details.members_count}</div>
+                        <div className="text-xs text-gray-500">Total Invited</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 rounded-lg">
+                        <div className="text-lg font-bold text-green-700">{selectedActivity.details.accepted_count}</div>
+                        <div className="text-xs text-gray-500">Accepted</div>
+                      </div>
+                      <div className="text-center p-3 bg-red-50 rounded-lg">
+                        <div className="text-lg font-bold text-red-700">{selectedActivity.details.declined_count}</div>
+                        <div className="text-xs text-gray-500">Declined</div>
+                      </div>
+                      <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                        <div className="text-lg font-bold text-yellow-700">{selectedActivity.details.pending_count}</div>
+                        <div className="text-xs text-gray-500">Pending</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedActivity.type === 'event_invited' && selectedActivity.details && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Invitation Details</h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm text-gray-600">Hosted by</p>
+                          <p className="font-medium text-gray-900">{selectedActivity.details.host?.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Your Response</p>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedActivity.details.user_response === 'accepted' ? 'bg-green-100 text-green-700' :
+                            selectedActivity.details.user_response === 'declined' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {selectedActivity.details.user_response?.charAt(0).toUpperCase() + selectedActivity.details.user_response?.slice(1)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedActivity.type === 'event_request_submitted' && selectedActivity.details && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Request Details</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="text-xs font-medium text-gray-600 mb-1">Justification</h4>
+                        <p className="text-sm text-gray-700">{selectedActivity.details.justification}</p>
+                      </div>
+                      {selectedActivity.details.reviewer && (
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-600 mb-1">Reviewed By</h4>
+                          <p className="text-sm text-gray-700">{selectedActivity.details.reviewer.name}</p>
+                        </div>
+                      )}
+                      {selectedActivity.details.rejection_reason && (
+                        <div>
+                          <h4 className="text-xs font-medium text-gray-600 mb-1">Rejection Reason</h4>
+                          <p className="text-sm text-red-700">{selectedActivity.details.rejection_reason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {selectedActivity.type === 'hierarchy_approval_requested' && selectedActivity.details && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Approval Status</h3>
+                    <div className="space-y-2">
+                      {selectedActivity.details.approvers?.map((approver, index) => (
+                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div>
+                            <p className="font-medium text-gray-900">{approver.name}</p>
+                            <p className="text-xs text-gray-500">{approver.role}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                              approver.status === 'approved' ? 'bg-green-100 text-green-700' :
+                              approver.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                              'bg-yellow-100 text-yellow-700'
+                            }`}>
+                              {approver.status?.charAt(0).toUpperCase() + approver.status?.slice(1)}
+                            </span>
+                            {approver.decided_at && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {formatDate(approver.decided_at)}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-4">
+                      <div className="text-center p-2 bg-yellow-50 rounded">
+                        <div className="text-sm font-bold text-yellow-700">{selectedActivity.details.pending_count}</div>
+                        <div className="text-xs text-gray-500">Pending</div>
+                      </div>
+                      <div className="text-center p-2 bg-green-50 rounded">
+                        <div className="text-sm font-bold text-green-700">{selectedActivity.details.approved_count}</div>
+                        <div className="text-xs text-gray-500">Approved</div>
+                      </div>
+                      <div className="text-center p-2 bg-red-50 rounded">
+                        <div className="text-sm font-bold text-red-700">{selectedActivity.details.rejected_count}</div>
+                        <div className="text-xs text-gray-500">Rejected</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {selectedActivity.type === 'hierarchy_approval_decision' && selectedActivity.details && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Your Decision</h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm text-gray-600">Event requested by</p>
+                          <p className="font-medium text-gray-900">{selectedActivity.details.host?.name}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Your Decision</p>
+                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                            selectedActivity.details.decision === 'approved' ? 'bg-green-100 text-green-700' :
+                            selectedActivity.details.decision === 'rejected' ? 'bg-red-100 text-red-700' :
+                            'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {selectedActivity.details.decision?.charAt(0).toUpperCase() + selectedActivity.details.decision?.slice(1)}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedActivity.details.decision_reason && (
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1">Reason</p>
+                          <p className="text-sm text-gray-700">{selectedActivity.details.decision_reason}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {(selectedActivity.type === 'message_sent' || selectedActivity.type === 'message_received') && selectedActivity.details && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Message Details</h3>
+                    <div className="bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <p className="text-sm text-gray-600">
+                            {selectedActivity.type === 'message_sent' ? 'Sent to' : 'Received from'}
+                          </p>
+                          <p className="font-medium text-gray-900">
+                            {selectedActivity.type === 'message_sent' 
+                              ? selectedActivity.details.recipient?.name 
+                              : selectedActivity.details.sender?.name}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">Type</p>
+                          <p className="text-sm font-medium text-gray-900">{selectedActivity.details.type}</p>
+                        </div>
+                      </div>
+                      {selectedActivity.details.event && (
+                        <div>
+                          <p className="text-xs text-gray-600 mb-1">Related Event</p>
+                          <p className="text-sm text-gray-700">{selectedActivity.details.event.title}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button

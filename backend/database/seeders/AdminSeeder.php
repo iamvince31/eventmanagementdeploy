@@ -21,7 +21,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         // Check if any admin already exists
-        $adminExists = User::where('role', 'admin')->exists();
+        $adminExists = User::where('role', 'Admin')->exists();
 
         if ($adminExists) {
             $this->command->info('Admin user already exists. Skipping bootstrap admin creation.');
@@ -64,9 +64,10 @@ class AdminSeeder extends Seeder
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($password),
-                'role' => 'admin',
+                'role' => 'Admin',
                 'department' => 'System Administration',
                 'is_bootstrap' => true,
+                'is_validated' => true, // Bootstrap admin is pre-validated
                 'email_verified_at' => now(), // Bootstrap admin is pre-verified
                 'schedule_initialized' => true,
             ]);

@@ -18,7 +18,9 @@ class AuthController extends Controller
     public function register(Request $request)
         {
             $request->validate([
-                'username' => 'required|string|max:255',
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'middle_initial' => 'nullable|string|max:255',
                 'email' => [
                     'required',
                     'string',
@@ -27,9 +29,8 @@ class AuthController extends Controller
                     'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
                 ],
                 'password' => 'required|string|min:6',
-                'department' => 'required|string',
             ], [
-                'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.'
+                'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
             ]);
 
             $email = strtolower(trim($request->email));
@@ -44,13 +45,29 @@ class AuthController extends Controller
                 ], 400);
             }
 
-            // Create user but mark as unverified
+            // Construct full name from parts
+            $middleInitial = '';
+            if ($request->middle_initial) {
+                // Extract first letter of each word in middle name and format as initials
+                $middleWords = explode(' ', trim($request->middle_initial));
+                $initials = array_map(function($word) {
+                    return strtoupper(substr(trim($word), 0, 1)) . '.';
+                }, array_filter($middleWords));
+                $middleInitial = ' ' . implode(' ', $initials);
+            }
+            $fullName = trim($request->first_name . $middleInitial . ' ' . $request->last_name);
+
+            // Create user but mark as unverified and not validated
             $user = User::create([
-                'name' => $request->username,
+                'name' => $fullName,
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_initial, // Store full middle name
+                'last_name' => $request->last_name,
                 'email' => $email,
                 'password' => Hash::make($request->password),
-                'department' => $request->department,
-                'role' => 'teacher',
+                'department' => null, // To be set by admin
+                'role' => 'Faculty Member', // Default role, to be changed by admin
+                'is_validated' => false, // Needs admin validation
                 'email_verified_at' => null, // User needs to verify email
             ]);
 
@@ -68,7 +85,7 @@ class AuthController extends Controller
 
             // Send verification email
             $brevoService = new BrevoMailService();
-            $emailSent = $brevoService->sendRegistrationOtp($email, $otp, $request->username);
+            $emailSent = $brevoService->sendRegistrationOtp($email, $otp, $fullName);
 
             if (!$emailSent) {
                 // If email fails, still allow registration but log the error
@@ -86,10 +103,12 @@ class AuthController extends Controller
                     'email' => $user->email,
                     'department' => $user->department,
                     'role' => $user->role,
+                    'is_validated' => $user->is_validated,
                     'schedule_initialized' => false,
                     'email_verified' => false,
                 ],
                 'requires_verification' => true,
+                'message_note' => 'Your department and role will be assigned by an administrator after account validation.',
             ], 201);
         }
     /**
@@ -355,7 +374,8 @@ class AuthController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
-                'role' => $user->role ?? 'Faculty',
+                'role' => $user->role,
+                'is_validated' => $user->is_validated ?? false,
                 'schedule_initialized' => $user->schedule_initialized ?? false,
             ],
             'token' => $token,
@@ -379,7 +399,8 @@ class AuthController extends Controller
                 'username' => $request->user()->name,
                 'email' => $request->user()->email,
                 'department' => $request->user()->department,
-                'role' => $request->user()->role ?? 'Faculty',
+                'role' => $request->user()->role,
+                'is_validated' => $request->user()->is_validated ?? false,
                 'schedule_initialized' => $request->user()->schedule_initialized ?? false,
             ],
         ]);

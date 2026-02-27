@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\User;
+use App\Services\HierarchyService;
+use App\Services\EventApprovalWorkflow;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -95,6 +97,15 @@ class EventController extends Controller
 
     public function store(Request $request)
     {
+        $user = $request->user();
+        
+        // Role-based restrictions for event creation
+        if (!in_array($user->role, ['Admin', 'Dean', 'Chairperson'])) {
+            return response()->json([
+                'error' => 'Unauthorized. Only Admin, Dean, and Chairperson can create events directly.'
+            ], 403);
+        }
+
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -122,13 +133,37 @@ class EventController extends Controller
             ], 422);
         }
 
+        // Hierarchy validation for invitations
+        $memberIds = $request->member_ids ? collect($request->member_ids)
+            ->filter(fn($id) => $id != $user->id) // Exclude host
+            ->unique()
+            ->values()
+            ->toArray() : [];
+
+        $hierarchyService = new HierarchyService();
+        $validationResult = $hierarchyService->validateInvitations($user, $memberIds);
+
+        // If hierarchy approval is required, create pending approval instead of direct event
+        if ($validationResult->requiresApproval) {
+            return $this->createPendingApproval($request, $user, $validationResult->approversNeeded);
+        }
+
+        // No hierarchy violations - create event directly (existing logic)
+        return $this->createEventDirectly($request, $user, $memberIds);
+    }
+
+    /**
+     * Create event directly when no hierarchy approval is needed
+     */
+    private function createEventDirectly(Request $request, User $user, array $memberIds)
+    {
         $event = Event::create([
             'title' => $request->title,
             'description' => $request->description,
             'location' => $request->location,
             'date' => $request->date,
             'time' => $request->time,
-            'host_id' => $request->user()->id,
+            'host_id' => $user->id,
         ]);
 
         // Handle multiple images/files
@@ -160,17 +195,9 @@ class EventController extends Controller
             }
         }
 
-        if ($request->member_ids) {
-            // Filter out the host's ID to prevent self-invitation
-            $memberIds = collect($request->member_ids)
-                ->filter(fn($id) => $id != $request->user()->id)
-                ->unique()
-                ->values();
-            
-            if ($memberIds->isNotEmpty()) {
-                $memberData = $memberIds->mapWithKeys(fn($id) => [$id => ['status' => 'pending']])->all();
-                $event->members()->attach($memberData);
-            }
+        if (!empty($memberIds)) {
+            $memberData = collect($memberIds)->mapWithKeys(fn($id) => [$id => ['status' => 'pending']])->all();
+            $event->members()->attach($memberData);
         }
 
         $event->load(['host', 'members', 'images']);
@@ -179,6 +206,71 @@ class EventController extends Controller
             'message' => 'Event created successfully',
             'event' => $event,
         ], 201);
+    }
+
+    /**
+     * Create pending approval when hierarchy validation fails
+     */
+    private function createPendingApproval(Request $request, User $user, array $approversNeeded)
+    {
+        // Prepare event data for approval workflow
+        $eventData = [
+            'title' => $request->title,
+            'description' => $request->description,
+            'location' => $request->location,
+            'date' => $request->date,
+            'time' => $request->time,
+            'host_id' => $user->id,
+            'member_ids' => $request->member_ids ? collect($request->member_ids)
+                ->filter(fn($id) => $id != $user->id)
+                ->unique()
+                ->values()
+                ->toArray() : [],
+        ];
+
+        // Handle file uploads for approval workflow
+        $imageData = [];
+        if ($request->hasFile('images')) {
+            foreach ($request->file('images') as $index => $image) {
+                // Validate file
+                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
+                if (!in_array($image->getMimeType(), $allowedMimes)) {
+                    return response()->json([
+                        'error' => 'Invalid file type. Only JPG, PNG, GIF, WebP, and PDF files are allowed.'
+                    ], 400);
+                }
+                
+                if ($image->getSize() > 25600 * 1024) {
+                    return response()->json([
+                        'error' => 'File size must not exceed 25MB.'
+                    ], 400);
+                }
+                
+                // Store file temporarily for approval workflow
+                $imagePath = $image->store('events/pending', 'public');
+                $imageData[] = [
+                    'path' => $imagePath,
+                    'original_filename' => $image->getClientOriginalName(),
+                ];
+            }
+        }
+        
+        $eventData['images'] = $imageData;
+
+        // Create pending approval
+        $workflow = new EventApprovalWorkflow();
+        $approval = $workflow->createPendingEvent($eventData, $approversNeeded);
+
+        // Get approver names for response
+        $approverNames = User::whereIn('id', $approversNeeded)->pluck('name')->toArray();
+
+        return response()->json([
+            'message' => 'Event requires approval from higher-level roles',
+            'approval_id' => $approval->id,
+            'status' => 'pending_approval',
+            'approvers_needed' => $approverNames,
+            'approval' => $approval->load(['host', 'approvers.approver']),
+        ], 202); // 202 Accepted - request received but not yet processed
     }
 
     public function update(Request $request, Event $event)
@@ -271,6 +363,51 @@ class EventController extends Controller
         }
 
         return response()->json(['message' => 'Event updated successfully', 'event' => $event->load(['host', 'members', 'images'])]);
+    }
+
+    /**
+     * Validate hierarchy rules for real-time feedback
+     */
+    public function validateHierarchy(Request $request)
+    {
+        $user = $request->user();
+        
+        $request->validate([
+            'member_ids' => 'nullable|array',
+            'member_ids.*' => 'integer|exists:users,id',
+        ]);
+
+        $memberIds = $request->member_ids ? collect($request->member_ids)
+            ->filter(fn($id) => $id != $user->id) // Exclude host
+            ->unique()
+            ->values()
+            ->toArray() : [];
+
+        if (empty($memberIds)) {
+            return response()->json([
+                'requires_approval' => false,
+                'violations' => [],
+                'approvers_needed' => [],
+            ]);
+        }
+
+        $hierarchyService = new HierarchyService();
+        $validationResult = $hierarchyService->validateInvitations($user, $memberIds);
+
+        // Get approver details if needed
+        $approverDetails = [];
+        if (!empty($validationResult->approversNeeded)) {
+            $approvers = User::whereIn('id', $validationResult->approversNeeded)
+                ->select('id', 'name', 'role')
+                ->get();
+            $approverDetails = $approvers->toArray();
+        }
+
+        return response()->json([
+            'requires_approval' => $validationResult->requiresApproval,
+            'violations' => $validationResult->violations,
+            'approvers_needed' => $approverDetails,
+        ]);
     }
 
     public function destroy(Request $request, Event $event)

@@ -20,11 +20,17 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     protected $fillable = [
         'name',
+        'first_name',
+        'middle_name',
+        'last_name',
         'email',
         'password',
         'department',
         'role',
+        'is_validated',
         'email_verified_at',
+        'schedule_initialized',
+        'is_bootstrap',
     ];
 
     /**
@@ -46,7 +52,65 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return [
             'email_verified_at' => 'datetime',
+            'is_validated' => 'boolean',
+            'is_bootstrap' => 'boolean',
         ];
+    }
+
+    // Automatically validate admins when created/updated
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($user) {
+            if ($user->role === 'Admin') {
+                $user->is_validated = true;
+                $user->schedule_initialized = true;
+            }
+        });
+        
+        static::updating(function ($user) {
+            if ($user->role === 'Admin') {
+                $user->is_validated = true;
+                $user->schedule_initialized = true;
+            }
+        });
+    }
+
+    // Helper methods for role checking
+    public function isAdmin()
+    {
+        return $this->role === 'Admin';
+    }
+
+    public function isDean()
+    {
+        return $this->role === 'Dean';
+    }
+
+    public function isChairperson()
+    {
+        return $this->role === 'Chairperson';
+    }
+
+    public function isCoordinator()
+    {
+        return $this->role === 'Coordinator';
+    }
+
+    public function isFacultyMember()
+    {
+        return $this->role === 'Faculty Member';
+    }
+
+    public function canCreateEvents()
+    {
+        return in_array($this->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator']);
+    }
+
+    public function needsApprovalForEvents()
+    {
+        return in_array($this->role, ['Chairperson', 'Coordinator']);
     }
 
     public function events()

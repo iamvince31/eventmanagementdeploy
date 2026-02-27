@@ -2,42 +2,35 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import AuthBackground from '../components/AuthBackground';
-import { useEffect } from 'react';
 
 export default function Register() {
   const [formData, setFormData] = useState({
-    username: '',
+    first_name: '',
+    last_name: '',
+    middle_initial: '',
     email: '',
     password: '',
-    password_confirmation: '',
-    department: ''
+    password_confirmation: ''
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
-  const [isDepartmentDropdownOpen, setIsDepartmentDropdownOpen] = useState(false);
   
   const navigate = useNavigate();
 
-  const departments = [
-    'Department of Agricultural and Food Engineering',
-    'Department of Civil and Environmental Engineering and Energy',
-    'Department of Computer Engineering and Architecture',
-    'Department of Industrial and Electrical Technology',
-    'Department of Information Technology'
-  ];
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isDepartmentDropdownOpen && !event.target.closest('.department-dropdown-container')) {
-        setIsDepartmentDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isDepartmentDropdownOpen]);
+  // Generate preview of full name
+  const generateFullName = () => {
+    if (!formData.first_name && !formData.last_name) return '';
+    
+    let middleInitial = '';
+    if (formData.middle_initial) {
+      const middleWords = formData.middle_initial.split(' ').filter(word => word.trim());
+      const initials = middleWords.map(word => word.trim().charAt(0).toUpperCase() + '.');
+      middleInitial = ' ' + initials.join(' ');
+    }
+    
+    return (formData.first_name + middleInitial + ' ' + formData.last_name).trim();
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -51,22 +44,6 @@ export default function Register() {
       setErrors(prev => ({
         ...prev,
         [name]: ''
-      }));
-    }
-  };
-
-  const handleDepartmentSelect = (department) => {
-    setFormData(prev => ({
-      ...prev,
-      department: department
-    }));
-    setIsDepartmentDropdownOpen(false);
-    
-    // Clear error when user selects
-    if (errors.department) {
-      setErrors(prev => ({
-        ...prev,
-        department: ''
       }));
     }
   };
@@ -163,22 +140,61 @@ export default function Register() {
             )}
 
             <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="first_name" className="block text-sm font-medium text-gray-700">
+                    First Name
+                  </label>
+                  <input
+                    id="first_name"
+                    name="first_name"
+                    type="text"
+                    required
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    placeholder="Enter your first name"
+                  />
+                  {errors.first_name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.first_name[0]}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="last_name" className="block text-sm font-medium text-gray-700">
+                    Last Name
+                  </label>
+                  <input
+                    id="last_name"
+                    name="last_name"
+                    type="text"
+                    required
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    placeholder="Enter your last name"
+                  />
+                  {errors.last_name && (
+                    <p className="mt-1 text-sm text-red-600">{errors.last_name[0]}</p>
+                  )}
+                </div>
+              </div>
+
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                  Username
+                <label htmlFor="middle_initial" className="block text-sm font-medium text-gray-700">
+                  Middle Name <span className="text-gray-400">(Optional)</span>
                 </label>
                 <input
-                  id="username"
-                  name="username"
+                  id="middle_initial"
+                  name="middle_initial"
                   type="text"
-                  required
-                  value={formData.username}
+                  value={formData.middle_initial}
                   onChange={handleChange}
                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                  placeholder="Enter your username"
+                  placeholder="Enter your middle name (e.g., Santos, De La Cruz)"
                 />
-                {errors.username && (
-                  <p className="mt-1 text-sm text-red-600">{errors.username[0]}</p>
+                {errors.middle_initial && (
+                  <p className="mt-1 text-sm text-red-600">{errors.middle_initial[0]}</p>
                 )}
               </div>
 
@@ -201,73 +217,6 @@ export default function Register() {
                 )}
               </div>
 
-              <div className="department-dropdown-container">
-                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
-                  Department
-                </label>
-                <div className="relative mt-1">
-                  <button
-                    type="button"
-                    onClick={() => setIsDepartmentDropdownOpen(!isDepartmentDropdownOpen)}
-                    className={`relative w-full bg-white border rounded-md shadow-sm pl-4 pr-10 py-4 text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors ${
-                      errors.department 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 hover:border-gray-400'
-                    }`}
-                    aria-haspopup="listbox"
-                    aria-expanded={isDepartmentDropdownOpen}
-                  >
-                    <span className={`block truncate text-sm ${
-                      formData.department ? 'text-gray-900' : 'text-gray-500'
-                    }`}>
-                      {formData.department || 'Select your department'}
-                    </span>
-                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg 
-                        className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
-                          isDepartmentDropdownOpen ? 'rotate-180' : ''
-                        }`} 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </span>
-                  </button>
-
-                  {/* Dropdown Menu */}
-                  {isDepartmentDropdownOpen && (
-                    <div className="absolute z-10 mt-1 w-full bg-white shadow-xl max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none border border-gray-200">
-                      {departments.map((dept) => (
-                        <button
-                          key={dept}
-                          type="button"
-                          onClick={() => handleDepartmentSelect(dept)}
-                          className={`w-full text-left px-4 py-3 text-sm hover:bg-green-50 hover:text-green-900 transition-colors cursor-pointer border-b border-gray-100 last:border-b-0 ${
-                            formData.department === dept 
-                              ? 'bg-green-50 text-green-900 font-medium' 
-                              : 'text-gray-900'
-                          }`}
-                        >
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 w-2 h-2 mr-3">
-                              {formData.department === dept && (
-                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              )}
-                            </div>
-                            <span className="block leading-6">{dept}</span>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {errors.department && (
-                  <p className="mt-1 text-sm text-red-600">{errors.department[0]}</p>
-                )}
-              </div>
-
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Password
@@ -277,11 +226,11 @@ export default function Register() {
                   name="password"
                   type="password"
                   required
-                  minLength="8"
+                  minLength="6"
                   value={formData.password}
                   onChange={handleChange}
                   className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
-                  placeholder="Enter your password (min. 8 characters)"
+                  placeholder="Enter your password (min. 6 characters)"
                 />
                 {errors.password && (
                   <p className="mt-1 text-sm text-red-600">{errors.password[0]}</p>

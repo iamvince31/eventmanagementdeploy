@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import DatePicker from './DatePicker';
+import HierarchyWarning from './HierarchyWarning';
 
 export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, hasSchedule = true, currentUser }) {
   const [title, setTitle] = useState('');
@@ -15,9 +16,18 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState('all');
+  const [filterRole, setFilterRole] = useState('all');
   const [searchMember, setSearchMember] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
+  
+  // Hierarchy validation state
+  const [hierarchyValidation, setHierarchyValidation] = useState({
+    requiresApproval: false,
+    violations: [],
+    approversNeeded: [],
+  });
+  const [validatingHierarchy, setValidatingHierarchy] = useState(false);
 
   useEffect(() => {
     const now = new Date();
@@ -61,6 +71,42 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     }
   }, [editingEvent]);
 
+  // Validate hierarchy when selected members change
+  useEffect(() => {
+    if (selectedMembers.length > 0 && !editingEvent) {
+      validateHierarchy();
+    } else {
+      setHierarchyValidation({
+        requiresApproval: false,
+        violations: [],
+        approversNeeded: [],
+      });
+    }
+  }, [selectedMembers, editingEvent]);
+
+  const validateHierarchy = async () => {
+    if (selectedMembers.length === 0) return;
+    
+    setValidatingHierarchy(true);
+    try {
+      const response = await api.post('/events/validate-hierarchy', {
+        member_ids: selectedMembers
+      });
+      
+      setHierarchyValidation(response.data);
+    } catch (error) {
+      console.error('Error validating hierarchy:', error);
+      // Reset validation on error
+      setHierarchyValidation({
+        requiresApproval: false,
+        violations: [],
+        approversNeeded: [],
+      });
+    } finally {
+      setValidatingHierarchy(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -96,10 +142,16 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         });
         setSuccess('Event updated successfully');
       } else {
-        await api.post('/events', formData, {
+        const response = await api.post('/events', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-        setSuccess('Event created successfully');
+
+        // Handle different response types
+        if (response.data.status === 'pending_approval') {
+          setSuccess(`Event submitted for approval. Waiting for approval from: ${response.data.approvers_needed.join(', ')}`);
+        } else {
+          setSuccess('Event created successfully');
+        }
         resetForm();
       }
 
@@ -249,9 +301,18 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setImagePreviews(prev => prev.filter((_, i) => i !== index));
   };
 
-  const filteredMembers = filterDepartment === 'all'
-    ? members.filter(member => member.id !== currentUser?.id) // Exclude current user (host)
-    : members.filter(member => member.department === filterDepartment && member.id !== currentUser?.id);
+  const filteredMembers = members.filter(member => {
+    // Exclude current user (host)
+    if (member.id === currentUser?.id) return false;
+    
+    // Filter by department
+    if (filterDepartment !== 'all' && member.department !== filterDepartment) return false;
+    
+    // Filter by role
+    if (filterRole !== 'all' && member.role !== filterRole) return false;
+    
+    return true;
+  });
 
   // Further filter by search term
   const searchFilteredMembers = filteredMembers.filter(member =>
@@ -260,6 +321,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   );
 
   const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
+  const availableRoles = [...new Set(members.map(m => m.role).filter(Boolean))];
 
   return (
     <div className="animate-fade-in">
@@ -290,6 +352,13 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
           </div>
         </div>
       )}
+
+      {/* Hierarchy Warning */}
+      <HierarchyWarning 
+        violations={hierarchyValidation.violations}
+        approversNeeded={hierarchyValidation.approversNeeded}
+        validating={validatingHierarchy}
+      />
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -548,7 +617,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 </div>
               </div>
               
-              {/* Department Filter and Select All */}
+              {/* Department and Role Filters with Select All */}
               <div className="mb-3 flex gap-2">
                 <select
                   value={filterDepartment}
@@ -558,6 +627,17 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   <option value="all">All Departments</option>
                   {availableDepartments.map(dept => (
                     <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={filterRole}
+                  onChange={(e) => setFilterRole(e.target.value)}
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                >
+                  <option value="all">All Roles</option>
+                  {availableRoles.map(role => (
+                    <option key={role} value={role}>{role}</option>
                   ))}
                 </select>
                 
@@ -609,9 +689,18 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                         />
                         <span className="ml-2.5 text-sm text-gray-700 font-medium">
                           {member.username}
-                          {member.department && (
-                            <span className="ml-2 text-xs text-gray-400 font-normal">({member.department})</span>
-                          )}
+                          <div className="flex items-center gap-2 mt-0.5">
+                            {member.role && (
+                              <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                {member.role}
+                              </span>
+                            )}
+                            {member.department && (
+                              <span className="text-xs text-gray-500 font-normal">
+                                {member.department}
+                              </span>
+                            )}
+                          </div>
                         </span>
                       </label>
                     ))}
