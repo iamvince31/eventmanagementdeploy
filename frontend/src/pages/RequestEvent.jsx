@@ -36,10 +36,28 @@ export default function RequestEvent() {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Check if date field and if it's a Sunday
+    if (name === 'date' && value) {
+      const date = new Date(value + 'T00:00:00');
+      if (date.getDay() === 0) { // 0 = Sunday
+        setMessage({ 
+          type: 'error', 
+          text: 'Events cannot be scheduled on Sundays. Please select a different date.' 
+        });
+        return; // Don't update the date
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+    
+    // Clear error message when user makes changes
+    if (message.type === 'error') {
+      setMessage({ type: '', text: '' });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -144,9 +162,17 @@ export default function RequestEvent() {
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
                   aria-label="Account menu"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </div>
+                  {user?.profile_picture ? (
+                    <img 
+                      src={user.profile_picture} 
+                      alt={user?.username}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {user?.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
                   <svg
                     className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`}

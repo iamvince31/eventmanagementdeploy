@@ -15,11 +15,15 @@ const DefaultEvents = () => {
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
   const [selectedDate, setSelectedDate] = useState('');
+  const [selectedEndDate, setSelectedEndDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [currentSchoolYear, setCurrentSchoolYear] = useState('');
   const [startYear, setStartYear] = useState('');
   const [endYear, setEndYear] = useState('');
   const [schoolYearError, setSchoolYearError] = useState('');
+  const [creatingEventMonth, setCreatingEventMonth] = useState(null);
+  const [newEventName, setNewEventName] = useState('');
+  const [tempEventId, setTempEventId] = useState(null);
 
   // Redirect non-admin users
   useEffect(() => {
@@ -32,6 +36,23 @@ const DefaultEvents = () => {
     'January', 'February', 'March', 'April', 'May', 'June',
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
+
+  // Check if a date is Sunday
+  const isSunday = (dateString) => {
+    if (!dateString) return false;
+    const date = new Date(dateString + 'T00:00:00');
+    return date.getDay() === 0; // 0 = Sunday
+  };
+
+  // Handle date change with Sunday validation
+  const handleDateChange = (dateString, setter, fieldName) => {
+    if (isSunday(dateString)) {
+      setError(`${fieldName} cannot be on a Sunday. Please select a different date.`);
+      return;
+    }
+    setter(dateString);
+    setError(''); // Clear any previous errors
+  };
 
   // Determine semester for a given month (1-12)
   const getSemester = (month) => {
@@ -172,17 +193,44 @@ const DefaultEvents = () => {
 
   const handleEditDate = (event) => {
     setEditingEventId(event.id);
-    setSelectedDate(event.date || '');
+    // If event has a date, use it; otherwise default to first day of the event's month
+    if (event.date) {
+      // Ensure date is in YYYY-MM-DD format for the date input
+      const dateObj = new Date(event.date);
+      const formattedDate = dateObj.toISOString().split('T')[0];
+      setSelectedDate(formattedDate);
+    } else {
+      // Set default date to first day of the event's designated month
+      const yearForMonth = getYearForMonth(event.month);
+      const defaultDate = `${yearForMonth}-${String(event.month).padStart(2, '0')}-01`;
+      setSelectedDate(defaultDate);
+    }
+    
+    // Set end date if it exists
+    if (event.end_date) {
+      const endDateObj = new Date(event.end_date);
+      const formattedEndDate = endDateObj.toISOString().split('T')[0];
+      setSelectedEndDate(formattedEndDate);
+    } else {
+      setSelectedEndDate('');
+    }
   };
 
   const handleCancelEdit = () => {
     setEditingEventId(null);
     setSelectedDate('');
+    setSelectedEndDate('');
   };
 
   const handleSaveDate = async (event) => {
     if (!selectedDate) {
-      alert('Please select a date');
+      alert('Please select a start date');
+      return;
+    }
+
+    // Validate that end date is after or equal to start date
+    if (selectedEndDate && selectedEndDate < selectedDate) {
+      alert('End date must be on or after the start date');
       return;
     }
 
@@ -194,24 +242,33 @@ const DefaultEvents = () => {
     const schoolYearEnd = new Date(endYear, 7, 31); // August 31st
     
     if (dateObj < schoolYearStart || dateObj > schoolYearEnd) {
-      alert(`Date must be within the school year ${currentSchoolYear} (September ${startYear} to August ${endYear})`);
+      alert(`Start date must be within the school year ${currentSchoolYear} (September ${startYear} to August ${endYear})`);
       return;
+    }
+
+    // Validate end date if provided
+    if (selectedEndDate) {
+      const endDateObj = new Date(selectedEndDate);
+      if (endDateObj < schoolYearStart || endDateObj > schoolYearEnd) {
+        alert(`End date must be within the school year ${currentSchoolYear} (September ${startYear} to August ${endYear})`);
+        return;
+      }
     }
 
     try {
       setSaving(true);
       await api.put(`/default-events/${event.id}/date`, {
         date: selectedDate,
+        end_date: selectedEndDate || null,
         school_year: currentSchoolYear
       });
       
-      // Update local state
-      setEvents(events.map(e => 
-        e.id === event.id ? { ...e, date: selectedDate, school_year: currentSchoolYear } : e
-      ));
+      // Refresh the events list to show the event in the correct month
+      await fetchDefaultEvents();
       
       setEditingEventId(null);
       setSelectedDate('');
+      setSelectedEndDate('');
       setError('');
     } catch (err) {
       setError(err.response?.data?.error || 'Failed to update date');
@@ -221,14 +278,34 @@ const DefaultEvents = () => {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString, endDateString) => {
     if (!dateString) return 'No date set';
+    
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
+    const formattedStart = date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric', 
       year: 'numeric' 
     });
+    
+    // If there's an end date, show the range
+    if (endDateString) {
+      const endDate = new Date(endDateString);
+      const formattedEnd = endDate.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+      
+      // If same month and year, show abbreviated format
+      if (date.getMonth() === endDate.getMonth() && date.getFullYear() === endDate.getFullYear()) {
+        return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.getDate()}, ${endDate.getFullYear()}`;
+      }
+      
+      return `${formattedStart} - ${formattedEnd}`;
+    }
+    
+    return formattedStart;
   };
 
   const getYearForMonth = (month) => {
@@ -255,6 +332,59 @@ const DefaultEvents = () => {
   };
 
   const eventsByMonth = groupEventsByMonth();
+
+  const handleStartCreateEvent = (monthNumber) => {
+    if (!currentSchoolYear) {
+      alert('Please select a school year first');
+      return;
+    }
+    
+    setCreatingEventMonth(monthNumber);
+    setNewEventName('');
+    setError('');
+  };
+
+  const handleCancelCreateEvent = () => {
+    setCreatingEventMonth(null);
+    setNewEventName('');
+    setError('');
+  };
+
+  const handleSaveNewEventName = async (monthNumber) => {
+    if (!newEventName.trim()) {
+      setError('Please enter an event name');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const response = await api.post('/default-events/create-empty', {
+        name: newEventName.trim(),
+        month: monthNumber,
+        school_year: currentSchoolYear
+      });
+      
+      // Refresh the events list
+      await fetchDefaultEvents();
+      
+      // Reset form and immediately open date editor for the new event
+      setCreatingEventMonth(null);
+      setNewEventName('');
+      setTempEventId(response.data.event.id);
+      setError('');
+      
+      // Auto-open the date editor for the newly created event
+      setTimeout(() => {
+        const newEvent = response.data.event;
+        handleEditDate(newEvent);
+      }, 100);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Failed to create event');
+      console.error('Error creating event:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -388,9 +518,17 @@ const DefaultEvents = () => {
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
                   aria-label="Account menu"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </div>
+                  {user?.profile_picture ? (
+                    <img 
+                      src={user.profile_picture} 
+                      alt={user?.username}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {user?.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
                   <svg 
                     className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} 
@@ -586,113 +724,270 @@ const DefaultEvents = () => {
 
                   {/* Events Table */}
                   {monthEvents.length > 0 ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="bg-gradient-to-r from-green-50 to-green-100 border-b-2 border-green-200">
-                            <th className="px-6 py-3 text-left text-xs font-bold text-green-900 uppercase tracking-wider w-16">#</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-green-900 uppercase tracking-wider">Event Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-bold text-green-900 uppercase tracking-wider">Date</th>
-                            <th className="px-6 py-3 text-center text-xs font-bold text-green-900 uppercase tracking-wider w-24">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                          {monthEvents.map((event, idx) => (
-                            <tr
-                              key={event.id}
-                              className="hover:bg-green-50 transition-colors duration-150"
-                            >
-                              <td className="px-6 py-4">
-                                <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
-                                  {idx + 1}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className="text-gray-900 text-sm font-semibold">
-                                  {event.name}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4">
-                                {editingEventId === event.id ? (
-                                  <div className="space-y-2">
-                                    <input
-                                      type="date"
-                                      value={selectedDate}
-                                      onChange={(e) => setSelectedDate(e.target.value)}
-                                      min={`${currentSchoolYear.split('-')[0]}-09-01`}
-                                      max={`${currentSchoolYear.split('-')[1]}-08-31`}
-                                      className="w-full px-3 py-2 text-sm font-medium border-2 border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent shadow-sm"
-                                    />
-                                    <div className="flex gap-2">
-                                      <button
-                                        onClick={() => handleSaveDate(event)}
-                                        disabled={saving}
-                                        className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        {saving ? (
-                                          <>
-                                            <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                            </svg>
-                                            Save
-                                          </>
-                                        ) : (
-                                          <>
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                            Save
-                                          </>
-                                        )}
-                                      </button>
-                                      <button
-                                        onClick={handleCancelEdit}
-                                        disabled={saving}
-                                        className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                                      >
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                        Cancel
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center gap-2">
-                                    <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                    <span className={`text-sm font-semibold ${event.date ? 'text-green-700' : 'text-gray-500'}`}>
-                                      {formatDate(event.date)}
-                                    </span>
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-6 py-4 text-center">
-                                {editingEventId !== event.id && (
-                                  <button
-                                    onClick={() => handleEditDate(event)}
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-green-700 hover:text-white bg-green-100 hover:bg-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                    {event.date ? 'Edit' : 'Set'}
-                                  </button>
-                                )}
-                              </td>
+                    <>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-green-50 to-green-100 border-b-2 border-green-200">
+                              <th className="px-6 py-3 text-left text-xs font-bold text-green-900 uppercase tracking-wider w-16">#</th>
+                              <th className="px-6 py-3 text-left text-xs font-bold text-green-900 uppercase tracking-wider">Event Name</th>
+                              <th className="px-6 py-3 text-left text-xs font-bold text-green-900 uppercase tracking-wider w-64">Date</th>
+                              <th className="px-6 py-3 text-center text-xs font-bold text-green-900 uppercase tracking-wider w-32">Action</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody className="divide-y divide-gray-200">
+                            {monthEvents.map((event, idx) => (
+                              <tr
+                                key={event.id}
+                                className="hover:bg-green-50 transition-colors duration-150"
+                              >
+                                <td className="px-6 py-4">
+                                  <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                                    {idx + 1}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4">
+                                  <span className="text-gray-900 text-sm font-semibold">
+                                    {event.name}
+                                  </span>
+                                </td>
+                                <td className="px-6 py-4 w-64">
+                                  {editingEventId === event.id ? (
+                                    <div className="space-y-2">
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                          Start Date
+                                        </label>
+                                        <input
+                                          type="date"
+                                          value={selectedDate}
+                                          onChange={(e) => handleDateChange(e.target.value, setSelectedDate, 'Start date')}
+                                          min={`${currentSchoolYear.split('-')[0]}-09-01`}
+                                          max={`${currentSchoolYear.split('-')[1]}-08-31`}
+                                          className="w-full px-3 py-2 text-sm font-medium border-2 border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent shadow-sm"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-xs font-semibold text-gray-700 mb-1">
+                                          End Date (Optional)
+                                        </label>
+                                        <input
+                                          type="date"
+                                          value={selectedEndDate}
+                                          onChange={(e) => handleDateChange(e.target.value, setSelectedEndDate, 'End date')}
+                                          min={selectedDate || `${currentSchoolYear.split('-')[0]}-09-01`}
+                                          max={`${currentSchoolYear.split('-')[1]}-08-31`}
+                                          className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent shadow-sm"
+                                          placeholder="Leave empty for single day"
+                                        />
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => handleSaveDate(event)}
+                                          disabled={saving}
+                                          className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          {saving ? (
+                                            <>
+                                              <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                              </svg>
+                                              Save
+                                            </>
+                                          ) : (
+                                            <>
+                                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                              </svg>
+                                              Save
+                                            </>
+                                          )}
+                                        </button>
+                                        <button
+                                          onClick={handleCancelEdit}
+                                          disabled={saving}
+                                          className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                          </svg>
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <svg className="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                      </svg>
+                                      <span className={`text-sm font-semibold ${event.date ? 'text-green-700' : 'text-gray-500'}`}>
+                                        {formatDate(event.date, event.end_date)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="px-6 py-4 text-center w-32">
+                                  {editingEventId !== event.id && (
+                                    <button
+                                      onClick={() => handleEditDate(event)}
+                                      className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-green-700 hover:text-white bg-green-100 hover:bg-green-700 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                                    >
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                      </svg>
+                                      {event.date ? 'Edit' : 'Set'}
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {/* Add Academic Event Button for all academic year months */}
+                      {(semester !== null || monthNumber === 7 || monthNumber === 8) && (
+                        <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-green-100 border-t border-green-200">
+                          {creatingEventMonth === monthNumber ? (
+                            <div className="flex items-center gap-3">
+                              <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                                {monthEvents.length + 1}
+                              </span>
+                              <input
+                                type="text"
+                                value={newEventName}
+                                onChange={(e) => setNewEventName(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && newEventName.trim()) {
+                                    handleSaveNewEventName(monthNumber);
+                                  }
+                                }}
+                                placeholder="Enter event name"
+                                className="flex-1 px-3 py-2 text-sm font-semibold border-2 border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent shadow-sm"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveNewEventName(monthNumber)}
+                                disabled={saving || !newEventName.trim()}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {saving ? (
+                                  <>
+                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Save
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Save
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={handleCancelCreateEvent}
+                                disabled={saving}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex justify-center">
+                              <button
+                                onClick={() => handleStartCreateEvent(monthNumber)}
+                                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Create Academic Event
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
                   ) : (
-                    <div className="px-6 py-12 text-center text-gray-400">
+                    <div className="px-6 py-12 text-center">
                       <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                      <p className="text-sm font-medium">No events scheduled</p>
+                      <p className="text-sm font-medium text-gray-400 mb-4">No events scheduled</p>
+                      {(semester !== null || monthNumber === 7 || monthNumber === 8) && (
+                        <>
+                          {creatingEventMonth === monthNumber ? (
+                            <div className="max-w-md mx-auto flex items-center gap-3">
+                              <span className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-600 to-green-700 text-white rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                                1
+                              </span>
+                              <input
+                                type="text"
+                                value={newEventName}
+                                onChange={(e) => setNewEventName(e.target.value)}
+                                onKeyPress={(e) => {
+                                  if (e.key === 'Enter' && newEventName.trim()) {
+                                    handleSaveNewEventName(monthNumber);
+                                  }
+                                }}
+                                placeholder="Enter event name"
+                                className="flex-1 px-3 py-2 text-sm font-semibold border-2 border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-transparent shadow-sm"
+                                autoFocus
+                              />
+                              <button
+                                onClick={() => handleSaveNewEventName(monthNumber)}
+                                disabled={saving || !newEventName.trim()}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {saving ? (
+                                  <>
+                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    Save
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Save
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                onClick={handleCancelCreateEvent}
+                                disabled={saving}
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleStartCreateEvent(monthNumber)}
+                              className="inline-flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                              </svg>
+                              Add Academic Event
+                            </button>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
                 </div>

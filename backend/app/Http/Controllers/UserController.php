@@ -170,12 +170,26 @@ class UserController extends Controller
             'username' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $user->id,
             'department' => 'sometimes|string|max:255',
+            'profile_picture' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Map 'username' to 'name' in the database and capitalize each word
         if (isset($validated['username'])) {
             $validated['name'] = $this->capitalizeWords($validated['username']);
             unset($validated['username']);
+        }
+
+        // Handle profile picture upload
+        if (request()->hasFile('profile_picture')) {
+            // Delete old profile picture if exists
+            if ($user->profile_picture && file_exists(public_path($user->profile_picture))) {
+                unlink(public_path($user->profile_picture));
+            }
+
+            $file = request()->file('profile_picture');
+            $filename = 'profile_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('uploads/profiles'), $filename);
+            $validated['profile_picture'] = 'uploads/profiles/' . $filename;
         }
 
         $user->update($validated);
@@ -187,6 +201,7 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'profile_picture' => $user->profile_picture ? url($user->profile_picture) : null,
                 'role' => $user->role,
                 'is_validated' => $user->is_validated,
                 'schedule_initialized' => $user->schedule_initialized ?? false,

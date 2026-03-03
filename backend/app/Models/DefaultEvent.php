@@ -11,6 +11,7 @@ class DefaultEvent extends Model
         'month',
         'order',
         'date',
+        'end_date',
         'school_year',
     ];
 
@@ -18,6 +19,7 @@ class DefaultEvent extends Model
         'month' => 'integer',
         'order' => 'integer',
         'date' => 'date',
+        'end_date' => 'date',
     ];
 
     /**

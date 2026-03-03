@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-export default function Calendar({ events, onDateSelect, highlightedDate, currentUser }) {
+export default function Calendar({ events, defaultEvents = [], onDateSelect, highlightedDate, currentUser }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
 
@@ -44,6 +44,58 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
   const getEventsForDate = (day) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return events.filter(event => event.date === dateStr);
+  };
+
+  // Check if a date falls within any default event's date range
+  const isDateInDefaultEventRange = (dateStr) => {
+    return defaultEvents.some(event => {
+      if (!event.date) return false;
+      
+      const eventStartDate = new Date(event.date);
+      const checkDate = new Date(dateStr);
+      
+      // If no end_date, check if it's the same day
+      if (!event.end_date) {
+        return eventStartDate.toDateString() === checkDate.toDateString();
+      }
+      
+      // If end_date exists, check if date is within range
+      const eventEndDate = new Date(event.end_date);
+      const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
+      
+      // Exclude Sundays (0) for multi-day events
+      if (isInRange) {
+        const dayOfWeek = checkDate.getDay();
+        return dayOfWeek !== 0;
+      }
+      
+      return false;
+    });
+  };
+
+  // Get default events for a specific date (including ranges)
+  const getDefaultEventsForDate = (dateStr) => {
+    return defaultEvents.filter(event => {
+      if (!event.date) return false;
+      
+      const eventStartDate = new Date(event.date);
+      const checkDate = new Date(dateStr);
+      
+      if (!event.end_date) {
+        return eventStartDate.toDateString() === checkDate.toDateString();
+      }
+      
+      const eventEndDate = new Date(event.end_date);
+      const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
+      
+      // Exclude Sundays (0) for multi-day events
+      if (isInRange) {
+        const dayOfWeek = checkDate.getDay();
+        return dayOfWeek !== 0;
+      }
+      
+      return false;
+    });
   };
 
   const handleDateClick = (day) => {
@@ -118,6 +170,7 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
       const cellDate = new Date(cellYear, cellMonth, cellDay);
       cellDate.setHours(0, 0, 0, 0);
       const isPast = cellDate < today;
+      const isSunday = cellDate.getDay() === 0;
 
       const isCurrentDay = (
         cellDay === today.getDate() &&
@@ -133,12 +186,16 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
       const dayEvents = isCurrentMonth ? events.filter(event => event.date === dateStr) : [];
       const eventCount = !isPast && isCurrentMonth ? dayEvents.length : 0;
       const hasAcademicEvent = dayEvents.some(event => event.is_default_event);
+      
+      // Check if this date is within any default event range
+      const isInDefaultEventRange = isCurrentMonth && isDateInDefaultEventRange(dateStr);
+      const defaultEventsOnDate = isCurrentMonth ? getDefaultEventsForDate(dateStr) : [];
 
       days.push(
         <div
           key={`${cellYear}-${cellMonth}-${cellDay}`}
           onClick={() => {
-            if (isCurrentMonth) {
+            if (isCurrentMonth && !isSunday) {
               const dateStr = `${cellYear}-${String(cellMonth + 1).padStart(2, '0')}-${String(cellDay).padStart(2, '0')}`;
               setSelectedDate(dateStr);
               if (onDateSelect) {
@@ -149,11 +206,13 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
           className={`
             h-16 p-2 rounded-lg transition-all duration-200 relative group flex flex-col
             ${isCurrentMonth 
-              ? `cursor-pointer ${isCurrentDay
+              ? `${isSunday ? 'cursor-not-allowed opacity-40 bg-gray-100' : 'cursor-pointer'} ${isCurrentDay
                   ? 'bg-green-100 border-2 border-green-600 shadow-sm'
-                  : hasAcademicEvent
-                    ? 'bg-green-50 border border-green-300 hover:border-green-400 hover:shadow-md'
-                    : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'
+                  : isInDefaultEventRange
+                    ? 'bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-400 hover:border-blue-500 hover:shadow-md'
+                    : hasAcademicEvent
+                      ? 'bg-green-700 border border-green-700 hover:border-green-600 hover:shadow-md'
+                      : 'bg-white border border-gray-200 hover:border-green-400 hover:shadow-md'
                 }`
               : 'bg-gray-50/30 border border-gray-100 cursor-default'
             }
@@ -162,13 +221,18 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
             ${isPast && isCurrentMonth ? 'opacity-40' : ''}
             ${isOtherMonth ? 'opacity-30' : ''}
           `}
+          title={isSunday && isCurrentMonth ? 'Sundays are not available for events' : ''}
         >
           <div className={`
             text-sm font-semibold flex-shrink-0
             ${isCurrentMonth 
               ? (isCurrentDay 
                   ? 'text-green-800' 
-                  : (selected ? 'text-green-700' : 'text-gray-700')
+                  : isInDefaultEventRange
+                    ? 'text-blue-700'
+                    : hasAcademicEvent
+                      ? 'text-white'
+                      : (selected ? 'text-green-700' : 'text-gray-700')
                 )
               : 'text-gray-400'
             }
@@ -182,28 +246,51 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
             </span>
           )}
 
+          {/* Show default event indicator */}
+          {isInDefaultEventRange && defaultEventsOnDate.length > 0 && (
+            <div className="absolute top-1 right-1 group-hover:opacity-100 transition-opacity">
+              <div className="relative">
+                <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                </svg>
+                {/* Tooltip on hover */}
+                <div className="absolute bottom-full right-0 mb-1 hidden group-hover:block z-10 w-48">
+                  <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-lg">
+                    {defaultEventsOnDate.map((evt, idx) => (
+                      <div key={idx} className="mb-1 last:mb-0">
+                        <div className="font-semibold">{evt.name}</div>
+                        {evt.end_date && (
+                          <div className="text-gray-300 text-[10px]">
+                            {new Date(evt.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(evt.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {eventCount > 0 && (
             <div className="mt-1 flex flex-wrap gap-1 flex-1 items-start">
-              {dayEvents.slice(0, 3).map((event, idx) => {
+              {dayEvents.filter(event => !event.is_default_event).slice(0, 3).map((event, idx) => {
                 const isHosted = currentUser && event.host && event.host.id === currentUser.id;
-                const isDefault = event.is_default_event;
                 return (
                   <div
                     key={idx}
                     className={`w-2 h-2 rounded-full ${
-                      isDefault
-                        ? 'bg-blue-500'
-                        : isHosted 
-                          ? 'bg-red-500' 
-                          : 'bg-green-500'
+                      isHosted 
+                        ? 'bg-red-500' 
+                        : 'bg-green-500'
                     }`}
-                    title={`${event.title} (${isDefault ? 'Academic' : isHosted ? 'Hosting' : 'Invited'})`}
+                    title={`${event.title} (${isHosted ? 'Hosting' : 'Invited'})`}
                   />
                 );
               })}
-              {eventCount > 3 && (
+              {dayEvents.filter(event => !event.is_default_event).length > 3 && (
                 <span className="text-[10px] text-gray-600 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">
-                  +{eventCount - 3}
+                  +{dayEvents.filter(event => !event.is_default_event).length - 3}
                 </span>
               )}
             </div>
@@ -265,6 +352,24 @@ export default function Calendar({ events, onDateSelect, highlightedDate, curren
       {/* Calendar Grid - Fixed 6 rows */}
       <div className="grid grid-cols-7 grid-rows-6 gap-1.5 flex-1">
         {renderCalendarDays()}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+        <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-400"></div>
+            <span className="text-gray-600 font-medium">Academic Event</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-500"></div>
+            <span className="text-gray-600 font-medium">Hosting</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-green-500"></div>
+            <span className="text-gray-600 font-medium">Invited</span>
+          </div>
+        </div>
       </div>
     </div>
   );

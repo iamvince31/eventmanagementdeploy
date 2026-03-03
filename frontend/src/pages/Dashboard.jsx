@@ -12,6 +12,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [events, setEvents] = useState([]);
+  const [defaultEvents, setDefaultEvents] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -81,19 +82,76 @@ export default function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const [eventsRes, membersRes] = await Promise.all([
+      // Get current school year
+      const now = new Date();
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1;
+      const schoolYear = currentMonth >= 9 
+        ? `${currentYear}-${currentYear + 1}` 
+        : `${currentYear - 1}-${currentYear}`;
+
+      // Also get next school year to cover all visible months in calendar
+      const nextSchoolYear = currentMonth >= 9
+        ? `${currentYear + 1}-${currentYear + 2}`
+        : `${currentYear}-${currentYear + 1}`;
+
+      const [eventsRes, membersRes, currentYearEventsRes, nextYearEventsRes] = await Promise.all([
         api.get('/events'),
         api.get('/users'),
+        api.get(`/default-events?school_year=${schoolYear}`),
+        api.get(`/default-events?school_year=${nextSchoolYear}`),
       ]);
       const fetchedEvents = eventsRes.data.events;
-      setEvents(fetchedEvents);
+      const currentYearDefaultEvents = currentYearEventsRes.data.events || [];
+      const nextYearDefaultEvents = nextYearEventsRes.data.events || [];
+      
+      // Combine default events from both school years
+      const fetchedDefaultEvents = [...currentYearDefaultEvents, ...nextYearDefaultEvents];
+      
+      // Filter out default events from the regular events list to avoid duplicates
+      const regularEventsOnly = fetchedEvents.filter(event => !event.is_default_event);
+      
+      setEvents(regularEventsOnly);
       setMembers(membersRes.data.members);
+      setDefaultEvents(fetchedDefaultEvents);
 
-      // Auto-select today's events
+      // Auto-select today's events (including default events)
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
-      const todayEvents = fetchedEvents.filter(event => event.date === todayStr);
-      setSelectedDateEvents(todayEvents);
+      const todayRegularEvents = regularEventsOnly.filter(event => event.date === todayStr);
+      
+      // Get default events for today
+      const todayDefaultEvents = fetchedDefaultEvents.filter(defEvent => {
+        if (!defEvent.date) return false;
+        
+        const eventStartDate = new Date(defEvent.date);
+        const checkDate = new Date(todayStr);
+        
+        if (!defEvent.end_date) {
+          return eventStartDate.toDateString() === checkDate.toDateString();
+        }
+        
+        const eventEndDate = new Date(defEvent.end_date);
+        const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
+        
+        // Exclude Sundays (0) for multi-day academic events
+        if (isInRange) {
+          const dayOfWeek = checkDate.getDay();
+          return dayOfWeek !== 0;
+        }
+        
+        return false;
+      }).map(defEvent => ({
+        ...defEvent,
+        is_default_event: true,
+        title: defEvent.name,
+        time: 'All Day',
+        host: { id: 0, username: 'Academic Calendar', email: '' },
+        members: [],
+        images: []
+      }));
+      
+      setSelectedDateEvents([...todayRegularEvents, ...todayDefaultEvents]);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -167,7 +225,43 @@ export default function Dashboard() {
 
   const handleDateSelect = (date, events) => {
     setSelectedDate(date);
-    setSelectedDateEvents(events);
+    
+    // Get default events that fall within their date ranges for this date
+    const defaultEventsForDate = defaultEvents.filter(defEvent => {
+      if (!defEvent.date) return false;
+      
+      const eventStartDate = new Date(defEvent.date);
+      const checkDate = new Date(date);
+      
+      // If no end_date, check if it's the same day
+      if (!defEvent.end_date) {
+        return eventStartDate.toDateString() === checkDate.toDateString();
+      }
+      
+      // If end_date exists, check if date is within range
+      const eventEndDate = new Date(defEvent.end_date);
+      const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
+      
+      // Exclude Sundays (0) for multi-day academic events
+      if (isInRange) {
+        const dayOfWeek = checkDate.getDay();
+        return dayOfWeek !== 0;
+      }
+      
+      return false;
+    }).map(defEvent => ({
+      ...defEvent,
+      is_default_event: true,
+      title: defEvent.name,
+      time: 'All Day',
+      host: { id: 0, username: 'Academic Calendar', email: '' },
+      members: [],
+      images: []
+    }));
+    
+    // Combine regular events with default events
+    const allEvents = [...events, ...defaultEventsForDate];
+    setSelectedDateEvents(allEvents);
   };
 
   const handleUpcomingClick = () => {
@@ -175,7 +269,39 @@ export default function Dashboard() {
       const nextEvent = upcomingEvents[0];
       setHighlightedDate(nextEvent.date);
       const eventsOnDate = events.filter(e => e.date === nextEvent.date);
-      handleDateSelect(nextEvent.date, eventsOnDate);
+      
+      // Get default events for this date
+      const defaultEventsForDate = defaultEvents.filter(defEvent => {
+        if (!defEvent.date) return false;
+        
+        const eventStartDate = new Date(defEvent.date);
+        const checkDate = new Date(nextEvent.date);
+        
+        if (!defEvent.end_date) {
+          return eventStartDate.toDateString() === checkDate.toDateString();
+        }
+        
+        const eventEndDate = new Date(defEvent.end_date);
+        const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
+        
+        // Exclude Sundays (0) for multi-day academic events
+        if (isInRange) {
+          const dayOfWeek = checkDate.getDay();
+          return dayOfWeek !== 0;
+        }
+        
+        return false;
+      }).map(defEvent => ({
+        ...defEvent,
+        is_default_event: true,
+        title: defEvent.name,
+        time: 'All Day',
+        host: { id: 0, username: 'Academic Calendar', email: '' },
+        members: [],
+        images: []
+      }));
+      
+      handleDateSelect(nextEvent.date, [...eventsOnDate, ...defaultEventsForDate]);
 
       setTimeout(() => {
         setHighlightedDate(null);
@@ -397,9 +523,17 @@ export default function Dashboard() {
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
                   aria-label="Account menu"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </div>
+                  {user?.profile_picture ? (
+                    <img 
+                      src={user.profile_picture} 
+                      alt={user?.username}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {user?.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
                   <svg
                     className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`}
@@ -690,6 +824,7 @@ export default function Dashboard() {
             ) : (
               <Calendar
                 events={events}
+                defaultEvents={defaultEvents}
                 onDateSelect={handleDateSelect}
                 highlightedDate={highlightedDate}
                 currentUser={user}
@@ -765,7 +900,17 @@ export default function Dashboard() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {selectedEvent.date} at {selectedEvent.time}
+                {selectedEvent.end_date ? (
+                  // Multi-day event: show date range without time
+                  <>
+                    {new Date(selectedEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {' - '}
+                    {new Date(selectedEvent.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </>
+                ) : (
+                  // Single-day event: show date and time
+                  `${selectedEvent.date} at ${selectedEvent.time}`
+                )}
               </p>
             </div>
 

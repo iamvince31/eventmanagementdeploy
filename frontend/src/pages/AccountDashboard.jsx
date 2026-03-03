@@ -16,6 +16,8 @@ export default function AccountDashboard() {
     email: '',
     department: '',
   });
+  const [profilePicture, setProfilePicture] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(null);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [schedule, setSchedule] = useState({
     Monday: [],
@@ -48,6 +50,11 @@ export default function AccountDashboard() {
         email: user.email || '',
         department: user.department || '',
       });
+      
+      // Set profile picture preview if exists
+      if (user.profile_picture) {
+        setProfilePicturePreview(user.profile_picture);
+      }
       
       // Fetch schedule and events without blocking UI
       fetchSchedule();
@@ -122,20 +129,48 @@ export default function AccountDashboard() {
     }));
   };
 
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setProfilePicture(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePicturePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSaveChanges = async (e) => {
     e.preventDefault();
     try {
-      const response = await api.put('/user/profile', formData);
+      const formDataToSend = new FormData();
+      formDataToSend.append('username', formData.username);
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('department', formData.department);
+      formDataToSend.append('_method', 'PUT'); // Laravel method spoofing
+      
+      if (profilePicture) {
+        formDataToSend.append('profile_picture', profilePicture);
+      }
+
+      const response = await api.post('/user/profile', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       // Update the user in context with the response data
       updateUser({
         username: response.data.user.username,
         email: response.data.user.email,
         department: response.data.user.department,
+        profile_picture: response.data.user.profile_picture,
       });
       
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setEditMode(false);
+      setProfilePicture(null);
       
       setTimeout(() => {
         setMessage({ type: '', text: '' });
@@ -457,9 +492,17 @@ export default function AccountDashboard() {
                   className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
                   aria-label="Account menu"
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                    {user?.username?.charAt(0).toUpperCase()}
-                  </div>
+                  {user?.profile_picture ? (
+                    <img 
+                      src={user.profile_picture} 
+                      alt={user?.username}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                      {user?.username?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
                   <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
                   <svg 
                     className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} 
@@ -855,6 +898,43 @@ export default function AccountDashboard() {
                   {editMode ? (
                     <form onSubmit={handleSaveChanges}>
                       <div className="space-y-6">
+                        {/* Profile Picture Upload */}
+                        <div className="flex flex-col items-center pb-6 border-b border-gray-200">
+                          <label className="block text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
+                            Profile Picture
+                          </label>
+                          <div className="relative">
+                            {profilePicturePreview ? (
+                              <img 
+                                src={profilePicturePreview} 
+                                alt="Profile preview"
+                                className="w-32 h-32 rounded-full object-cover border-4 border-green-200"
+                              />
+                            ) : (
+                              <div className="w-32 h-32 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-4xl">
+                                {user?.username?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+                            <label 
+                              htmlFor="profile-picture-input"
+                              className="absolute bottom-0 right-0 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-colors"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </label>
+                            <input
+                              id="profile-picture-input"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleProfilePictureChange}
+                              className="hidden"
+                            />
+                          </div>
+                          <p className="text-xs text-gray-500 mt-2">JPG, PNG, GIF (Max 2MB)</p>
+                        </div>
+
                         <div>
                           <label htmlFor="username" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
                             Username
@@ -919,6 +999,8 @@ export default function AccountDashboard() {
                                 email: user.email || '',
                                 department: user.department || '',
                               });
+                              setProfilePicture(null);
+                              setProfilePicturePreview(user.profile_picture || null);
                             }}
                             className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-300"
                           >
@@ -929,14 +1011,26 @@ export default function AccountDashboard() {
                     </form>
                   ) : (
                     <div className="space-y-6">
-                      <div className="pb-6 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
-                        <p className="text-lg text-gray-900 font-medium">February 2026</p>
+                      {/* Profile Picture Display */}
+                      <div className="flex flex-col items-center pb-6 border-b border-gray-200">
+                        {user?.profile_picture ? (
+                          <img 
+                            src={user.profile_picture} 
+                            alt={user?.username}
+                            className="w-32 h-32 rounded-full object-cover border-4 border-green-200 shadow-lg"
+                          />
+                        ) : (
+                          <div className="w-32 h-32 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-4xl shadow-lg">
+                            {user?.username?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <p className="text-lg font-bold text-gray-900 mt-4">{user?.username}</p>
+                        <p className="text-sm text-gray-500">{user?.role}</p>
                       </div>
 
                       <div className="pb-6 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Username</p>
-                        <p className="text-2xl font-bold text-gray-900">{user.username}</p>
+                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
+                        <p className="text-lg text-gray-900 font-medium">February 2026</p>
                       </div>
 
                       <div className="pb-6 border-b border-gray-200">

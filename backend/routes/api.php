@@ -54,11 +54,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/hierarchy-approvals/{approval}/review', [EventRequestController::class, 'reviewHierarchyApproval']);
     Route::get('/hierarchy-approvals/{approval}/details', [EventRequestController::class, 'getApprovalDetails']);
     
+<<<<<<< Updated upstream
     // Default Events (Academic Calendar) - Admin Only
     Route::middleware('admin')->group(function () {
         Route::get('/default-events', [DefaultEventController::class, 'index']);
         Route::put('/default-events/{id}/date', [DefaultEventController::class, 'updateDate']);
     });
+=======
+    // Default Events (Academic Calendar) - Protected
+    Route::put('/default-events/{id}/date', [DefaultEventController::class, 'updateDate']);
+    Route::post('/default-events/create-empty', [DefaultEventController::class, 'createEmptyEvent']);
+    Route::post('/default-events/create-with-details', [DefaultEventController::class, 'createEventWithDetails']);
+>>>>>>> Stashed changes
     
     // Users
     Route::get('/users', [UserController::class, 'index']);

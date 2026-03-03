@@ -379,6 +379,7 @@ class AuthController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
+                'profile_picture' => $user->profile_picture ? url($user->profile_picture) : null,
                 'role' => $user->role,
                 'is_validated' => $user->is_validated ?? false,
                 'schedule_initialized' => $user->schedule_initialized ?? false,

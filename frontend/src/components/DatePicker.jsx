@@ -31,7 +31,10 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate }) {
     today.setHours(0, 0, 0, 0);
     date.setHours(0, 0, 0, 0);
     
-    return date < today;
+    // Check if date is Sunday (0 = Sunday)
+    const isSunday = date.getDay() === 0;
+    
+    return date < today || isSunday;
   };
 
   const isDateSelected = (day) => {
@@ -73,15 +76,26 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate }) {
 
     // Previous month days
     for (let i = firstDayOfMonth - 1; i >= 0; i--) {
+      const prevDay = prevMonthDays - i;
+      const prevDate = new Date(year, month - 1, prevDay);
+      const isPrevSunday = prevDate.getDay() === 0;
+      
       days.push(
-        <div key={`prev-${i}`} className="h-7 flex items-center justify-center text-gray-300 text-xs">
-          {prevMonthDays - i}
+        <div 
+          key={`prev-${i}`} 
+          className={`h-7 flex items-center justify-center text-xs ${
+            isPrevSunday ? 'text-gray-200' : 'text-gray-300'
+          }`}
+        >
+          {prevDay}
         </div>
       );
     }
 
     // Current month days
     for (let day = 1; day <= daysInMonth; day++) {
+      const date = new Date(year, month, day);
+      const isSunday = date.getDay() === 0;
       const disabled = isDateDisabled(day);
       const selected = isDateSelected(day);
       const today = isToday(day);
@@ -92,6 +106,7 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate }) {
           type="button"
           onClick={() => handleDateClick(day)}
           disabled={disabled}
+          title={isSunday ? 'Sundays are not available' : ''}
           className={`h-7 flex items-center justify-center text-xs rounded-md transition-all ${
             disabled
               ? 'text-gray-300 bg-gray-100 cursor-not-allowed'
@@ -110,8 +125,16 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate }) {
     // Next month days to fill the grid
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
+      const nextDate = new Date(year, month + 1, day);
+      const isNextSunday = nextDate.getDay() === 0;
+      
       days.push(
-        <div key={`next-${day}`} className="h-7 flex items-center justify-center text-gray-300 text-xs">
+        <div 
+          key={`next-${day}`} 
+          className={`h-7 flex items-center justify-center text-xs ${
+            isNextSunday ? 'text-gray-200' : 'text-gray-300'
+          }`}
+        >
           {day}
         </div>
       );
@@ -160,8 +183,11 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate }) {
               </div>
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 bg-gray-300 rounded"></div>
-                <span className="text-gray-600">Past Date</span>
+                <span className="text-gray-600">Unavailable</span>
               </div>
+            </div>
+            <div className="text-center mt-1 text-[10px] text-gray-500">
+              Sundays are excluded
             </div>
           </div>
 
