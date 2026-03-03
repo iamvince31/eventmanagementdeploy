@@ -3,7 +3,10 @@
 7:00 - 8:00 : Improving consistency of UI on the dashboard 
 8:00 - 9:00 : Debugging error on member's list not showing up
 9:00 - 10:00 : Fixing inconsistency on the request between dean-chair-coord / Your-events onClick fixed
-10:00 - 11:00 : Cleanup on validation between chair-coord-dean approval, cleaned request event
+10:00 - 11:00 : Cleanup on validation between chair-coord-dean approval, cleaned request event.
 11:00 - 12:00 : Lunch break 
 12:00 - 1:00 : Fixing bugs on the add event + request between positions 
-1:00 - 2:00 : 
+1:00 - 2:00 : Fixing bugs on the add events 
+2:00 - 3:00 : Testing changes between users wit privileges
+3:00 - 4:00 : Improving the add event handling of privileges between users with different position
+4:00 - 5:00 : Determining what to improve more on the system
