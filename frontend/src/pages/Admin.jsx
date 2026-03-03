@@ -405,106 +405,123 @@ export default function Admin() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Header */}
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-3xl font-bold text-gray-900">User Management</h2>
-              <p className="text-gray-600 mt-1">View and manage all registered users</p>
-            </div>
-            
-            {/* Bootstrap Admin - Create Permanent Admin Button */}
-            {isBootstrapAdmin && (
-              <button
-                onClick={() => setShowCreateAdminModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                <span className="font-semibold">Create Permanent Admin</span>
-              </button>
-            )}
-          </div>
-
+      <main className="flex-1 w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto">
           {/* Bootstrap Admin Warning Banner */}
           {isBootstrapAdmin && (
-            <div className="mb-6 bg-gradient-to-r from-purple-50 to-purple-100 border-l-4 border-purple-500 p-4 rounded-lg shadow-md">
-              <div className="flex items-start">
-                <svg className="w-6 h-6 text-purple-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-                <div className="ml-3">
-                  <h3 className="text-sm font-bold text-purple-900">Bootstrap Admin Account</h3>
-                  <p className="text-sm text-purple-800 mt-1">
-                    You are logged in as a temporary setup admin. Create 2 permanent admin accounts to complete the setup. 
-                    Your bootstrap account will be automatically removed after creating the 2nd admin.
-                  </p>
+            <div className="mb-6 bg-white border-l-4 border-green-500 p-4 rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start">
+                  <svg className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-bold text-gray-900">Bootstrap Admin Account</h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      You are logged in as a temporary setup admin. Create 2 permanent admin accounts to complete the setup.
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setShowCreateAdminModal(true)}
+                  className="ml-4 flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-300 shadow-md hover:shadow-lg whitespace-nowrap"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span className="font-semibold">Create Admin</span>
+                </button>
               </div>
             </div>
           )}
 
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div className="bg-white rounded-lg shadow-md border-l-4 border-green-500 p-6">
-              <div className="flex items-center">
-                <div className="bg-green-100 rounded-full p-3">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {loading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-white rounded-2xl shadow-md p-6 animate-pulse">
+                    <div className="flex items-center space-x-4">
+                      <div className="bg-gray-200 rounded-2xl w-16 h-16"></div>
+                      <div className="space-y-2">
+                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                        <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                {/* Total Users Card */}
+                <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-green-100 rounded-2xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Users</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{users.length}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Total Users</p>
-                  <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-md border-l-4 border-blue-500 p-6">
-              <div className="flex items-center">
-                <div className="bg-blue-100 rounded-full p-3">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
+                {/* Validated Card */}
+                <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-green-100 rounded-2xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Validated</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">{users.filter(u => u.is_validated).length}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Active Users</p>
-                  <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white rounded-lg shadow-md border-l-4 border-purple-500 p-6">
-              <div className="flex items-center">
-                <div className="bg-purple-100 rounded-full p-3">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
+                {/* Departments Card */}
+                <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-green-100 rounded-2xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
+                      <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-500 uppercase tracking-wide">Departments</p>
+                      <p className="text-3xl font-bold text-gray-900 mt-1">
+                        {new Set(users.map(u => u.department).filter(Boolean)).size}
+                      </p>
+                    </div>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500">Departments</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {new Set(users.map(u => u.department).filter(Boolean)).size}
-                  </p>
-                </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
-          {/* Search Bar */}
-          <div className="bg-white rounded-lg shadow-md mb-6 p-4 border-t-4 border-green-500">
-            <div className="flex gap-4 items-center">
+          {/* User Management Section */}
+          <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
+            {/* Header */}
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+              <p className="text-sm text-gray-600 mt-1">Manage users, roles, and validations</p>
+            </div>
+
+            {/* Search and Filter */}
+            <div className="mb-6 flex gap-4 items-center">
               <div className="flex-1 relative">
                 <input
                   type="text"
                   placeholder="Search by name, email, or department..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all"
                 />
-                <svg className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-3 top-3.5 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
@@ -512,10 +529,10 @@ export default function Admin() {
               {/* Pending Filter Button */}
               <button
                 onClick={() => setShowPendingOnly(!showPendingOnly)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 whitespace-nowrap shadow-sm hover:shadow-md ${
                   showPendingOnly
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                    ? 'bg-green-600 text-white hover:bg-green-700'
+                    : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500'
                 }`}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -523,70 +540,71 @@ export default function Admin() {
                 </svg>
                 {showPendingOnly ? 'Show All' : 'Pending Only'}
                 {showPendingOnly && (
-                  <span className="ml-1 px-2 py-0.5 bg-white text-blue-600 rounded-full text-xs font-bold">
+                  <span className="ml-1 px-2.5 py-0.5 bg-white text-green-600 rounded-full text-xs font-bold">
                     {filteredUsers.length}
                   </span>
                 )}
               </button>
             </div>
-          </div>
 
-          {/* Users Table */}
-          <div ref={tableRef} className="bg-white rounded-lg shadow-md overflow-hidden border-t-4 border-green-500">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-green-50 to-green-100">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+            {/* Users Table */}
+            <div ref={tableRef} className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       User
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Email
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Department
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Role
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
-                      Validation
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                      Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {filteredUsers.length === 0 ? (
                     <tr>
-                      <td colSpan="7" className="px-6 py-8 text-center text-gray-500">
-                        No users found
+                      <td colSpan="6" className="px-6 py-12 text-center">
+                        <svg className="w-16 h-16 mx-auto text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                        </svg>
+                        <p className="text-gray-500 font-medium">No users found</p>
                       </td>
                     </tr>
                   ) : (
                     filteredUsers.map((u) => (
-                      <tr key={u.id} className="hover:bg-green-50 transition-colors">
+                      <tr key={u.id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold shadow-md">
                               {u.username.charAt(0).toUpperCase()}
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{u.username}</div>
+                              <div className="text-sm font-semibold text-gray-900">{u.username}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{u.email}</div>
+                          <div className="text-sm text-gray-600">{u.email}</div>
                         </td>
                         <td className="px-6 py-4">
                           {u.department ? (
-                            <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            <span className="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">
                               {u.department}
                             </span>
                           ) : (
-                            <span className="text-sm text-red-500 italic">Not assigned</span>
+                            <span className="text-sm text-gray-400 italic">Not assigned</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -595,7 +613,7 @@ export default function Admin() {
                               <select
                                 value={selectedRole}
                                 onChange={(e) => setSelectedRole(e.target.value)}
-                                className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500"
                               >
                                 {roles.map(role => (
                                   <option key={role} value={role}>
@@ -605,26 +623,26 @@ export default function Admin() {
                               </select>
                               <button
                                 onClick={() => handleRoleChange(u.id, selectedRole)}
-                                className="text-green-600 hover:text-green-900 text-xs font-medium"
+                                className="text-green-600 hover:text-green-700 text-xs font-semibold"
                               >
                                 Save
                               </button>
                               <button
                                 onClick={cancelEditRole}
-                                className="text-gray-600 hover:text-gray-900 text-xs font-medium"
+                                className="text-gray-600 hover:text-gray-700 text-xs font-semibold"
                               >
                                 Cancel
                               </button>
                             </div>
                           ) : (
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleColor(u.role)}`}>
+                            <span className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${getRoleColor(u.role)}`}>
                               {u.role}
                             </span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            <span className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${
                               u.is_validated 
                                 ? 'bg-green-100 text-green-800' 
                                 : 'bg-red-100 text-red-800'
@@ -632,47 +650,45 @@ export default function Admin() {
                               {u.is_validated ? 'Validated' : 'Pending'}
                             </span>
                             {u.role === 'Admin' && (
-                              <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                Auto-validated
+                              <span className="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                Auto
                               </span>
                             )}
                             {!u.is_validated && u.role !== 'Admin' ? (
                               <button
                                 onClick={() => handleValidateUser(u.id)}
-                                className="text-green-600 hover:text-green-900 text-xs font-medium"
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                 title="Validate User"
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                               </button>
                             ) : u.is_validated && u.role !== 'Admin' ? (
                               <button
                                 onClick={() => handleRevokeValidation(u.id)}
-                                className="text-red-600 hover:text-red-900 text-xs font-medium"
+                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                 title="Revoke Validation"
                               >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                               </button>
                             ) : null}
                           </div>
                         </td>
-                        <td className="px-11 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
                             {user?.id !== u.id && (
-                              <>
-                                <button
-                                  onClick={() => handleEditUser(u)}
-                                  className="text-blue-600 hover:text-blue-900 text-xs"
-                                  title="Edit User"
-                                >
-                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                  </svg>
-                                </button>                      
-                              </>
+                              <button
+                                onClick={() => handleEditUser(u)}
+                                className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                                title="Edit User"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -682,11 +698,11 @@ export default function Admin() {
                 </tbody>
               </table>
             </div>
-          </div>
 
-          {/* Results Count */}
-          <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredUsers.length} of {users.length} users
+            {/* Results Count */}
+            <div className="mt-6 pt-4 border-t border-gray-200 text-center text-sm text-gray-600 font-medium">
+              Showing {filteredUsers.length} of {users.length} users
+            </div>
           </div>
         </div>
       </main>
