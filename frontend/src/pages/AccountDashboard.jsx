@@ -33,7 +33,7 @@ export default function AccountDashboard() {
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [newTimeSlot, setNewTimeSlot] = useState({ start_time: '', end_time: '' });
 
-  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
   const departments = [
     'Department of Information Technology',
