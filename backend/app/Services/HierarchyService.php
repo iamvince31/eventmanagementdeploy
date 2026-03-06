@@ -12,8 +12,10 @@ class HierarchyService
      */
     private const ROLE_HIERARCHY = [
         'Faculty Member' => 1,
+        'Staff' => 1,  // Same level as Faculty Member
         'Coordinator' => 2,
         'Chairperson' => 3,
+        'CEIT Official' => 3,  // Same level as Chairperson
         'Dean' => 4,
         'Admin' => 5,
     ];

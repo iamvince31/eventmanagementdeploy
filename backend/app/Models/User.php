@@ -106,7 +106,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canCreateEvents()
     {
-        return in_array($this->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator']);
+        return in_array($this->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'CEIT Official']);
     }
 
     public function needsApprovalForEvents()

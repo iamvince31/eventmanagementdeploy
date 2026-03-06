@@ -132,9 +132,9 @@ class EventController extends Controller
         }
         
         // Role-based restrictions for event creation (allow Coordinators with approved requests)
-        if (!in_array($user->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator'])) {
+        if (!in_array($user->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'CEIT Official'])) {
             return response()->json([
-                'error' => 'Unauthorized. Only Admin, Dean, Chairperson, and Coordinator (with approved requests) can create events.'
+                'error' => 'Unauthorized. Only Admin, Dean, Chairperson, Coordinator, and CEIT Official can create events.'
             ], 403);
         }
         
@@ -146,10 +146,10 @@ class EventController extends Controller
         }
         */
         
-        // Simplified: Only Faculty Members cannot create events directly
-        if ($user->role === 'Faculty Member') {
+        // Simplified: Only Faculty Members and Staff cannot create events directly
+        if (in_array($user->role, ['Faculty Member', 'Staff'])) {
             return response()->json([
-                'error' => 'Faculty Members cannot create events directly. Please submit an event request.'
+                'error' => 'Faculty Members and Staff cannot create events directly. Please submit an event request.'
             ], 403);
         }
 

@@ -458,8 +458,8 @@ export default function History() {
                   Invitations
                 </button>
                 
-                {/* Show Requests filter for Faculty Members only */}
-                {user?.role === 'Faculty Member' && (
+                {/* Show Requests filter for Faculty Members and Staff only */}
+                {(user?.role === 'Faculty Member' || user?.role === 'Staff') && (
                   <button
                     onClick={() => setFilterType('event_request_submitted')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
@@ -472,8 +472,8 @@ export default function History() {
                   </button>
                 )}
                 
-                {/* Show Approvals filter for Dean, Chairperson, and Coordinator */}
-                {(user?.role === 'Dean' || user?.role === 'Chairperson' || user?.role === 'Coordinator') && (
+                {/* Show Approvals filter for Dean, Chairperson, Coordinator, and CEIT Official */}
+                {(user?.role === 'Dean' || user?.role === 'Chairperson' || user?.role === 'Coordinator' || user?.role === 'CEIT Official') && (
                   <button
                     onClick={() => setFilterType('hierarchy_approval_requested')}
                     className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${

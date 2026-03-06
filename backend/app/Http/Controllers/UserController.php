@@ -129,7 +129,7 @@ class UserController extends Controller
     public function updateRole(Request $request, $id)
     {
         $validated = $request->validate([
-            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Faculty Member',
+            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Faculty Member,Staff,CEIT Official',
             'department' => 'sometimes|string|max:255',
         ]);
 

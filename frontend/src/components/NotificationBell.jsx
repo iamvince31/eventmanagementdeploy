@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/api';
 import Modal from './Modal';
 
 export default function NotificationBell({ events, user, onNotificationClick, approvedRequests = [] }) {
@@ -30,16 +30,8 @@ export default function NotificationBell({ events, user, onNotificationClick, ap
 
   const fetchMessages = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        console.log('No token found, skipping message fetch');
-        return;
-      }
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/messages`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setMessages(response.data);
+      const response = await api.get('/messages/unread');
+      setMessages(response.data.messages || []);
     } catch (error) {
       // Only log non-auth errors to avoid console spam
       if (error.response?.status !== 401) {
@@ -50,12 +42,7 @@ export default function NotificationBell({ events, user, onNotificationClick, ap
 
   const fetchPendingValidations = async () => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/users/pending-validation`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/users/pending-validation');
       setPendingUsers(response.data.pending_users || []);
     } catch (error) {
       if (error.response?.status !== 401 && error.response?.status !== 403) {
@@ -97,14 +84,7 @@ export default function NotificationBell({ events, user, onNotificationClick, ap
     // Mark as read (but don't refetch immediately to avoid UI flicker)
     if (!message.is_read) {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        
-        await axios.post(
-          `${import.meta.env.VITE_API_URL}/messages/${message.id}/read`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await api.post(`/messages/${message.id}/read`);
         // Update local state instead of refetching
         setMessages(prevMessages => 
           prevMessages.map(msg => 
@@ -123,15 +103,7 @@ export default function NotificationBell({ events, user, onNotificationClick, ap
     if (!confirm('Are you sure you want to delete this message?')) return;
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        alert('Authentication required. Please log in again.');
-        return;
-      }
-      
-      await axios.delete(`${import.meta.env.VITE_API_URL}/messages/${messageId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/messages/${messageId}`);
       // Remove from local state
       setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
       setIsMessageModalOpen(false);

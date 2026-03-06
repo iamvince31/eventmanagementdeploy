@@ -37,7 +37,7 @@ class PositionSeeder extends Seeder
         }
 
         // Set default role for users without a proper role
-        User::whereNotIn('role', ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member'])
+        User::whereNotIn('role', ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member', 'Staff', 'CEIT Official'])
             ->orWhereNull('role')
             ->update([
                 'role' => 'Faculty Member',

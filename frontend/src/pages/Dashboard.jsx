@@ -736,8 +736,8 @@ export default function Dashboard() {
             )}
             
             {/* Role-based Event Creation Buttons */}
-            {user?.role === 'Faculty Member' ? (
-              // Faculty Members can only request events
+            {user?.role === 'Faculty Member' || user?.role === 'Staff' ? (
+              // Faculty Members and Staff can only request events
               <div className="flex gap-3">
                 <button
                   onClick={() => navigate('/request-event', { state: { selectedDate } })}
@@ -758,8 +758,8 @@ export default function Dashboard() {
                   Personal Event
                 </button>
               </div>
-            ) : user?.role === 'Coordinator' || user?.role === 'Chairperson' || user?.role === 'Dean' || user?.role === 'Admin' ? (
-              // Coordinators, Chairpersons, Deans, and Admins can create events directly
+            ) : user?.role === 'Coordinator' || user?.role === 'Chairperson' || user?.role === 'Dean' || user?.role === 'Admin' || user?.role === 'CEIT Official' ? (
+              // Coordinators, Chairpersons, Deans, CEIT Officials, and Admins can create events directly
               <div className="flex gap-3">
                 <button
                   onClick={() => navigate('/add-event', { state: { selectedDate } })}
@@ -1496,7 +1496,7 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     setIsEventsListModalOpen(false);
-                    if (user?.role === 'Faculty Member') {
+                    if (user?.role === 'Faculty Member' || user?.role === 'Staff') {
                       navigate('/request-event');
                     } else {
                       handleAddEventClick();

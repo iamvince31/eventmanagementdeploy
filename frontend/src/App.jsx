@@ -164,7 +164,7 @@ function App() {
             </AccountRoute>
           } />
           <Route path="/add-event" element={
-            <RoleProtectedRoute allowedRoles={['Admin', 'Dean', 'Chairperson', 'Coordinator']}>
+            <RoleProtectedRoute allowedRoles={['Admin', 'Dean', 'Chairperson', 'Coordinator', 'CEIT Official']}>
               <AddEvent />
             </RoleProtectedRoute>
           } />
@@ -174,7 +174,7 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/request-event" element={
-            <RoleProtectedRoute allowedRoles={['Faculty Member']}>
+            <RoleProtectedRoute allowedRoles={['Faculty Member', 'Staff']}>
               <RequestEvent />
             </RoleProtectedRoute>
           } />

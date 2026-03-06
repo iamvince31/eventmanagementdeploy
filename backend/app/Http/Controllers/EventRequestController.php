@@ -36,14 +36,14 @@ class EventRequestController extends Controller
 
         $user = Auth::user();
 
-        // Only Faculty Members can submit event requests
-        if ($user->role !== 'Faculty Member') {
+        // Only Faculty Members and Staff can submit event requests
+        if (!in_array($user->role, ['Faculty Member', 'Staff'])) {
             return response()->json([
-                'message' => 'Unauthorized. Only Faculty Members can submit event requests.'
+                'message' => 'Unauthorized. Only Faculty Members and Staff can submit event requests.'
             ], 403);
         }
 
-        // Faculty Members need approval from Dean and/or Chairperson (whoever is available)
+        // Faculty Members and Staff need approval from Dean and/or Chairperson (whoever is available)
         $requiredApprovers = [];
         
         $dean = User::where('role', 'Dean')->first();
