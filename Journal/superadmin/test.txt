@@ -1,3 +1,13 @@
 cd backend
 php artisan tinker --execute="App\Models\User::where('role', 'admin')->delete();"
 php artisan db:seed --class=AdminSeeder
+
+Perfect! I've created a comprehensive test accounts seeder. Here's what you can do now:
+
+Run the seeder:
+
+php artisan db:seed --class=TestUsersSeeder
+Or refresh the entire database with all seeders:
+
+php artisan migrate:fresh --seed
+All test accounts use password: 11111111

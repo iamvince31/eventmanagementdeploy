@@ -16,9 +16,15 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
         ]);
 
+        // Seed test users for development/testing
+        if (app()->environment(['local', 'development', 'testing'])) {
+            $this->call([
+                TestUsersSeeder::class,
+            ]);
+        }
+
         // Seed academic calendar events
         $this->call([
-            AcademicCalendarSeeder::class,
             DefaultEventSeeder::class,
         ]);
     }

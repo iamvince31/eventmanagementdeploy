@@ -17,8 +17,8 @@ A new endpoint has been added to allow bootstrap admins to create new admin user
 {
   "name": "Admin Name",
   "email": "admin@cvsu.edu.ph",
-  "password": "securepassword123",
-  "password_confirmation": "securepassword123",
+  "password": "secure11111111",
+  "password_confirmation": "secure11111111",
   "department": "IT Department"
 }
 ```

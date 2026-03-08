@@ -3,11 +3,13 @@ import api from '../services/api';
 
 export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    name: '',
+    first_name: '',
+    last_name: '',
+    middle_initial: '',
     email: '',
     password: '',
     password_confirmation: '',
-    department: '',
+    department: 'Admin',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -21,6 +23,23 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
     setError('');
   };
 
+  // Capitalize names on blur
+  const handleNameBlur = (e) => {
+    const { name, value } = e.target;
+    if (value.trim()) {
+      const capitalizedValue = value.split(' ')
+        .map(word => word.trim())
+        .filter(word => word.length > 0)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
+      setFormData(prev => ({
+        ...prev,
+        [name]: capitalizedValue
+      }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -28,7 +47,22 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
     setLoading(true);
 
     try {
-      const response = await api.post('/setup/create-admin', formData);
+      // Construct full name from parts
+      let middleInitial = '';
+      if (formData.middle_initial) {
+        const middleWords = formData.middle_initial.split(' ').filter(word => word.trim());
+        const initials = middleWords.map(word => word.trim().charAt(0).toUpperCase() + '.');
+        middleInitial = ' ' + initials.join(' ');
+      }
+      const fullName = (formData.first_name + middleInitial + ' ' + formData.last_name).trim();
+
+      const response = await api.post('/setup/create-admin', {
+        name: fullName,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.password_confirmation,
+        department: formData.department,
+      });
       
       setSuccess(response.data.message);
       
@@ -49,11 +83,13 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
           onClose();
           // Reset form
           setFormData({
-            name: '',
+            first_name: '',
+            last_name: '',
+            middle_initial: '',
             email: '',
             password: '',
             password_confirmation: '',
-            department: '',
+            department: 'Admin',
           });
         }, 1500);
       }
@@ -73,37 +109,37 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4 rounded-t-lg">
+        <div className="px-6 py-4 border-b border-gray-200">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-white">Create Permanent Admin</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Create Admin Account</h2>
+              <p className="text-gray-500 text-sm mt-1">Join the Event Management System</p>
+            </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-200 transition-colors"
+              className="text-gray-400 hover:text-gray-600 transition-colors"
               disabled={loading}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
-          <p className="text-green-100 text-sm mt-2">
-            Create permanent admin accounts. Bootstrap admin will be removed after creating 2 admins.
-          </p>
         </div>
 
         {/* Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {/* Success Message */}
           {success && (
-            <div className="bg-green-50 border-l-4 border-green-500 p-4 rounded">
+            <div className="bg-green-50 border border-green-200 p-3 rounded-lg">
               <div className="flex items-start">
                 <svg className="w-5 h-5 text-green-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                 </svg>
                 <div className="ml-3">
-                  <p className="text-sm text-green-800">{success}</p>
+                  <p className="text-sm text-green-800 font-medium">{success}</p>
                   <p className="text-xs text-green-700 mt-1">Redirecting to login...</p>
                 </div>
               </div>
@@ -112,7 +148,7 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+            <div className="bg-red-50 border border-red-200 p-3 rounded-lg">
               <div className="flex items-start">
                 <svg className="w-5 h-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -122,43 +158,67 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
             </div>
           )}
 
-          {/* Warning */}
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
-            <div className="flex items-start">
-              <svg className="w-5 h-5 text-yellow-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-800 font-medium">Important</p>
-                <p className="text-xs text-yellow-700 mt-1">
-                  You can create up to 2 permanent admin accounts. Bootstrap admin will be automatically removed after the 2nd admin is created.
-                </p>
-              </div>
+          {/* Name Fields */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="first_name" className="block text-sm font-medium text-gray-700 mb-1">
+                First Name
+              </label>
+              <input
+                type="text"
+                id="first_name"
+                name="first_name"
+                value={formData.first_name}
+                onChange={handleChange}
+                onBlur={handleNameBlur}
+                required
+                disabled={loading || success}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all"
+                placeholder="First name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-1">
+                Last Name
+              </label>
+              <input
+                type="text"
+                id="last_name"
+                name="last_name"
+                value={formData.last_name}
+                onChange={handleChange}
+                onBlur={handleNameBlur}
+                required
+                disabled={loading || success}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all"
+                placeholder="Last name"
+              />
             </div>
           </div>
 
-          {/* Name */}
+          {/* Middle Name */}
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
+            <label htmlFor="middle_initial" className="block text-sm font-medium text-gray-700 mb-1">
+              Middle Name <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="middle_initial"
+              name="middle_initial"
+              value={formData.middle_initial}
               onChange={handleChange}
-              required
+              onBlur={handleNameBlur}
               disabled={loading || success}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-              placeholder="John Doe"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all"
+              placeholder="Middle name"
             />
           </div>
 
           {/* Email */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-              Email Address
+              CVSU Email Address
             </label>
             <input
               type="email"
@@ -168,27 +228,8 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
               onChange={handleChange}
               required
               disabled={loading || success}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-              placeholder="admin@cvsu.edu.ph"
-            />
-            <p className="text-xs text-gray-500 mt-1">Must be a @cvsu.edu.ph email</p>
-          </div>
-
-          {/* Department */}
-          <div>
-            <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-1">
-              Department
-            </label>
-            <input
-              type="text"
-              id="department"
-              name="department"
-              value={formData.department}
-              onChange={handleChange}
-              required
-              disabled={loading || success}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-              placeholder="Computer Engineering and Information Technology"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all"
+              placeholder="yourname@cvsu.edu.ph"
             />
           </div>
 
@@ -204,10 +245,10 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
               value={formData.password}
               onChange={handleChange}
               required
-              minLength={8}
+              minLength={6}
               disabled={loading || success}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-              placeholder="Minimum 8 characters"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all"
+              placeholder="Min. 6 characters"
             />
           </div>
 
@@ -223,43 +264,38 @@ export default function CreatePermanentAdminModal({ isOpen, onClose, onSuccess }
               value={formData.password_confirmation}
               onChange={handleChange}
               required
-              minLength={8}
+              minLength={6}
               disabled={loading || success}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100"
-              placeholder="Re-enter password"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 disabled:bg-gray-100 transition-all"
+              placeholder="Confirm password"
             />
           </div>
 
-          {/* Buttons */}
-          <div className="flex space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={loading || success}
-              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || success}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Creating...
-                </>
-              ) : success ? (
-                'Success!'
-              ) : (
-                'Create Admin'
-              )}
-            </button>
-          </div>
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading || success}
+            className="w-full px-4 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center shadow-md hover:shadow-lg"
+          >
+            {loading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Creating Account...
+              </>
+            ) : success ? (
+              'Account Created!'
+            ) : (
+              'Create Account'
+            )}
+          </button>
+
+          {/* Info Text */}
+          <p className="text-center text-xs text-gray-500">
+            Bootstrap admin will be removed after creating 2 permanent admins
+          </p>
         </form>
       </div>
     </div>

@@ -254,7 +254,7 @@ php artisan db:seed --class=AdminSeeder
 ```env
 BOOTSTRAP_ADMIN_NAME="Setup Admin"
 BOOTSTRAP_ADMIN_EMAIL=admin@cvsu.edu.ph
-BOOTSTRAP_ADMIN_PASSWORD=YourStrongPassword123!
+BOOTSTRAP_ADMIN_PASSWORD=YourStrong11111111!
 ```
 
 ### Issue: "Invalid bootstrap admin email format"

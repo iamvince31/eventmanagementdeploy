@@ -18,7 +18,7 @@ Password: SetupAdmin2024!
    - Name: Admin One
    - Email: admin1@cvsu.edu.ph
    - Department: Administration
-   - Password: YourPassword123
+   - Password: Your11111111
 3. Submit
 
 **Result**: 

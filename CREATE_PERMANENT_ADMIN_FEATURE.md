@@ -101,8 +101,8 @@ Content-Type: application/json
 {
   "name": "John Doe",
   "email": "john.doe@cvsu.edu.ph",
-  "password": "SecurePassword123",
-  "password_confirmation": "SecurePassword123",
+  "password": "Secure11111111",
+  "password_confirmation": "Secure11111111",
   "department": "Computer Engineering"
 }
 ```
@@ -158,8 +158,8 @@ Password: SetupAdmin2024!
 Name: John Doe
 Email: john.doe@cvsu.edu.ph
 Department: Computer Engineering
-Password: YourSecurePassword123
-Confirm Password: YourSecurePassword123
+Password: YourSecure11111111
+Confirm Password: YourSecure11111111
 ```
 
 ### Step 5: Submit
@@ -170,7 +170,7 @@ Confirm Password: YourSecurePassword123
 ### Step 6: Login with New Admin
 ```
 Email: john.doe@cvsu.edu.ph
-Password: YourSecurePassword123
+Password: YourSecure11111111
 ```
 
 ## Visual Indicators
