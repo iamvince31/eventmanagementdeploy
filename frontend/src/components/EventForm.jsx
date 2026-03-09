@@ -7,18 +7,15 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
-<<<<<<< Updated upstream
-  const [schoolYear, setSchoolYear] = useState('');
-=======
   const [eventType, setEventType] = useState(
     // Faculty and Staff can only create meetings
     currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff' ? 'meeting' : 'event'
   );
->>>>>>> Stashed changes
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
+  const [schoolYear, setSchoolYear] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -107,11 +104,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setTitle(editingEvent.title);
       setDescription(editingEvent.description || '');
       setLocation(editingEvent.location || '');
-<<<<<<< Updated upstream
-      setSchoolYear(editingEvent.school_year || '');
-=======
       setEventType(editingEvent.event_type || 'event');
->>>>>>> Stashed changes
       setImagePreviews(editingEvent.images || []);
       setDate(editingEvent.date);
       setTime(editingEvent.time);

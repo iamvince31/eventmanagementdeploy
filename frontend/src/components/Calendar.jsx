@@ -215,70 +215,73 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                 </div>
               ))}
 
-          {eventCount > 0 && (
-            <div className="mt-1 flex flex-wrap gap-1 flex-1 items-start relative">
-              {regularEvents.slice(0, 3).map((event, idx) => {
-                const isHosted = currentUser && event.host && event.host.id === currentUser.id;
-                const isPersonal = event.is_personal;
-                const isMeeting = event.event_type === 'meeting';
-                
-                return (
-                  <div
-                    key={idx}
-                    className={`w-2 h-2 rounded-full ${
-                      isPersonal
-                        ? 'bg-purple-500'
-                        : isMeeting
-                          ? (isHosted ? 'bg-amber-800' : 'bg-yellow-500')
-                          : (isHosted ? 'bg-red-500' : 'bg-green-500')
-                    }`}
-                    title={`${event.title} ${isPersonal ? '(Personal)' : isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : (isHosted ? '(Hosting Event)' : '(Invited to Event)')}`}
-                  />
-                );
-              })}
-              {regularEvents.length > 3 && (
-                <span className="text-[10px] text-gray-600 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">
-                  +{regularEvents.length - 3}
-                </span>
-              )}
-              
-              {/* Hover Tooltip for Event Titles */}
+              {/* Regular Events (Colored Dots) */}
               {regularEvents.length > 0 && (
-                <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-20 w-56">
-                  <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
-                    <div className="font-semibold mb-1.5 text-green-300 border-b border-gray-700 pb-1">
-                      {regularEvents.length} Event{regularEvents.length !== 1 ? 's' : ''}
-                    </div>
-                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                      {regularEvents.map((event, idx) => {
-                        const isHosted = currentUser && event.host && event.host.id === currentUser.id;
-                        const isMeeting = event.event_type === 'meeting';
-                        const isPersonal = event.is_personal;
-                        return (
-                          <div key={idx} className="flex items-start gap-2">
-                            <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
-                              isPersonal
-                                ? 'bg-purple-400'
-                                : isMeeting
-                                  ? (isHosted ? 'bg-amber-700' : 'bg-yellow-400')
-                                  : (isHosted ? 'bg-red-400' : 'bg-green-400')
-                            }`} />
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium truncate">{event.title}</div>
-                              <div className="text-gray-400 text-[10px]">
-                                {event.time} • {isPersonal ? 'Personal Event' : isMeeting ? (isHosted ? 'Hosting Meeting' : 'Invited to Meeting') : (isHosted ? 'Hosting Event' : 'Invited to Event')}
+                <div className="mt-1 flex flex-wrap gap-1 flex-1 items-start relative">
+                  {regularEvents.slice(0, 3).map((event, idx) => {
+                    const isHosted = currentUser && event.host && event.host.id === currentUser.id;
+                    const isPersonal = event.is_personal;
+                    const isMeeting = event.event_type === 'meeting';
+                    
+                    return (
+                      <div
+                        key={idx}
+                        className={`w-2 h-2 rounded-full ${
+                          isPersonal
+                            ? 'bg-purple-500'
+                            : isMeeting
+                              ? (isHosted ? 'bg-amber-800' : 'bg-yellow-500')
+                              : (isHosted ? 'bg-red-500' : 'bg-green-500')
+                        }`}
+                        title={`${event.title} ${isPersonal ? '(Personal)' : isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : (isHosted ? '(Hosting Event)' : '(Invited to Event)')}`}
+                      />
+                    );
+                  })}
+                  {regularEvents.length > 3 && (
+                    <span className="text-[10px] text-gray-600 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">
+                      +{regularEvents.length - 3}
+                    </span>
+                  )}
+                  
+                  {/* Hover Tooltip for Event Titles */}
+                  {regularEvents.length > 0 && (
+                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-20 w-56">
+                      <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
+                        <div className="font-semibold mb-1.5 text-green-300 border-b border-gray-700 pb-1">
+                          {regularEvents.length} Event{regularEvents.length !== 1 ? 's' : ''}
+                        </div>
+                        <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                          {regularEvents.map((event, idx) => {
+                            const isHosted = currentUser && event.host && event.host.id === currentUser.id;
+                            const isMeeting = event.event_type === 'meeting';
+                            const isPersonal = event.is_personal;
+                            return (
+                              <div key={idx} className="flex items-start gap-2">
+                                <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
+                                  isPersonal
+                                    ? 'bg-purple-400'
+                                    : isMeeting
+                                      ? (isHosted ? 'bg-amber-700' : 'bg-yellow-400')
+                                      : (isHosted ? 'bg-red-400' : 'bg-green-400')
+                                }`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium truncate">{event.title}</div>
+                                  <div className="text-gray-400 text-[10px]">
+                                    {event.time} • {isPersonal ? 'Personal Event' : isMeeting ? (isHosted ? 'Hosting Meeting' : 'Invited to Meeting') : (isHosted ? 'Hosting Event' : 'Invited to Event')}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                            );
+                          })}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-              ))}
+              )}
 
               {/* "View More" button - only show when total events > 2 */}
-              {allEvents.length > 2 && (
+              {allEvents.length > displayLimit && (
                 <button
                   onClick={(e) => handleMoreClick(e, dateStr)}
                   className="text-sm text-blue-600 hover:text-blue-800 font-semibold px-1 hover:underline transition-colors"
@@ -343,6 +346,11 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           ))}
         </div>
 
+        {/* Calendar Grid */}
+        <div className="grid grid-cols-7 gap-0 flex-1 min-h-0">
+          {renderCalendarDays()}
+        </div>
+
       {/* Legend */}
       <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
         <div className="flex flex-wrap gap-3 text-xs">
@@ -372,6 +380,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           </div>
         </div>
       </div>
+    </div>
 
       {/* Event Detail Modal */}
       {showMoreModal && (
@@ -610,6 +619,5 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
         </div>
       )}
     </>
-
-);
+  );
 }
