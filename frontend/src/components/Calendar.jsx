@@ -181,7 +181,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               ? `${isSunday ? 'cursor-not-allowed bg-gray-50' : 'cursor-default bg-white'}`
               : 'bg-gray-50/50'
             }
-            ${selected ? 'ring-2 ring-blue-500 ring-inset z-10' : ''}
+            ${selected ? 'ring-2 ring-green-500 ring-inset z-10' : ''}
             ${highlighted ? 'ring-2 ring-green-400 animate-pulse z-10' : ''}
           `}
         >
@@ -190,7 +190,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
             <span className={`
               text-xs font-semibold px-1.5 py-0.5 rounded-full
               ${isCurrentDay 
-                ? 'bg-blue-600 text-white shadow-sm' 
+                ? 'bg-green-600 text-white shadow-sm' 
                 : isCurrentMonth 
                   ? 'text-gray-800' 
                   : 'text-gray-400'
@@ -215,83 +215,42 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                 </div>
               ))}
 
-              {/* Regular Events (Colored Dots) */}
-              {regularEvents.length > 0 && (
-                <div className="mt-1 flex flex-wrap gap-1 flex-1 items-start relative">
-                  {regularEvents.slice(0, 3).map((event, idx) => {
-                    const isHosted = currentUser && event.host && event.host.id === currentUser.id;
-                    const isPersonal = event.is_personal;
-                    const isMeeting = event.event_type === 'meeting';
-                    
-                    return (
-                      <div
-                        key={idx}
-                        className={`w-2 h-2 rounded-full ${
-                          isPersonal
-                            ? 'bg-purple-500'
-                            : isMeeting
-                              ? (isHosted ? 'bg-amber-800' : 'bg-yellow-500')
-                              : (isHosted ? 'bg-red-500' : 'bg-green-500')
-                        }`}
-                        title={`${event.title} ${isPersonal ? '(Personal)' : isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : (isHosted ? '(Hosting Event)' : '(Invited to Event)')}`}
-                      />
-                    );
-                  })}
-                  {regularEvents.length > 3 && (
-                    <span className="text-[10px] text-gray-600 font-semibold bg-gray-100 px-1.5 py-0.5 rounded-full">
-                      +{regularEvents.length - 3}
-                    </span>
-                  )}
-                  
-                  {/* Hover Tooltip for Event Titles */}
-                  {regularEvents.length > 0 && (
-                    <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block z-20 w-56">
-                      <div className="bg-gray-900 text-white text-xs rounded-lg py-2 px-3 shadow-xl">
-                        <div className="font-semibold mb-1.5 text-green-300 border-b border-gray-700 pb-1">
-                          {regularEvents.length} Event{regularEvents.length !== 1 ? 's' : ''}
-                        </div>
-                        <div className="space-y-1.5 max-h-32 overflow-y-auto">
-                          {regularEvents.map((event, idx) => {
-                            const isHosted = currentUser && event.host && event.host.id === currentUser.id;
-                            const isMeeting = event.event_type === 'meeting';
-                            const isPersonal = event.is_personal;
-                            return (
-                              <div key={idx} className="flex items-start gap-2">
-                                <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${
-                                  isPersonal
-                                    ? 'bg-purple-400'
-                                    : isMeeting
-                                      ? (isHosted ? 'bg-amber-700' : 'bg-yellow-400')
-                                      : (isHosted ? 'bg-red-400' : 'bg-green-400')
-                                }`} />
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium truncate">{event.title}</div>
-                                  <div className="text-gray-400 text-[10px]">
-                                    {event.time} • {isPersonal ? 'Personal Event' : isMeeting ? (isHosted ? 'Hosting Meeting' : 'Invited to Meeting') : (isHosted ? 'Hosting Event' : 'Invited to Event')}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Regular Events (Title Labels) */}
+              {regularEvents.slice(0, displayLimit - academicEvents.length).map((event, idx) => {
+                const isHosted = currentUser && event.host && event.host.id === currentUser.id;
+                const isPersonal = event.is_personal;
+                const isMeeting = event.event_type === 'meeting';
+                
+                return (
+                  <div
+                    key={`regular-${idx}`}
+                    className={`text-sm px-2.5 py-1.5 text-white rounded-md truncate font-normal shadow-md cursor-pointer transition-colors ${
+                      isPersonal
+                        ? 'bg-purple-500 hover:bg-purple-600'
+                        : isMeeting
+                          ? (isHosted ? 'bg-amber-800 hover:bg-amber-900' : 'bg-yellow-500 hover:bg-yellow-600')
+                          : (isHosted ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600')
+                    }`}
+                    title={`${event.title} ${isPersonal ? '(Personal)' : isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : (isHosted ? '(Hosting Event)' : '(Invited to Event)')}`}
+                    onClick={(e) => handleEventClick(event, e)}
+                  >
+                    {event.title}
+                  </div>
+                );
+              })}
 
               {/* "View More" button - only show when total events > 2 */}
               {allEvents.length > displayLimit && (
                 <button
                   onClick={(e) => handleMoreClick(e, dateStr)}
-                  className="text-sm text-blue-600 hover:text-blue-800 font-semibold px-1 hover:underline transition-colors"
+                  className="text-sm text-green-600 hover:text-green-800 font-semibold px-1 hover:underline transition-colors"
                 >
                   View More ({allEvents.length})
                 </button>
               )}
             </div>
           )}
-        </div>
+          </div>
       );
     }
 
@@ -309,14 +268,14 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
               isAtMinDate
                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-800'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 className="text-2xl font-bold text-gray-900 font-display tracking-tight">
+          <h2 className="text-2xl font-bold text-green-800 font-display tracking-tight">
             {monthNames[month]} {year}
           </h2>
           <button
@@ -325,7 +284,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
             className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
               isAtMaxDate
                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                : 'bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
+                : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-800'
             }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -335,11 +294,11 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
         </div>
 
         {/* Day Headers */}
-        <div className="grid grid-cols-7 gap-0 mb-0 flex-shrink-0 border-b border-gray-200">
+        <div className="grid grid-cols-7 gap-0 mb-0 flex-shrink-0 border-b border-green-200">
           {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
             <div
               key={day}
-              className="text-center text-[10px] font-semibold text-gray-500 uppercase tracking-wider py-1.5"
+              className="text-center text-[10px] font-semibold text-green-600 uppercase tracking-wider py-1.5"
             >
               {day}
             </div>
@@ -385,13 +344,13 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       {/* Event Detail Modal */}
       {showMoreModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-100 rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden">
+          <div className="bg-green-50 rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden border border-green-200">
             {/* Modal Header - Day and Date */}
-            <div className="bg-gray-100 px-6 pt-6 pb-4 flex flex-col items-center relative">
+            <div className="bg-green-50 px-6 pt-6 pb-4 flex flex-col items-center relative">
               {/* Close Button */}
               <button
                 onClick={() => setShowMoreModal(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 transition-colors"
+                className="absolute top-4 right-4 text-green-600 hover:text-green-800 transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -399,12 +358,12 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               </button>
               
               {/* Day of Week */}
-              <div className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">
+              <div className="text-sm font-medium text-green-600 uppercase tracking-wider mb-1">
                 {new Date(moreModalDate).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
               </div>
               
               {/* Date Number */}
-              <div className="text-6xl font-normal text-gray-800 mb-4">
+              <div className="text-6xl font-normal text-green-800 mb-4">
                 {new Date(moreModalDate).getDate()}
               </div>
             </div>
@@ -414,6 +373,9 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               <div className="space-y-2">
                 {moreModalEvents.map((event, idx) => {
                   const isAcademic = event.is_default_event || !event.time;
+                  const isHosted = currentUser && event.host && event.host.id === currentUser.id;
+                  const isPersonal = event.is_personal;
+                  const isMeeting = event.event_type === 'meeting';
                   
                   return (
                     <div key={idx}>
@@ -426,15 +388,24 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                           {event.name || event.title}
                         </div>
                       ) : (
-                        // Regular Event - Blue Bullet Style
+                        // Regular Event - Consistent Color Dots
                         <div 
-                          className="flex items-start gap-2 px-2 py-2 hover:bg-gray-200 rounded-lg transition-colors cursor-pointer"
+                          className="flex items-start gap-3 px-3 py-2 hover:bg-green-100 rounded-lg transition-colors cursor-pointer"
                           onClick={(e) => handleEventClick(event, e)}
                         >
-                          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-500 mt-1.5"></div>
+                          <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-1 ${
+                            isPersonal
+                              ? 'bg-purple-500'
+                              : isMeeting
+                                ? (isHosted ? 'bg-amber-800' : 'bg-yellow-500')
+                                : (isHosted ? 'bg-red-500' : 'bg-green-500')
+                          }`}></div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-gray-800 font-normal">
+                            <div className="text-green-800 font-normal">
                               <span className="font-medium">{formatTime(event.time)}</span> {event.title || '(No title)'}
+                            </div>
+                            <div className="text-xs text-green-600 mt-0.5">
+                              {isPersonal ? 'Personal Event' : isMeeting ? (isHosted ? 'Hosting Meeting' : 'Invited to Meeting') : (isHosted ? 'Hosting Event' : 'Invited to Event')}
                             </div>
                           </div>
                         </div>
@@ -451,20 +422,20 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       {/* Individual Event Detail Modal */}
       {showEventDetailModal && selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-green-200">
             {/* Modal Header */}
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-start">
+            <div className="px-6 py-4 border-b border-green-200 flex justify-between items-start bg-green-50">
               <div className="flex items-start gap-3 flex-1 min-h-[4rem]">
                 {/* Color Indicator */}
                 <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-                  selectedEvent.is_default_event || !selectedEvent.time ? 'bg-green-600' : 'bg-blue-600'
+                  selectedEvent.is_default_event || !selectedEvent.time ? 'bg-green-600' : 'bg-green-600'
                 }`}></div>
                 
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-1 break-words">
+                  <h3 className="text-xl font-semibold text-green-900 mb-1 break-words">
                     {selectedEvent.title || selectedEvent.name}
                   </h3>
-                  <div className="text-sm text-gray-600">
+                  <div className="text-sm text-green-700">
                     {new Date(selectedEvent.date).toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       month: 'long', 
@@ -483,7 +454,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                       setShowEventDetailModal(false);
                       onEditEvent(selectedEvent);
                     }}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                     title="Edit Event"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -499,7 +470,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                         onDeleteEvent(selectedEvent);
                       }
                     }}
-                    className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Delete Event"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -509,7 +480,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                 )}
                 <button
                   onClick={() => setShowEventDetailModal(false)}
-                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
                   title="Close"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -605,8 +576,8 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
 
               {/* Regular Event Type Badge (when no school year) */}
               {!(selectedEvent.is_default_event || !selectedEvent.time) && !selectedEvent.school_year && (
-                <div className="pt-3 border-t border-gray-200">
-                  <span className="inline-flex items-center gap-2 text-sm font-medium text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">
+                <div className="pt-3 border-t border-green-200">
+                  <span className="inline-flex items-center gap-2 text-xs font-medium text-green-700">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
@@ -621,3 +592,4 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
     </>
   );
 }
+
