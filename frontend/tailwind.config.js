@@ -21,6 +21,9 @@ export default {
           950: '#052e16',
         },
       },
+      fontFamily: {
+        'display': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+      },
     },
   },
   plugins: [],

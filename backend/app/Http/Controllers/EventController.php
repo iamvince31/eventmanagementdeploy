@@ -14,7 +14,7 @@ class EventController extends Controller
     {
         $user = $request->user();
 
-        $events = Event::with(['host', 'members', 'images'])
+        $events = Event::with(['host', 'members', 'images', 'rescheduleRequests'])
             ->where(function ($query) use ($user) {
                 // User is the host
                 $query->where('host_id', $user->id)
@@ -53,6 +53,7 @@ class EventController extends Controller
                 ]),
                 'date' => $event->date,
                 'time' => $event->time,
+                'school_year' => $event->school_year,
                 'has_pending_reschedule_requests' => $event->rescheduleRequests()->where('status', 'pending')->exists(),
                 'host' => [
                     'id' => $event->host->id,
@@ -79,7 +80,7 @@ class EventController extends Controller
                 'description' => 'Academic Calendar Event',
                 'location' => 'TBD',
                 'images' => [],
-                'date' => $event->date->format('Y-m-d'),
+                'date' => $event->date ? $event->date->format('Y-m-d') : null,
                 'time' => '00:00',
                 'has_pending_reschedule_requests' => false,
                 'host' => [
@@ -215,6 +216,7 @@ class EventController extends Controller
             'location' => $request->location,
             'date' => $request->date,
             'time' => $request->time,
+            'school_year' => $request->school_year,
             'host_id' => $user->id,
             'approved_request_id' => $approvedRequestId,
         ]);
@@ -361,7 +363,7 @@ class EventController extends Controller
             }
         }
 
-        $event->update($request->only(['title', 'description', 'location', 'date', 'time']));
+        $event->update($request->only(['title', 'description', 'location', 'date', 'time', 'school_year']));
 
         // Handle new images/files
         if ($request->hasFile('images')) {
