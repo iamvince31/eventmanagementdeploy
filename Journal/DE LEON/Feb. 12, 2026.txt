@@ -7,4 +7,4 @@
 11 AM - Lunch Break/Brainstorming for Log-In page improvements
 12 PM - Improving Log-in page
 1 PM - Improved Git repository version
-2 PM - 
+2 PM - dsf

@@ -167,6 +167,9 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       // Display limit: show first 2 items (academic events + regular events)
       const displayLimit = 2;
 
+      // Check if this cell will show "View More" button
+      const hasViewMore = allEvents.length > displayLimit;
+
       days.push(
         <div
           key={`${cellYear}-${cellMonth}-${cellDay}`}
@@ -203,11 +206,11 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           {/* Events List - Only for current month */}
           {isCurrentMonth && !isSunday && (
             <div className="flex-1 space-y-1.5 overflow-hidden">
-              {/* Academic Events (Green Labels) - Clickable */}
+              {/* Academic Events (Blue Labels) - Clickable */}
               {academicEvents.slice(0, displayLimit).map((event, idx) => (
                 <div
                   key={`academic-${idx}`}
-                  className="text-sm px-2.5 py-1.5 bg-green-600 text-white rounded-md truncate font-normal shadow-md cursor-pointer hover:bg-green-700 transition-colors"
+                  className="text-sm px-2.5 py-1.5 bg-blue-500 text-white rounded-md truncate font-normal shadow-md cursor-pointer hover:bg-blue-600 transition-colors"
                   title={event.name}
                   onClick={(e) => handleEventClick(event, e)}
                 >
@@ -243,7 +246,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               {allEvents.length > displayLimit && (
                 <button
                   onClick={(e) => handleMoreClick(e, dateStr)}
-                  className="text-sm text-green-600 hover:text-green-800 font-semibold px-1 hover:underline transition-colors"
+                  className="text-sm text-green-600 hover:text-green-800 font-semibold px-1 hover:underline transition-colors mt-auto"
                 >
                   View More ({allEvents.length})
                 </button>
@@ -306,7 +309,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-0 flex-1 min-h-0">
+        <div className="grid grid-cols-7 gap-0 flex-1 min-h-0" style={{ gridAutoRows: '1fr' }}>
           {renderCalendarDays()}
         </div>
 
@@ -314,7 +317,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
         <div className="flex flex-wrap gap-3 text-xs">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-400"></div>
+            <div className="w-3 h-3 rounded bg-blue-500"></div>
             <span className="text-gray-600 font-medium">Academic Event</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -380,9 +383,9 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                   return (
                     <div key={idx}>
                       {isAcademic ? (
-                        // Academic Event - Green Bar Style
+                        // Academic Event - Blue Bar Style
                         <div 
-                          className="bg-green-600 text-white rounded-lg px-4 py-3 font-medium cursor-pointer hover:bg-green-700 transition-colors"
+                          className="bg-blue-500 text-white rounded-lg px-4 py-3 font-medium cursor-pointer hover:bg-blue-600 transition-colors"
                           onClick={(e) => handleEventClick(event, e)}
                         >
                           {event.name || event.title}
@@ -428,7 +431,13 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               <div className="flex items-start gap-3 flex-1 min-h-[4rem]">
                 {/* Color Indicator */}
                 <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-                  selectedEvent.is_default_event || !selectedEvent.time ? 'bg-green-600' : 'bg-green-600'
+                  selectedEvent.is_default_event || !selectedEvent.time 
+                    ? 'bg-blue-500' 
+                    : selectedEvent.is_personal
+                      ? 'bg-purple-500'
+                      : selectedEvent.event_type === 'meeting'
+                        ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-amber-800' : 'bg-yellow-500')
+                        : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-red-500' : 'bg-green-500')
                 }`}></div>
                 
                 <div className="flex-1 min-w-0">
@@ -494,16 +503,16 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
             <div className="px-6 py-5 space-y-4">
               {/* Academic Event - School Year & Duration */}
               {(selectedEvent.is_default_event || !selectedEvent.time) && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
                   {/* School Year */}
                   {selectedEvent.school_year && (
                     <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                       <div>
-                        <div className="text-xs text-green-600 font-medium uppercase tracking-wide">School Year</div>
-                        <div className="text-sm font-semibold text-green-900">{selectedEvent.school_year}</div>
+                        <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">School Year</div>
+                        <div className="text-sm font-semibold text-blue-900">{selectedEvent.school_year}</div>
                       </div>
                     </div>
                   )}
@@ -511,11 +520,11 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
 
 
                   {/* Event Type Badge */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-green-200">
-                    <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center gap-2 pt-2 border-t border-blue-200">
+                    <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span className="text-xs font-medium text-green-700">Official Academic Calendar Event</span>
+                    <span className="text-xs font-medium text-blue-700">Official Academic Calendar Event</span>
                   </div>
                 </div>
               )}
@@ -574,14 +583,25 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                 </div>
               )}
 
-              {/* Regular Event Type Badge (when no school year) */}
+              {/* Event Type Badge (when no school year) */}
               {!(selectedEvent.is_default_event || !selectedEvent.time) && !selectedEvent.school_year && (
-                <div className="pt-3 border-t border-green-200">
-                  <span className="inline-flex items-center gap-2 text-xs font-medium text-green-700">
+                <div className="pt-3 border-t border-gray-200">
+                  <span className={`inline-flex items-center gap-2 text-xs font-medium ${
+                    selectedEvent.is_personal
+                      ? 'text-purple-700'
+                      : selectedEvent.event_type === 'meeting'
+                        ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'text-amber-900' : 'text-yellow-700')
+                        : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'text-red-700' : 'text-green-700')
+                  }`}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    Regular Event
+                    {selectedEvent.is_personal 
+                      ? 'Personal Event' 
+                      : selectedEvent.event_type === 'meeting'
+                        ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'Hosting Meeting' : 'Invited to Meeting')
+                        : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'Hosting Event' : 'Invited to Event')
+                    }
                   </span>
                 </div>
               )}
