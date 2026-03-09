@@ -3,8 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Calendar from '../components/Calendar';
-import EventDetails from '../components/EventDetails';
-import NotificationBell from '../components/NotificationBell';
+import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import logo from "../assets/CEIT-LOGO.png";
 
@@ -28,10 +27,7 @@ export default function Dashboard() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isMembersDropdownOpen, setIsMembersDropdownOpen] = useState(false);
   const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
-  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const [isEventsListModalOpen, setIsEventsListModalOpen] = useState(false);
   const [hasSchedule, setHasSchedule] = useState(true);
-  const [selectedMemberForView, setSelectedMemberForView] = useState(null);
 
   // Reschedule States
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -49,9 +45,6 @@ export default function Dashboard() {
   const [hasApprovedRequests, setHasApprovedRequests] = useState(false);
   const [approvedRequests, setApprovedRequests] = useState([]);
 
-  // Event Requests State
-  const [myEventRequests, setMyEventRequests] = useState([]);
-
   useEffect(() => {
     // Check if user is validated
     if (user && !user.is_validated) {
@@ -61,7 +54,6 @@ export default function Dashboard() {
     
     fetchData();
     checkApprovedRequests();
-    fetchMyEventRequests();
     
     // Auto-select today's date
     const today = new Date();
@@ -74,7 +66,6 @@ export default function Dashboard() {
     if (location.state?.refresh) {
       fetchData();
       checkApprovedRequests();
-      fetchMyEventRequests();
       // Clear the state to prevent re-fetching on every render
       navigate(location.pathname, { replace: true, state: {} });
     }
@@ -183,16 +174,6 @@ export default function Dashboard() {
     }
   };
 
-  const fetchMyEventRequests = async () => {
-    try {
-      const response = await api.get('/event-requests/my-requests');
-      setMyEventRequests(response.data.requests || []);
-    } catch (error) {
-      console.error('Error fetching event requests:', error);
-      setMyEventRequests([]);
-    }
-  };
-
   const handleEdit = (event) => {
     if (event.is_personal) {
       navigate('/personal-event', { state: { event } });
@@ -278,62 +259,6 @@ export default function Dashboard() {
     // Combine regular events with default events
     const allEvents = [...events, ...defaultEventsForDate];
     setSelectedDateEvents(allEvents);
-  };
-
-  const handleUpcomingClick = () => {
-    if (upcomingEvents.length > 0) {
-      const nextEvent = upcomingEvents[0];
-      setHighlightedDate(nextEvent.date);
-      const eventsOnDate = events.filter(e => e.date === nextEvent.date);
-      
-      // Get default events for this date
-      const defaultEventsForDate = defaultEvents.filter(defEvent => {
-        if (!defEvent.date) return false;
-        
-        const eventStartDate = new Date(defEvent.date);
-        const checkDate = new Date(nextEvent.date);
-        
-        if (!defEvent.end_date) {
-          return eventStartDate.toDateString() === checkDate.toDateString();
-        }
-        
-        const eventEndDate = new Date(defEvent.end_date);
-        const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
-        
-        // Exclude Sundays (0) for multi-day academic events
-        if (isInRange) {
-          const dayOfWeek = checkDate.getDay();
-          return dayOfWeek !== 0;
-        }
-        
-        return false;
-      }).map(defEvent => ({
-        ...defEvent,
-        is_default_event: true,
-        title: defEvent.name,
-        time: 'All Day',
-        host: { id: 0, username: 'Academic Calendar', email: '' },
-        members: [],
-        images: []
-      }));
-      
-      handleDateSelect(nextEvent.date, [...eventsOnDate, ...defaultEventsForDate]);
-
-      setTimeout(() => {
-        setHighlightedDate(null);
-      }, 2000);
-    }
-  };
-
-  const handleMembersClick = () => {
-    if (members.length > 0) {
-      setSelectedMemberForView(members[0]);
-    }
-    setIsMembersModalOpen(true);
-  };
-
-  const handleYourEventsClick = () => {
-    setIsEventsListModalOpen(true);
   };
 
   const fetchRescheduleRequests = async (eventId) => {
@@ -463,262 +388,34 @@ export default function Dashboard() {
     navigate('/add-event', { state: { selectedDate } });
   };
 
-  // Compute stats
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const upcomingEvents = events.filter(event => {
-    const eventDate = new Date(event.date + 'T00:00:00');
-    return eventDate >= today;
-  });
-
-  const hostedEvents = events.filter(event => event.host.id === user?.id);
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
-      {/* Navbar */}
-      <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left corner - Logo and Title */}
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
-                aria-label="Go to dashboard"
-              >
-                <img
-                  src={logo}
-                  alt="CEIT Logo"
-                  className="h-10 w-auto cursor-pointer"
-                />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Event Management</h1>
-                <p className="text-xs text-green-200 font-medium">Dashboard</p>
-              </div>
-            </div>
-
-            {/* Right corner - Home Icon, History, Notifications and Account */}
-            <div className="flex items-center space-x-4">
-              {/* Home Icon */}
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
-                aria-label="Go to dashboard"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </button>
-
-              {/* History Icon */}
-              <button
-                onClick={() => navigate('/history')}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
-                aria-label="View history"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-
-              {/* Notifications Bell */}
-              <div className="relative">
-                <NotificationBell
-                  events={events}
-                  user={user}
-                  onNotificationClick={handleViewEvent}
-                  approvedRequests={approvedRequests}
-                />
-              </div>
-
-              {/* Account Dropdown */}
-              <div className="relative account-dropdown-container">
-                <button
-                  onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
-                  aria-label="Account menu"
-                >
-                  {user?.profile_picture ? (
-                    <img 
-                      src={user.profile_picture} 
-                      alt={user?.username}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      {user?.username?.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
-                  <svg
-                    className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Dropdown Menu */}
-                {isAccountDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setIsAccountDropdownOpen(false);
-                          navigate('/account');
-                        }}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors flex items-center space-x-3"
-                      >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span className="font-medium">Settings</span>
-                      </button>
-
-                      {/* Admin Panel Link - Only for admin users */}
-                      {user?.role === 'Admin' && (
-                        <>
-                          <div className="border-t border-gray-100"></div>
-                          <button
-                            onClick={() => {
-                              setIsAccountDropdownOpen(false);
-                              navigate('/admin');
-                            }}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
-                          >
-                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <span className="font-medium">Admin Panel</span>
-                          </button>
-                        </>
-                      )}
-
-                      <div className="border-t border-gray-100"></div>
-                      <button
-                        onClick={async () => {
-                          setIsAccountDropdownOpen(false);
-                          await logout();
-                        }}
-                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
-                      >
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span className="font-medium">Logout</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div className="h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col overflow-hidden">
+      <Navbar 
+        showUpcomingEvents={true} 
+        upcomingCount={0}
+        approvedRequests={approvedRequests}
+        isLoading={loading}
+      />
 
       {/* Main Content */}
-      <main className="flex-1 w-full py-8 px-4 sm:px-6 lg:px-8">
-        {/* Stats Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          {loading ? (
-            // Skeleton for stats cards
-            <>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-pulse">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-gray-200 rounded-xl w-16 h-16"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                      <div className="h-8 bg-gray-200 rounded w-16"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </>
-          ) : (
-            <>
-              {/* Your Events (Hosted by User + Event Requests) */}
-              <button
-                onClick={handleYourEventsClick}
-                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left w-full"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-green-200 to-green-100 rounded-xl p-4 group-hover:from-green-300 group-hover:to-green-200 transition-colors duration-300">
-                    <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Your Events</p>
-                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{hostedEvents.length + myEventRequests.length}</p>
-                  </div>
-                </div>
-              </button>
-
-              {/* Upcoming Events */}
-              <button
-                onClick={handleUpcomingClick}
-                disabled={upcomingEvents.length === 0}
-                className={`bg-white rounded-2xl shadow-lg border border-gray-100 p-6 transition-all duration-300 group text-left ${upcomingEvents.length > 0
-                  ? 'hover:shadow-2xl hover:scale-105 cursor-pointer'
-                  : 'opacity-50 cursor-not-allowed'
-                  }`}
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
-                    <svg className="w-7 h-7 text-green-600 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Upcoming</p>
-                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-600 transition-colors">{upcomingEvents.length}</p>
-                  </div>
-                </div>
-              </button>
-
-              {/* Total Members */}
-              <button
-                onClick={handleMembersClick}
-                className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 group cursor-pointer text-left w-full"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="bg-gradient-to-br from-green-100 to-green-50 rounded-xl p-4 group-hover:from-green-200 group-hover:to-green-100 transition-colors duration-300">
-                    <svg className="w-7 h-7 text-green-700 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Members</p>
-                    <p className="text-3xl font-bold text-gray-900 group-hover:text-green-700 transition-colors">{members.length}</p>
-                  </div>
-                </div>
-              </button>
-            </>
-          )}
-        </div>
-
+      <main className="flex-1 w-full py-4 px-4 sm:px-6 lg:px-8 overflow-hidden flex flex-col">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 flex-shrink-0">
           <div>
-            <h2 className="text-3xl font-bold text-gray-900">Calendar View</h2>
-            <p className="text-sm text-gray-600 mt-1.5 font-medium">Click a date to view or manage your events</p>
+            <h2 className="text-2xl font-bold text-gray-900">Calendar View</h2>
+            <p className="text-xs text-gray-600 mt-1 font-medium">Click a date to view or manage your events</p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 flex-wrap">
             {/* Academic Calendar - Admin Only */}
             {user?.role === 'Admin' && (
               <button
                 onClick={() => navigate('/default-events')}
-                className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
               >
-                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                Academic Calendar
+                Academic
               </button>
             )}
             
@@ -726,77 +423,77 @@ export default function Dashboard() {
             {['Admin', 'Dean', 'Chairperson'].includes(user?.role) && (
               <button
                 onClick={() => navigate('/event-requests')}
-                className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
               >
-                <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Event Requests
+                Requests
               </button>
             )}
             
             {/* Role-based Event Creation Buttons */}
             {user?.role === 'Faculty Member' || user?.role === 'Staff' ? (
               // Faculty Members and Staff can only request events
-              <div className="flex gap-3">
+              <>
                 <button
                   onClick={() => navigate('/request-event', { state: { selectedDate } })}
-                  className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
+                  className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
                 >
-                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  Request Event
+                  Request
                 </button>
                 <button
                   onClick={() => navigate('/personal-event', { state: { selectedDate } })}
-                  className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                  className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
                 >
-                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Personal Event
+                  Personal
                 </button>
-              </div>
+              </>
             ) : user?.role === 'Coordinator' || user?.role === 'Chairperson' || user?.role === 'Dean' || user?.role === 'Admin' || user?.role === 'CEIT Official' ? (
               // Coordinators, Chairpersons, Deans, CEIT Officials, and Admins can create events directly
-              <div className="flex gap-3">
+              <>
                 <button
                   onClick={() => navigate('/add-event', { state: { selectedDate } })}
-                  className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 via-green-700 to-green-800 text-white hover:from-green-800 hover:via-green-800 hover:to-green-900 focus:ring-green-600"
+                  className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
                 >
-                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                   </svg>
                   Add Event
                 </button>
                 <button
                   onClick={() => navigate('/personal-event', { state: { selectedDate } })}
-                  className="inline-flex items-center px-6 py-3 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                  className="inline-flex items-center px-4 py-2 text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
                 >
-                  <svg className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                   </svg>
-                  Personal Event
+                  Personal
                 </button>
-              </div>
+              </>
             ) : null}
           </div>
         </div>
 
-        {/* Calendar + Event Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[600px]">
-          <div className="lg:col-span-2 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 hover:shadow-xl transition-shadow duration-300 h-full">
+        {/* Calendar */}
+        <div className="flex-1 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4 hover:shadow-xl transition-shadow duration-200 h-full flex flex-col">
             {loading ? (
               // Skeleton for calendar
               <div className="animate-pulse h-full flex flex-col">
-                <div className="h-8 bg-gray-200 rounded w-32 mb-4 flex-shrink-0"></div>
-                <div className="grid grid-cols-7 gap-2 mb-2 flex-shrink-0">
+                <div className="h-6 bg-gray-200 rounded w-24 mb-3 flex-shrink-0"></div>
+                <div className="grid grid-cols-7 gap-1 mb-2 flex-shrink-0">
                   {[...Array(7)].map((_, i) => (
-                    <div key={i} className="h-8 bg-gray-200 rounded"></div>
+                    <div key={i} className="h-6 bg-gray-200 rounded"></div>
                   ))}
                 </div>
-                <div className="grid grid-cols-7 grid-rows-6 gap-2 flex-1">
+                <div className="grid grid-cols-7 grid-rows-6 gap-1 flex-1">
                   {[...Array(42)].map((_, i) => (
                     <div key={i} className="bg-gray-100 rounded"></div>
                   ))}
@@ -809,29 +506,6 @@ export default function Dashboard() {
                 onDateSelect={handleDateSelect}
                 highlightedDate={highlightedDate}
                 currentUser={user}
-              />
-            )}
-          </div>
-          <div className="h-full">
-            {loading ? (
-              // Skeleton for event details
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 animate-pulse h-full flex flex-col">
-                <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-                <div className="flex-1 space-y-3">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className="h-20 bg-gray-100 rounded"></div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <EventDetails
-                date={selectedDate}
-                events={selectedDateEvents}
-                members={members}
-                currentUser={user}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onView={handleViewEvent}
               />
             )}
           </div>
@@ -1311,207 +985,6 @@ export default function Dashboard() {
               </p>
             </div>
           )}
-        </div>
-      </Modal>
-
-      {/* Members Modal */}
-      <Modal
-        isOpen={isMembersModalOpen}
-        onClose={() => setIsMembersModalOpen(false)}
-        title="All Members"
-        maxWidth="max-w-2xl"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-600">Total members: {members.length}</p>
-          <div className="max-h-96 overflow-y-auto space-y-3">
-            {members.map((member) => (
-              <div key={member.id} className="flex items-center justify-between bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-lg">
-                    {member.username.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <p className="font-semibold text-gray-900">{member.username}</p>
-                    <p className="text-sm text-gray-500">{member.email}</p>
-                    <p className="text-xs text-gray-400">{member.department}</p>
-                  </div>
-                </div>
-                {member.id === user?.id && (
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    You
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-          {members.length === 0 && (
-            <div className="text-center py-8">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              <p className="text-gray-500">No members found</p>
-            </div>
-          )}
-        </div>
-      </Modal>
-
-      {/* Your Events Modal */}
-      <Modal
-        isOpen={isEventsListModalOpen}
-        onClose={() => setIsEventsListModalOpen(false)}
-        title="Your Events & Requests"
-        maxWidth="max-w-4xl"
-      >
-        <div className="space-y-6">
-          {/* Event Requests Section */}
-          {myEventRequests.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                Event Requests ({myEventRequests.length})
-              </h3>
-              <div className="max-h-64 overflow-y-auto space-y-3">
-                {myEventRequests.map((request) => (
-                  <div key={request.id} className="bg-gray-50 rounded-xl p-4 border-l-4 border-blue-500">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold text-gray-900 mb-2">{request.title}</h4>
-                        <div className="space-y-1 text-sm text-gray-600">
-                          <div className="flex items-center">
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {new Date(request.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at {request.time}
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {request.location}
-                          </div>
-                          <div className="flex items-center">
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Submitted {new Date(request.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                          </div>
-                        </div>
-                        {request.description && (
-                          <p className="text-sm text-gray-500 mt-2 line-clamp-2">{request.description}</p>
-                        )}
-                      </div>
-                      <div className="flex flex-col items-end space-y-2 ml-4">
-                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          request.status === 'approved' 
-                            ? 'bg-green-100 text-green-800' 
-                            : request.status === 'rejected'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {request.status === 'approved' ? '✓ Approved' : request.status === 'rejected' ? '✗ Rejected' : '⏳ Pending'}
-                        </span>
-                        {request.status === 'rejected' && request.rejection_reason && (
-                          <p className="text-xs text-red-600 max-w-xs text-right">
-                            Reason: {request.rejection_reason}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Hosted Events Section */}
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
-              <svg className="w-5 h-5 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              Hosted Events ({hostedEvents.length})
-            </h3>
-            <div className="max-h-96 overflow-y-auto space-y-4">
-              {hostedEvents.map((event) => (
-                <div key={event.id} className="bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition-colors border-l-4 border-green-500">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-gray-900 mb-2">{event.title}</h4>
-                      <div className="space-y-1 text-sm text-gray-600">
-                        <div className="flex items-center">
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                          {event.date} at {event.time}
-                        </div>
-                        {event.location && (
-                          <div className="flex items-center">
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {event.location}
-                          </div>
-                        )}
-                        {event.members && event.members.length > 0 && (
-                          <div className="flex items-center">
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            {event.members.length} member{event.members.length !== 1 ? 's' : ''} invited
-                          </div>
-                        )}
-                      </div>
-                      {event.description && (
-                        <p className="text-sm text-gray-500 mt-2 line-clamp-2">{event.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Host
-                      </span>
-                      <button
-                        onClick={() => {
-                          setIsEventsListModalOpen(false);
-                          handleViewEvent(event);
-                        }}
-                        className="px-3 py-1 text-xs font-medium text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                      >
-                        View Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {hostedEvents.length === 0 && myEventRequests.length === 0 && (
-              <div className="text-center py-8">
-                <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="text-gray-500 mb-4">You haven't created any events or requests yet</p>
-                <button
-                  onClick={() => {
-                    setIsEventsListModalOpen(false);
-                    if (user?.role === 'Faculty Member' || user?.role === 'Staff') {
-                      navigate('/request-event');
-                    } else {
-                      handleAddEventClick();
-                    }
-                  }}
-                  className="inline-flex items-center px-4 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors"
-                >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  {user?.role === 'Faculty Member' ? 'Request Your First Event' : 'Create Your First Event'}
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       </Modal>
 

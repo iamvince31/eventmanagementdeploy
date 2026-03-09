@@ -168,8 +168,6 @@ class UserController extends Controller
         
         $validated = request()->validate([
             'username' => 'sometimes|string|max:255',
-            'email' => 'sometimes|email|unique:users,email,' . $user->id,
-            'department' => 'sometimes|string|max:255',
             'profile_picture' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
@@ -191,6 +189,11 @@ class UserController extends Controller
             $file->move(public_path('uploads/profiles'), $filename);
             $validated['profile_picture'] = 'uploads/profiles/' . $filename;
         }
+
+        // Email and department cannot be changed by users
+        // Remove them from validated data if they were somehow included
+        unset($validated['email']);
+        unset($validated['department']);
 
         $user->update($validated);
 

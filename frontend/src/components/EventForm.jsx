@@ -7,6 +7,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
+  const [schoolYear, setSchoolYear] = useState('');
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [date, setDate] = useState('');
@@ -32,12 +33,44 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   });
   const [validatingHierarchy, setValidatingHierarchy] = useState(false);
 
+  // Calculate school year based on date
+  const getSchoolYearFromDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const dateObj = new Date(dateString);
+    const year = dateObj.getFullYear();
+    const month = dateObj.getMonth() + 1; // 1-12
+    
+    // If we're in Sept-Dec, school year is current-next
+    // If we're in Jan-Aug, school year is previous-current
+    if (month >= 9) {
+      return `${year}-${year + 1}`;
+    } else {
+      return `${year - 1}-${year}`;
+    }
+  };
+
+  // Auto-update school year when date changes
+  useEffect(() => {
+    if (date) {
+      const calculatedSchoolYear = getSchoolYearFromDate(date);
+      setSchoolYear(calculatedSchoolYear);
+      console.log('School year calculated:', calculatedSchoolYear, 'for date:', date);
+    }
+  }, [date]);
+
   useEffect(() => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
     const currentTime = now.toTimeString().slice(0, 5);
 
-    if (!date) setDate(defaultDate || today);
+    if (!date) {
+      setDate(defaultDate || today);
+      // Calculate school year for initial date
+      const initialSchoolYear = getSchoolYearFromDate(defaultDate || today);
+      setSchoolYear(initialSchoolYear);
+      console.log('Initial school year:', initialSchoolYear);
+    }
     if (!time) setTime(currentTime);
   }, [defaultDate]);
 
@@ -67,6 +100,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setTitle(editingEvent.title);
       setDescription(editingEvent.description || '');
       setLocation(editingEvent.location || '');
+      setSchoolYear(editingEvent.school_year || '');
       setImagePreviews(editingEvent.images || []);
       setDate(editingEvent.date);
       setTime(editingEvent.time);
@@ -156,6 +190,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       formData.append('location', location);
       formData.append('date', date);
       formData.append('time', time);
+      
+      // Always append school_year (it should always have a value)
+      console.log('Submitting with school_year:', schoolYear);
+      formData.append('school_year', schoolYear);
 
       images.forEach((image) => {
         formData.append('images[]', image);
@@ -534,6 +572,24 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                     className="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">School Year</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    value={schoolYear}
+                    readOnly
+                    className="block w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm bg-gray-50 text-gray-700 cursor-not-allowed"
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Automatically determined based on event date</p>
               </div>
 
               <div className="space-y-4">

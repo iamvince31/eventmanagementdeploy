@@ -37,8 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Events
     Route::get('/events', [EventController::class, 'index']);
     Route::post('/events', [EventController::class, 'store']);
-    // COMMENTED OUT - Hierarchy validation feature disabled
-    // Route::post('/events/validate-hierarchy', [EventController::class, 'validateHierarchy']);
+    Route::post('/events/validate-hierarchy', [EventController::class, 'validateHierarchy']);
     Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
     Route::post('/events/{event}/respond', [EventController::class, 'respondToInvitation']);
@@ -60,9 +59,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/hierarchy-approvals/{approval}/review', [EventRequestController::class, 'reviewHierarchyApproval']);
     Route::get('/hierarchy-approvals/{approval}/details', [EventRequestController::class, 'getApprovalDetails']);
     
-    // Default Events (Academic Calendar) - Admin Only
+    // Default Events (Academic Calendar) - View access for all authenticated users
+    Route::get('/default-events', [DefaultEventController::class, 'index']);
+    
+    // Default Events (Academic Calendar) - Admin Only for modifications
     Route::middleware('admin')->group(function () {
-        Route::get('/default-events', [DefaultEventController::class, 'index']);
         Route::put('/default-events/{id}/date', [DefaultEventController::class, 'updateDate']);
         Route::post('/default-events/create-empty', [DefaultEventController::class, 'createEmptyEvent']);
         Route::post('/default-events/create-with-details', [DefaultEventController::class, 'createEventWithDetails']);
