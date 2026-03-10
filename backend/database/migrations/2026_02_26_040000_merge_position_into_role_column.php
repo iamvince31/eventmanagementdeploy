@@ -12,8 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, update the role column to use the position values where position is not null
-        DB::statement("UPDATE users SET role = position WHERE position IS NOT NULL");
+        // Check if position column exists before trying to merge
+        if (Schema::hasColumn('users', 'position')) {
+            // First, update the role column to use the position values where position is not null
+            DB::statement("UPDATE users SET role = position WHERE position IS NOT NULL");
+            
+            // Drop the position column
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('position');
+            });
+        }
         
         // Now modify the role column to include all the position enum values
         Schema::table('users', function (Blueprint $table) {
@@ -21,11 +29,6 @@ return new class extends Migration
             $table->enum('role', ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member'])
                   ->default('Faculty Member')
                   ->change();
-        });
-        
-        // Drop the position column
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('position');
         });
     }
 

@@ -1,0 +1,28 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
+  <diagram name="Page-1" id="uDySCzvfvcw45hNpKQ_k">
+    <mxGraphModel dx="1426" dy="883" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="h9mKt-M_4orTfOMKG0MK-1" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Dean" vertex="1">
+          <mxGeometry height="60" width="120" x="265" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="h9mKt-M_4orTfOMKG0MK-2" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="CEIT Official" vertex="1">
+          <mxGeometry height="60" width="120" x="110" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="h9mKt-M_4orTfOMKG0MK-3" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Department Chairperson" vertex="1">
+          <mxGeometry height="60" width="120" x="430" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="h9mKt-M_4orTfOMKG0MK-4" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Coordinator" vertex="1">
+          <mxGeometry height="60" width="120" x="265" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="h9mKt-M_4orTfOMKG0MK-5" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Faculty" vertex="1">
+          <mxGeometry height="60" width="120" x="430" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="h9mKt-M_4orTfOMKG0MK-6" parent="1" style="rounded=0;whiteSpace=wrap;html=1;" value="Staff" vertex="1">
+          <mxGeometry height="60" width="120" x="430" y="450" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

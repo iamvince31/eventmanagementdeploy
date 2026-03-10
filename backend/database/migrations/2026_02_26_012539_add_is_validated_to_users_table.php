@@ -12,8 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_validated')->default(false)->after('role');
-            $table->enum('position', ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member'])->default('Faculty Member')->after('is_validated');
+            if (!Schema::hasColumn('users', 'is_validated')) {
+                $table->boolean('is_validated')->default(false)->after('role');
+            }
         });
     }
 
@@ -23,7 +24,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['is_validated', 'position']);
+            $table->dropColumn('is_validated');
         });
     }
 };

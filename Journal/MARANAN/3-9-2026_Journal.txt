@@ -6,3 +6,4 @@
 12:00 - 1:00 : Testing implementations on all account's level of access from dean-staff / Fixing bugs
 1:00 - 2:00 : Fixing bug for the faculty/staff side meeting requests for approval + dean/chairperson side for approval
 2:00 - 4:00 : Improving UI on the newly merged changes
+4:00 - 5:00 : Fixing inconsistencies on UI on Calendar merge

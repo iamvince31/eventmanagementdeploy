@@ -6,17 +6,25 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('events', function (Blueprint $table) {
-            $table->string('image')->nullable()->after('location');
+            if (Schema::hasColumn('events', 'is_special_event')) {
+                $table->dropColumn('is_special_event');
+            }
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('events', function (Blueprint $table) {
-            $table->dropColumn('image');
+            $table->boolean('is_special_event')->default(false)->after('time');
         });
     }
 };

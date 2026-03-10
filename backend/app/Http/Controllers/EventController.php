@@ -123,10 +123,10 @@ class EventController extends Controller
             ], 403);
         }
         
-        // Only Admin, Dean, Chairperson, CEIT Official can create events directly
-        if (!in_array($user->role, ['Admin', 'Dean', 'Chairperson', 'CEIT Official'])) {
+        // Only Admin, Dean, Chairperson, Coordinator, CEIT Official can create events directly
+        if (!in_array($user->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'CEIT Official'])) {
             return response()->json([
-                'error' => 'Unauthorized. Only Admin, Dean, Chairperson, and CEIT Official can create events.'
+                'error' => 'Unauthorized. Only Admin, Dean, Chairperson, Coordinator, and CEIT Official can create events.'
             ], 403);
         }
 

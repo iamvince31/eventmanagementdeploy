@@ -423,14 +423,13 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
   const availableRoles = [...new Set(members.map(m => m.role).filter(Boolean))]
     .filter(role => {
-      // Only exclude "Dean" role when current user is a Dean
-      // Only exclude "CEIT Official" role when current user is a CEIT Official
-      if (currentUser?.role === 'Dean' && role === 'Dean') {
-        return false;
+      // Only Faculty Members and Staff have invitation restrictions
+      // Coordinator, Dean, Chairperson, and CEIT Official can invite anyone
+      if (currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') {
+        // Faculty and Staff can only invite other Faculty Members and Staff
+        return role === 'Faculty Member' || role === 'Staff';
       }
-      if (currentUser?.role === 'CEIT Official' && role === 'CEIT Official') {
-        return false;
-      }
+      // All other roles (Coordinator, Dean, Chairperson, CEIT Official, Admin) have no restrictions
       return true;
     });
 

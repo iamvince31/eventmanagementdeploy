@@ -39,7 +39,8 @@ export default function Admin() {
     'Department of Civil and Environmental Engineering and Energy',
     'Department of Computer Engineering and Architecture',
     'Department of Industrial and Electrical Technology',
-    'Department of Information Technology'
+    'Department of Information Technology',
+    'College of Engineering and Information Technology'
   ];
 
   useEffect(() => {

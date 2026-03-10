@@ -14,7 +14,6 @@ class Event extends Model
         'time',
         'school_year',
         'host_id',
-        'is_special_event',
         'approved_request_id',
         'is_personal',
         'personal_color',
@@ -22,7 +21,6 @@ class Event extends Model
     ];
 
     protected $casts = [
-        'is_special_event' => 'boolean',
         'is_personal' => 'boolean',
     ];
 
