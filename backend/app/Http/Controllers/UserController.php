@@ -46,6 +46,50 @@ class UserController extends Controller
         ]);
     }
 
+    public function store(Request $request)
+    {
+        // Only admins can create users
+        if (!$request->user()->isAdmin()) {
+            return response()->json([
+                'error' => 'Only admins can create users.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'department' => 'required|string|max:255',
+            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Faculty Member,Staff,CEIT Official',
+            'name' => 'required|string|max:255',
+        ]);
+
+        // Create the user
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'department' => $validated['department'],
+            'role' => $validated['role'],
+            'is_validated' => true, // Admin-created users are automatically validated
+            'email_verified_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'User created successfully',
+            'user' => [
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'role' => $user->role,
+                'is_validated' => $user->is_validated,
+            ],
+        ], 201);
+    }
+
     public function pendingValidation(Request $request)
     {
         // Only admins can see pending validations

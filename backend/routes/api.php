@@ -84,6 +84,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/users', [UserController::class , 'index']);
         Route::get('/users/all', [UserController::class , 'all']);
         Route::get('/users/pending-validation', [UserController::class , 'pendingValidation']);
+        Route::post('/users', [UserController::class , 'store']);
         Route::put('/users/{id}/role', [UserController::class , 'updateRole']);
         Route::put('/user/profile', [UserController::class , 'update']);
         Route::post('/users/{id}/validate', [UserController::class , 'validateUser']);
