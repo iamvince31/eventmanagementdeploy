@@ -17,7 +17,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Calculate date boundaries: 2 months in the past, 1 year in the future
+  // Calculate date boundaries: 2 months in the past, 1 year in the future h
   const today = new Date();
   const minDate = new Date(today.getFullYear(), today.getMonth() - 2, 1);
   const maxDate = new Date(today.getFullYear() + 1, today.getMonth(), 0);
@@ -50,22 +50,22 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
   const getDefaultEventsForDate = (dateStr) => {
     return defaultEvents.filter(event => {
       if (!event.date) return false;
-      
+
       const eventStartDate = new Date(event.date);
       const checkDate = new Date(dateStr);
-      
+
       if (!event.end_date) {
         return eventStartDate.toDateString() === checkDate.toDateString();
       }
-      
+
       const eventEndDate = new Date(event.end_date);
       const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
-      
+
       if (isInRange) {
         const dayOfWeek = checkDate.getDay();
         return dayOfWeek !== 0;
       }
-      
+
       return false;
     });
   };
@@ -73,7 +73,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
   const handleDateClick = (dateStr) => {
     setSelectedDate(dateStr);
     const regularEvents = getEventsForDate(dateStr);
-    
+
     if (onDateSelect) {
       onDateSelect(dateStr, regularEvents);
     }
@@ -83,7 +83,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
     e.stopPropagation();
     const regularEvents = getEventsForDate(dateStr);
     const academicEvents = getDefaultEventsForDate(dateStr);
-    
+
     setMoreModalDate(dateStr);
     setMoreModalEvents([...academicEvents, ...regularEvents]);
     setShowMoreModal(true);
@@ -91,13 +91,13 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
 
   const formatTime = (time) => {
     if (!time || time === 'All Day') return 'All Day';
-    
+
     // Parse time (assuming format like "14:00" or "2:00 PM")
     const [hours] = time.split(':');
     const hour = parseInt(hours);
     const ampm = hour >= 12 ? 'pm' : 'am';
     const displayHour = hour % 12 || 12;
-    
+
     return `${displayHour}${ampm}`;
   };
 
@@ -180,7 +180,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           }}
           className={`
             h-full p-1.5 border border-gray-200 -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
-            ${isCurrentMonth 
+            ${isCurrentMonth
               ? `${isSunday ? 'cursor-not-allowed bg-gray-50' : 'cursor-default bg-white'}`
               : 'bg-gray-50/50'
             }
@@ -192,10 +192,10 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           <div className="flex justify-between items-start mb-1 flex-shrink-0">
             <span className={`
               text-xs font-semibold px-1.5 py-0.5 rounded-full
-              ${isCurrentDay 
-                ? 'bg-green-600 text-white shadow-sm' 
-                : isCurrentMonth 
-                  ? 'text-gray-800' 
+              ${isCurrentDay
+                ? 'bg-green-600 text-white shadow-sm'
+                : isCurrentMonth
+                  ? 'text-gray-800'
                   : 'text-gray-400'
               }
             `}>
@@ -223,17 +223,16 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                 const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                 const isPersonal = event.is_personal;
                 const isMeeting = event.event_type === 'meeting';
-                
+
                 return (
                   <div
                     key={`regular-${idx}`}
-                    className={`text-sm px-2.5 py-1.5 text-white rounded-md truncate font-normal shadow-md cursor-pointer transition-colors ${
-                      isPersonal
+                    className={`text-sm px-2.5 py-1.5 text-white rounded-md truncate font-normal shadow-md cursor-pointer transition-colors ${isPersonal
                         ? 'bg-purple-500 hover:bg-purple-600'
                         : isMeeting
                           ? (isHosted ? 'bg-amber-800 hover:bg-amber-900' : 'bg-yellow-500 hover:bg-yellow-600')
                           : (isHosted ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600')
-                    }`}
+                      }`}
                     title={`${event.title} ${isPersonal ? '(Personal)' : isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : (isHosted ? '(Hosting Event)' : '(Invited to Event)')}`}
                     onClick={(e) => handleEventClick(event, e)}
                   >
@@ -253,7 +252,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               )}
             </div>
           )}
-          </div>
+        </div>
       );
     }
 
@@ -268,11 +267,10 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           <button
             onClick={prevMonth}
             disabled={isAtMinDate}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-              isAtMinDate
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${isAtMinDate
                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-800'
-            }`}
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -284,11 +282,10 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           <button
             onClick={nextMonth}
             disabled={isAtMaxDate}
-            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${
-              isAtMaxDate
+            className={`w-8 h-8 flex items-center justify-center rounded-lg transition-colors ${isAtMaxDate
                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-800'
-            }`}
+              }`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
@@ -313,36 +310,36 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           {renderCalendarDays()}
         </div>
 
-      {/* Legend */}
-      <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-blue-500"></div>
-            <span className="text-gray-600 font-medium">Academic Event</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-red-500"></div>
-            <span className="text-gray-600 font-medium">Hosting Event</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-green-500"></div>
-            <span className="text-gray-600 font-medium">Invited to Event</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-amber-800"></div>
-            <span className="text-gray-600 font-medium">Hosting Meeting</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-yellow-500"></div>
-            <span className="text-gray-600 font-medium">Invited to Meeting</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded bg-purple-500"></div>
-            <span className="text-gray-600 font-medium">Personal Event</span>
+        {/* Legend */}
+        <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+          <div className="flex flex-wrap gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-blue-500"></div>
+              <span className="text-gray-600 font-medium">Academic Event</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-red-500"></div>
+              <span className="text-gray-600 font-medium">Hosting Event</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-green-500"></div>
+              <span className="text-gray-600 font-medium">Invited to Event</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-amber-800"></div>
+              <span className="text-gray-600 font-medium">Hosting Meeting</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-yellow-500"></div>
+              <span className="text-gray-600 font-medium">Invited to Meeting</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-purple-500"></div>
+              <span className="text-gray-600 font-medium">Personal Event</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
       {/* Event Detail Modal */}
       {showMoreModal && (
@@ -359,12 +356,12 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              
+
               {/* Day of Week */}
               <div className="text-sm font-medium text-green-600 uppercase tracking-wider mb-1">
                 {new Date(moreModalDate).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
               </div>
-              
+
               {/* Date Number */}
               <div className="text-6xl font-normal text-green-800 mb-4">
                 {new Date(moreModalDate).getDate()}
@@ -379,12 +376,12 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                   const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                   const isPersonal = event.is_personal;
                   const isMeeting = event.event_type === 'meeting';
-                  
+
                   return (
                     <div key={idx}>
                       {isAcademic ? (
                         // Academic Event - Blue Bar Style
-                        <div 
+                        <div
                           className="bg-blue-500 text-white rounded-lg px-4 py-3 font-medium cursor-pointer hover:bg-blue-600 transition-colors"
                           onClick={(e) => handleEventClick(event, e)}
                         >
@@ -392,17 +389,16 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                         </div>
                       ) : (
                         // Regular Event - Consistent Color Dots
-                        <div 
+                        <div
                           className="flex items-start gap-3 px-3 py-2 hover:bg-green-100 rounded-lg transition-colors cursor-pointer"
                           onClick={(e) => handleEventClick(event, e)}
                         >
-                          <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-1 ${
-                            isPersonal
+                          <div className={`flex-shrink-0 w-3 h-3 rounded-full mt-1 ${isPersonal
                               ? 'bg-purple-500'
                               : isMeeting
                                 ? (isHosted ? 'bg-amber-800' : 'bg-yellow-500')
                                 : (isHosted ? 'bg-red-500' : 'bg-green-500')
-                          }`}></div>
+                            }`}></div>
                           <div className="flex-1 min-w-0">
                             <div className="text-green-800 font-normal">
                               <span className="font-medium">{formatTime(event.time)}</span> {event.title || '(No title)'}
@@ -430,31 +426,30 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
             <div className="px-6 py-4 border-b border-green-200 flex justify-between items-start bg-green-50">
               <div className="flex items-start gap-3 flex-1 min-h-[4rem]">
                 {/* Color Indicator */}
-                <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${
-                  selectedEvent.is_default_event || !selectedEvent.time 
-                    ? 'bg-blue-500' 
+                <div className={`w-1 self-stretch rounded-full flex-shrink-0 ${selectedEvent.is_default_event || !selectedEvent.time
+                    ? 'bg-blue-500'
                     : selectedEvent.is_personal
                       ? 'bg-purple-500'
                       : selectedEvent.event_type === 'meeting'
                         ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-amber-800' : 'bg-yellow-500')
                         : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-red-500' : 'bg-green-500')
-                }`}></div>
-                
+                  }`}></div>
+
                 <div className="flex-1 min-w-0">
                   <h3 className="text-xl font-semibold text-green-900 mb-1 break-words">
                     {selectedEvent.title || selectedEvent.name}
                   </h3>
                   <div className="text-sm text-green-700">
-                    {new Date(selectedEvent.date).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
+                    {new Date(selectedEvent.date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
                       day: 'numeric',
                       year: 'numeric'
                     })}
                   </div>
                 </div>
               </div>
-              
+
               {/* Action Buttons */}
               <div className="flex items-center gap-2 ml-3">
                 {currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id && onEditEvent && (
@@ -586,18 +581,17 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               {/* Event Type Badge (when no school year) */}
               {!(selectedEvent.is_default_event || !selectedEvent.time) && !selectedEvent.school_year && (
                 <div className="pt-3 border-t border-gray-200">
-                  <span className={`inline-flex items-center gap-2 text-xs font-medium ${
-                    selectedEvent.is_personal
+                  <span className={`inline-flex items-center gap-2 text-xs font-medium ${selectedEvent.is_personal
                       ? 'text-purple-700'
                       : selectedEvent.event_type === 'meeting'
                         ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'text-amber-900' : 'text-yellow-700')
                         : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'text-red-700' : 'text-green-700')
-                  }`}>
+                    }`}>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    {selectedEvent.is_personal 
-                      ? 'Personal Event' 
+                    {selectedEvent.is_personal
+                      ? 'Personal Event'
                       : selectedEvent.event_type === 'meeting'
                         ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'Hosting Meeting' : 'Invited to Meeting')
                         : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'Hosting Event' : 'Invited to Event')

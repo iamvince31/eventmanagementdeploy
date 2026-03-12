@@ -14,10 +14,11 @@ import EventRequests from './pages/EventRequests';
 import Admin from './pages/Admin';
 import DefaultEvents from './pages/DefaultEvents';
 import History from './pages/History';
+import Archive from './pages/Archive';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
@@ -31,22 +32,22 @@ const ProtectedRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/login" />;
   }
-  
+
   // If user hasn't initialized their schedule, redirect to account page
   if (!user.schedule_initialized) {
     return <Navigate to="/account" />;
   }
-  
+
   return children;
 };
 
 const RoleProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
@@ -60,27 +61,27 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/login" />;
   }
-  
+
   // If user hasn't initialized their schedule, redirect to account page
   if (!user.schedule_initialized) {
     return <Navigate to="/account" />;
   }
-  
+
   // Check if user's role is allowed
   if (!allowedRoles.includes(user.role)) {
     return <Navigate to="/dashboard" />;
   }
-  
+
   return children;
 };
 
 const AccountRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
@@ -94,13 +95,13 @@ const AccountRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   return user ? children : <Navigate to="/login" />;
 };
 
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex items-center justify-center">
@@ -114,7 +115,7 @@ const PublicRoute = ({ children }) => {
       </div>
     );
   }
-  
+
   // If user is logged in, check if they need to set up schedule
   if (user) {
     if (!user.schedule_initialized) {
@@ -122,7 +123,7 @@ const PublicRoute = ({ children }) => {
     }
     return <Navigate to="/dashboard" />;
   }
-  
+
   return children;
 };
 
@@ -190,6 +191,11 @@ function App() {
           <Route path="/default-events" element={
             <RoleProtectedRoute allowedRoles={['Admin']}>
               <DefaultEvents />
+            </RoleProtectedRoute>
+          } />
+          <Route path="/archive" element={
+            <RoleProtectedRoute allowedRoles={['Admin']}>
+              <Archive />
             </RoleProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/account" />} />

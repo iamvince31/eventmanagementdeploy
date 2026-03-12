@@ -5,8 +5,8 @@ import NotificationBell from './NotificationBell';
 import api from '../services/api';
 import logo from "../assets/CEIT-LOGO.png";
 
-export default function Navbar({ 
-  showUpcomingEvents = false, 
+export default function Navbar({
+  showUpcomingEvents = false,
   upcomingCount = 0,
   approvedRequests = [],
   isLoading = false
@@ -46,7 +46,7 @@ export default function Navbar({
       const response = await api.get('/events');
       const fetchedEvents = response.data.events;
       setEvents(fetchedEvents);
-      
+
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const upcoming = fetchedEvents.filter(event => {
@@ -95,11 +95,10 @@ export default function Navbar({
               <button
                 onClick={() => navigate('/dashboard')}
                 disabled={isLoading}
-                className={`focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all flex-shrink-0 ${
-                  isLoading 
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                className={`focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all flex-shrink-0 ${isLoading
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:opacity-80'
-                }`}
+                  }`}
                 aria-label="Go to dashboard"
                 aria-disabled={isLoading}
               >
@@ -121,11 +120,10 @@ export default function Navbar({
               <button
                 onClick={() => navigate('/dashboard')}
                 disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${
-                  isLoading 
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:bg-white/10'
-                }`}
+                  }`}
                 aria-label="Go to dashboard"
                 aria-disabled={isLoading}
               >
@@ -138,11 +136,10 @@ export default function Navbar({
               <button
                 onClick={handleUpcomingIconClick}
                 disabled={isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)}
-                className={`relative p-2 rounded-lg transition-colors duration-200 ${
-                  isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)
+                className={`relative p-2 rounded-lg transition-colors duration-200 ${isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)
                     ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:bg-white/10 cursor-pointer'
-                }`}
+                  }`}
                 aria-label="View upcoming events"
                 aria-disabled={isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)}
               >
@@ -160,11 +157,10 @@ export default function Navbar({
               <button
                 onClick={() => setIsMembersModalOpen(true)}
                 disabled={isLoading || isFetchingMembers}
-                className={`relative p-2 rounded-lg transition-colors duration-200 ${
-                  isLoading || isFetchingMembers
+                className={`relative p-2 rounded-lg transition-colors duration-200 ${isLoading || isFetchingMembers
                     ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:bg-white/10 cursor-pointer'
-                }`}
+                  }`}
                 aria-label="View members"
                 aria-disabled={isLoading || isFetchingMembers}
               >
@@ -182,11 +178,10 @@ export default function Navbar({
               <button
                 onClick={() => navigate('/history')}
                 disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${
-                  isLoading 
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading
+                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:bg-white/10'
-                }`}
+                  }`}
                 aria-label="View history"
                 aria-disabled={isLoading}
               >
@@ -211,17 +206,16 @@ export default function Navbar({
                 <button
                   onClick={() => !isLoading && setIsAccountDropdownOpen(!isAccountDropdownOpen)}
                   disabled={isLoading}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${
-                    isLoading 
-                      ? 'opacity-50 cursor-not-allowed pointer-events-none' 
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${isLoading
+                      ? 'opacity-50 cursor-not-allowed pointer-events-none'
                       : 'hover:bg-white/10'
-                  }`}
+                    }`}
                   aria-label="Account menu"
                   aria-disabled={isLoading}
                 >
                   {user?.profile_picture ? (
-                    <img 
-                      src={user.profile_picture} 
+                    <img
+                      src={user.profile_picture}
                       alt={user?.username}
                       className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
                     />
@@ -274,6 +268,18 @@ export default function Navbar({
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                             <span className="font-medium">Admin Panel</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsAccountDropdownOpen(false);
+                              navigate('/archive');
+                            }}
+                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 transition-colors flex items-center space-x-3"
+                          >
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                            </svg>
+                            <span className="font-medium">Archive</span>
                           </button>
                         </>
                       )}
@@ -340,8 +346,8 @@ export default function Navbar({
                     <div key={member.id} className="flex items-center justify-between bg-gray-50 hover:bg-green-50 rounded-xl p-4 transition-colors border border-gray-200 hover:border-green-300">
                       <div className="flex items-center space-x-3">
                         {member.profile_picture ? (
-                          <img 
-                            src={member.profile_picture} 
+                          <img
+                            src={member.profile_picture}
                             alt={member.username}
                             className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
                           />
@@ -425,11 +431,11 @@ export default function Navbar({
                             <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            {new Date(event.date).toLocaleDateString('en-US', { 
-                              weekday: 'short', 
-                              month: 'short', 
-                              day: 'numeric', 
-                              year: 'numeric' 
+                            {new Date(event.date).toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric'
                             })}
                           </div>
                           <div className="flex items-center text-sm text-gray-600">
