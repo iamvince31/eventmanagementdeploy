@@ -2,4 +2,4 @@
 
 7:00 - 11:00 : optimizing system to run faster (removing loading inconsistencies)
 11:00 - 12:00 : Lunch break
-12:00 - 1:00 : Merging changes between teammates
+12:00 - 3:00 : Merging changes between teammates
