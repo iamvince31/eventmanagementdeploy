@@ -1,0 +1,5 @@
+add archive
+add seed events for archive testing
+add filter in archive
+change to list view in archive
+remove the archived events in activity history
