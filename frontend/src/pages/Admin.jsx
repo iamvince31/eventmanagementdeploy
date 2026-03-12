@@ -5,6 +5,7 @@ import api from '../services/api';
 import logo from "../assets/CEIT-LOGO.png";
 import Navbar from '../components/Navbar';
 import CreatePermanentAdminModal from '../components/CreatePermanentAdminModal';
+import CreateUserModal from '../components/CreateUserModal';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export default function Admin() {
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [isBootstrapAdmin, setIsBootstrapAdmin] = useState(false);
   const [showCreateAdminModal, setShowCreateAdminModal] = useState(false);
+  const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
@@ -396,8 +398,21 @@ export default function Admin() {
           <div className="bg-white rounded-2xl shadow-md p-6 hover:shadow-lg transition-shadow duration-300">
             {/* Header */}
             <div className="mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
-              <p className="text-sm text-gray-600 mt-1">Manage users, roles, and validations</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">User Management</h2>
+                  <p className="text-sm text-gray-600 mt-1">Manage users, roles, and validations</p>
+                </div>
+                <button
+                  onClick={() => setShowCreateUserModal(true)}
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                  <span className="font-semibold">Create User</span>
+                </button>
+              </div>
             </div>
 
             {/* Search and Filter */}
@@ -670,6 +685,16 @@ export default function Admin() {
         isOpen={showCreateAdminModal}
         onClose={() => setShowCreateAdminModal(false)}
         onSuccess={handleCreateAdminSuccess}
+      />
+
+      {/* Create User Modal */}
+      <CreateUserModal
+        isOpen={showCreateUserModal}
+        onClose={() => setShowCreateUserModal(false)}
+        onSuccess={() => {
+          fetchUsers();
+          setShowCreateUserModal(false);
+        }}
       />
 
       {/* Edit User Modal */}
