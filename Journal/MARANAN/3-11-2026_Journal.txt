@@ -6,4 +6,4 @@
 12:00 - 1:00 : Improving the /add-event interface for faculty/staff / Debugging and unrestricting the faculty-staff to invite everyone
 1:00 - 3:00 : Event Request added for ease of use for dean/chairperson / Improving the faculty-chair-dean request event feature approvals to only strictly on their department
 3:00 - 4:00 : Improving the dean/chairperson's approval request to be dynamic to the faculty request status
-4:00 - 5:00 : fixed the time inconsistency issue to the event request tab
+4:00 - 5:00 : fixed the time inconsistency issue to the event request tab  
