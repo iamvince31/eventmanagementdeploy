@@ -1,72 +1,143 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
 
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour in milliseconds
+const LAST_ACTIVITY_KEY = 'lastActivity';
+
+// Helper: determine which storage to use based on remember me flag
+const getStorage = () => {
+  return localStorage.getItem('rememberMe') === 'true' ? localStorage : sessionStorage;
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const sessionTimerRef = useRef(null);
+
+  const clearSessionTimer = () => {
+    if (sessionTimerRef.current) {
+      clearTimeout(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+  };
+
+  const performLogout = useCallback(async () => {
+    clearSessionTimer();
+    try {
+      await api.post('/logout');
+    } catch (error) {
+      // Silently fail — token may already be invalid
+    } finally {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      setUser(null);
+    }
+  }, []);
+
+  // Start a 1-hour inactivity timer for non-remembered sessions
+  const startSessionTimer = useCallback(() => {
+    if (localStorage.getItem('rememberMe') === 'true') return;
+
+    clearSessionTimer();
+    sessionTimerRef.current = setTimeout(() => {
+      performLogout();
+    }, SESSION_TIMEOUT_MS);
+  }, [performLogout]);
+
+  // Reset the timer on user activity
+  const resetActivity = useCallback(() => {
+    if (localStorage.getItem('rememberMe') === 'true') return;
+    localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    startSessionTimer();
+  }, [startSessionTimer]);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    
+    // Try localStorage first (remember me), then sessionStorage
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+    const rememberMe = localStorage.getItem('rememberMe') === 'true';
+
     if (token && savedUser) {
+      // For non-remembered sessions, check if 1hr has passed since last activity
+      if (!rememberMe) {
+        const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+        const elapsed = Date.now() - lastActivity;
+        if (lastActivity && elapsed > SESSION_TIMEOUT_MS) {
+          // Session expired while browser was closed
+          performLogout();
+          setLoading(false);
+          return;
+        }
+        startSessionTimer();
+      }
+
       setUser(JSON.parse(savedUser));
     }
     setLoading(false);
   }, []);
 
-  const login = async (email, password, userFromOtp = null, tokenFromOtp = null) => {
+  // Attach activity listeners for non-remembered sessions
+  useEffect(() => {
+    if (!user || localStorage.getItem('rememberMe') === 'true') return;
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(e => window.addEventListener(e, resetActivity));
+    startSessionTimer();
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetActivity));
+      clearSessionTimer();
+    };
+  }, [user, resetActivity, startSessionTimer]);
+
+  const login = async (email, password, rememberMe = false, userFromOtp = null, tokenFromOtp = null) => {
     // If called from OTP verification, use provided user and token
     if (userFromOtp && tokenFromOtp) {
       localStorage.setItem('token', tokenFromOtp);
       localStorage.setItem('user', JSON.stringify(userFromOtp));
+      localStorage.setItem('rememberMe', 'true');
       setUser(userFromOtp);
       return { user: userFromOtp, token: tokenFromOtp };
     }
 
     // Normal login flow
     const response = await api.post('/login', { email, password });
-    
-    // Check if email verification is required
-    if (response.data.requires_verification) {
-      return response.data;
-    }
-    
-    // Check if 2FA is required
-    if (response.data.requires_otp) {
-      // Return the response data for handling in the component
-      return response.data;
-    }
-    
-    // Normal login success
+
+    if (response.data.requires_verification) return response.data;
+    if (response.data.requires_otp) return response.data;
+
     const { user, token } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+
+    if (rememberMe) {
+      // Persist across browser sessions
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('rememberMe', 'true');
+      localStorage.removeItem(LAST_ACTIVITY_KEY);
+    } else {
+      // Only lives for this browser session + 1hr inactivity limit
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('rememberMe', 'false');
+      localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
+    }
+
     setUser(user);
-    
     return response.data;
   };
 
   const register = async (username, email, password, department) => {
     const response = await api.post('/register', { username, email, password, department });
-    // Don't automatically log the user in - just return the response
-    // User will need to login manually
     return response.data;
   };
 
-  const logout = async () => {
-    try {
-      await api.post('/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      setUser(null);
-    }
-  };
+  const logout = performLogout;
 
   const forgotPassword = async (email) => {
     const response = await api.post('/forgot-password', { email });
@@ -85,7 +156,8 @@ export const AuthProvider = ({ children }) => {
 
   const updateUser = (updatedUserData) => {
     const updatedUser = { ...user, ...updatedUserData };
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    const storage = getStorage();
+    storage.setItem('user', JSON.stringify(updatedUser));
     setUser(updatedUser);
   };
 

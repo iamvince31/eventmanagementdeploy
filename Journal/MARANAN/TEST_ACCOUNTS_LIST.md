@@ -63,7 +63,7 @@
 | john.rivera.chair.dceee@cvsu.edu.ph | Chairperson | Department of Civil and Environmental Engineering and Energy |
 | sarah.reyes.chair.dcea@cvsu.edu.ph | Chairperson | Department of Computer Engineering and Architecture |
 | michael.cruz.chair.diet@cvsu.edu.ph | Chairperson | Department of Industrial and Electrical Technology |
-| anna.dela cruz.chair.dit@cvsu.edu.ph | Chairperson | Department of Information Technology |
+| anna.delacruz.chair.dit@cvsu.edu.ph | Chairperson | Department of Information Technology |
 
 ---
 
@@ -137,7 +137,7 @@
 | cristina.castro.fac7.dit@cvsu.edu.ph | Faculty Member |
 | roberto.morales.fac8.dit@cvsu.edu.ph | Faculty Member |
 | angela.navarro.fac9.dit@cvsu.edu.ph | Faculty Member |
-| francisco.ortiz.fac10.dit@cvsu.edu.ph | Faculty Member |
+| anna.delacruz.chair.dit@cvsu.edu.ph | Faculty Member |
 
 ---
 
@@ -202,7 +202,7 @@
 ### DIT - Department of Information Technology
 | Email | Role |
 |-------|------|
-| gloria.perez.staff1.dit@cvsu.edu.ph | Staff |
+| anna.delacruz.chair.dit@cvsu.edu.ph | Staff |
 | manuel.ramirez.staff2.dit@cvsu.edu.ph | Staff |
 | teresa.silva.staff3.dit@cvsu.edu.ph | Staff |
 | jorge.vargas.staff4.dit@cvsu.edu.ph | Staff |

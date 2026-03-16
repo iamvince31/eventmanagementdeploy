@@ -66,13 +66,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       }
 
       const eventEndDate = new Date(event.end_date);
-      const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
-
-      if (isInRange) {
-        return true; // Allow all days except Sundays
-      }
-
-      return false;
+      return checkDate >= eventStartDate && checkDate <= eventEndDate;
     });
   };
 
@@ -187,8 +181,6 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       const cellDate = new Date(cellYear, cellMonth, cellDay);
       cellDate.setHours(0, 0, 0, 0);
 
-      const isSunday = cellDate.getDay() === 0; // Check if it's Sunday
-
       const isCurrentDay = (
         cellDay === today.getDate() &&
         cellMonth === today.getMonth() &&
@@ -217,7 +209,8 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               handleDateClick(dateStr);
             }
           }}
-          className={`h-full p-0.5 sm:p-1 lg:p-1.5 border border-gray-200 -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
+          className={`
+            h-full p-1.5 border border-gray-200 -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
             ${isCurrentMonth ? 'cursor-default bg-white' : 'bg-gray-50/50'}
             ${selected ? 'ring-2 ring-green-500 ring-inset z-10' : ''}
             ${highlighted ? 'ring-2 ring-green-400 animate-pulse z-10' : ''}
@@ -235,9 +228,9 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
 
           {/* Events List - Only for current month */}
           {isCurrentMonth && (
-            <div className="flex-1 space-y-0.5 sm:space-y-1 lg:space-y-1.5 overflow-hidden">
-              {/* Academic Events (Blue Labels) - Clickable - Excluded on Sundays */}
-              {!isSunday && academicEvents.slice(0, displayLimit).map((event, idx) => (
+            <div className="flex-1 space-y-1.5 overflow-hidden">
+              {/* Academic Events (Blue Labels) - Clickable */}
+              {academicEvents.slice(0, displayLimit).map((event, idx) => (
                 <div
                   key={`academic-${idx}`}
                   className="text-[9px] sm:text-xs lg:text-sm px-1 sm:px-1.5 lg:px-2.5 py-0.5 sm:py-1 lg:py-1.5 bg-blue-500 text-white rounded-sm sm:rounded-md truncate font-normal shadow-sm sm:shadow-md cursor-pointer hover:bg-blue-600 transition-colors"
@@ -249,7 +242,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
               ))}
 
               {/* Regular Events (Title Labels) - Always allowed */}
-              {regularEvents.slice(0, displayLimit - (isSunday ? 0 : academicEvents.length)).map((event, idx) => {
+              {regularEvents.slice(0, displayLimit - academicEvents.length).map((event, idx) => {
                 const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                 const isPersonal = event.is_personal;
                 const isMeeting = event.event_type === 'meeting';

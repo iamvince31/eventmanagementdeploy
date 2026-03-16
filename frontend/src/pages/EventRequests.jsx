@@ -157,7 +157,7 @@ export default function EventRequests() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50">
-        <Navbar showUpcomingEvents={true} isLoading={loading} />
+        <Navbar isLoading={loading} />
         <main className="w-full py-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8 animate-pulse">
@@ -181,7 +181,7 @@ export default function EventRequests() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50">
-      <Navbar showUpcomingEvents={true} isLoading={loading} />
+      <Navbar isLoading={loading} />
 
       <main className="w-full py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">

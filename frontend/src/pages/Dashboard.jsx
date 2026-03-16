@@ -107,15 +107,7 @@ export default function Dashboard() {
         }
         
         const eventEndDate = new Date(defEvent.end_date);
-        const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
-        
-        // Exclude Sundays (0) for multi-day academic events
-        if (isInRange) {
-          const dayOfWeek = checkDate.getDay();
-          return dayOfWeek !== 0;
-        }
-        
-        return false;
+        return checkDate >= eventStartDate && checkDate <= eventEndDate;
       }).map(defEvent => ({
         ...defEvent,
         is_default_event: true,
@@ -197,15 +189,7 @@ export default function Dashboard() {
       
       // If end_date exists, check if date is within range
       const eventEndDate = new Date(defEvent.end_date);
-      const isInRange = checkDate >= eventStartDate && checkDate <= eventEndDate;
-      
-      // Exclude Sundays (0) for multi-day academic events
-      if (isInRange) {
-        const dayOfWeek = checkDate.getDay();
-        return dayOfWeek !== 0;
-      }
-      
-      return false;
+      return checkDate >= eventStartDate && checkDate <= eventEndDate;
     }).map(defEvent => ({
       ...defEvent,
       is_default_event: true,
@@ -350,11 +334,7 @@ export default function Dashboard() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col overflow-hidden">
-      <Navbar 
-        showUpcomingEvents={true} 
-        upcomingCount={0}
-        isLoading={loading}
-      />
+      <Navbar isLoading={loading} />
 
       {/* Main Content */}
       <main className="flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 overflow-hidden flex flex-col">

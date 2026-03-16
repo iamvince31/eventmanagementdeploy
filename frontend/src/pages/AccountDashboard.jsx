@@ -410,7 +410,7 @@ export default function AccountDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50">
-      <Navbar showUpcomingEvents={true} isLoading={false} />
+      <Navbar isLoading={false} />
 
       <main className={`w-full py-8 sm:px-6 lg:px-8`}>
         <div className="px-4 py-2 sm:px-0">

@@ -29,7 +29,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const response = await login(email.trim(), password);
+      const response = await login(email.trim(), password, rememberMe);
 
       // Check if email verification is required
       if (response?.requires_verification) {

@@ -30,8 +30,8 @@ export default function NotificationBell({ events, user, onNotificationClick, ap
 
   const fetchMessages = async () => {
     try {
-      const response = await api.get('/messages/unread');
-      setMessages(response.data.messages || []);
+      const response = await api.get('/messages');
+      setMessages(response.data || []);
     } catch (error) {
       // Silently handle error - messages endpoint may not exist (405 Method Not Allowed)
       // Only log non-auth and non-405 errors

@@ -3,24 +3,12 @@ import { useState, useEffect, useRef } from 'react';
 export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDate, className = '', excludeSundays = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [displayValue, setDisplayValue] = useState('');
   const datePickerRef = useRef(null);
 
-  // Format date for display
-  const formatDisplayDate = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
-  };
-
-  // Update display value when selectedDate changes
-  useEffect(() => {
-    setDisplayValue(formatDisplayDate(selectedDate));
-  }, [selectedDate]);
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -29,7 +17,6 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
         setIsOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -43,19 +30,17 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
   };
 
   // Check if a date is disabled
-  const isDateDisabled = (year, month, day) => {
+  const isDateDisable = (year, month, day) => {
     const dateString = formatDateString(year, month, day);
-    
-    // Check min/max date constraints
+
     if (minDate && dateString < minDate) return true;
     if (maxDate && dateString > maxDate) return true;
-    
-    // Check if Sundays should be excluded
+
     if (excludeSundays) {
       const date = new Date(year, month, day);
-      if (date.getDay() === 0) return true; // 0 = Sunday
+      if (date.getDay() === 0) return true;
     }
-    
+
     return false;
   };
 
@@ -63,25 +48,22 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    
+
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
-    
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
     const days = [];
     const currentDate = new Date(startDate);
-    
-    // Generate 6 weeks (42 days) to fill the calendar grid
+
     for (let i = 0; i < 42; i++) {
       const day = currentDate.getDate();
       const isCurrentMonth = currentDate.getMonth() === month;
       const isToday = currentDate.toDateString() === new Date().toDateString();
       const dateString = formatDateString(currentDate.getFullYear(), currentDate.getMonth(), day);
       const isSelected = dateString === selectedDate;
-      const isDisabled = isDateDisabled(currentDate.getFullYear(), currentDate.getMonth(), day);
-      const isWeekend = false; // Allow all days including weekends
-      
+      const isDisabled = isDateDisable(currentDate.getFullYear(), currentDate.getMonth(), day);
+
       days.push({
         day,
         date: new Date(currentDate),
@@ -90,12 +72,11 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
         isToday,
         isSelected,
         isDisabled,
-        isWeekend
       });
-      
+
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return days;
   };
 
@@ -113,10 +94,12 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
   };
 
   const days = generateCalendarDays();
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
+
+  const getDisplayValue = () => {
+    if (!selectedDate) return null;
+    const date = new Date(selectedDate + 'T00:00:00');
+    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  };
 
   return (
     <div className={`relative ${className}`} ref={datePickerRef}>
@@ -127,13 +110,13 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
         className="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm text-left bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
       >
         <div className="flex items-center justify-between">
-          <span className={displayValue ? 'text-gray-900' : 'text-gray-400'}>
-            {displayValue || 'Select date...'}
+          <span className={getDisplayValue() ? 'text-gray-900' : 'text-gray-400'}>
+            {getDisplayValue() || 'Select date...'}
           </span>
-          <svg 
-            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
-            fill="none" 
-            stroke="currentColor" 
+          <svg
+            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
             viewBox="0 0 24 24"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -143,7 +126,7 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
 
       {/* Calendar Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
+        <div className="absolute z-50 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-full max-w-md">
           {/* Month Navigation */}
           <div className="flex items-center justify-between mb-4">
             <button
@@ -155,11 +138,11 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            
+
             <h3 className="text-sm font-semibold text-gray-900">
               {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </h3>
-            
+
             <button
               type="button"
               onClick={() => navigateMonth(1)}
@@ -188,9 +171,8 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
                 type="button"
                 onClick={() => !dayObj.isDisabled && dayObj.isCurrentMonth && handleDateClick(dayObj.dateString)}
                 disabled={dayObj.isDisabled || !dayObj.isCurrentMonth}
-                title={dayObj.isCurrentMonth ? '' : ''}
                 className={`
-                  h-8 w-8 text-xs rounded transition-colors relative
+                  h-8 w-8 text-xs rounded transition-colors
                   ${dayObj.isCurrentMonth
                     ? dayObj.isDisabled
                       ? 'text-gray-300 cursor-not-allowed bg-gray-100'
@@ -215,16 +197,15 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
               onClick={() => {
                 const today = new Date();
                 const todayString = formatDateString(today.getFullYear(), today.getMonth(), today.getDate());
-                const isTodayDisabled = isDateDisabled(today.getFullYear(), today.getMonth(), today.getDate());
-                if (!isTodayDisabled) {
+                if (!isDateDisable(today.getFullYear(), today.getMonth(), today.getDate())) {
                   handleDateClick(todayString);
                 }
               }}
               disabled={(() => {
                 const today = new Date();
-                return isDateDisabled(today.getFullYear(), today.getMonth(), today.getDate());
+                return isDateDisable(today.getFullYear(), today.getMonth(), today.getDate());
               })()}
-              className="w-full px-3 py-2 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-50"
+              className="w-full px-3 py-2 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Today
             </button>

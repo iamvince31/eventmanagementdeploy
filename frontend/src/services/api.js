@@ -1,4 +1,5 @@
 import axios from 'axios';
+// Token can be in localStorage (remember me) or sessionStorage (session only)
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
@@ -11,7 +12,7 @@ const api = axios.create({
 
 // Add token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -27,9 +28,12 @@ api.interceptors.response.use(
       return Promise.reject(new Error('Request timed out. Please check your connection and try again.'));
     }
     if (error.response?.status === 401) {
-      // Clear all auth data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      localStorage.removeItem('rememberMe');
+      localStorage.removeItem('lastActivity');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
       window.location.href = '/login';
     }
     return Promise.reject(error);

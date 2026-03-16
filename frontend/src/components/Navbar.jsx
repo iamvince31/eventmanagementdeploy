@@ -6,8 +6,6 @@ import api from '../services/api';
 import logo from "../assets/CEIT-LOGO.png";
 
 export default function Navbar({
-  showUpcomingEvents = false,
-  upcomingCount = 0,
   approvedRequests = [],
   isLoading = false
 }) {
@@ -20,10 +18,9 @@ export default function Navbar({
   const [isFetchingMembers, setIsFetchingMembers] = useState(false);
 
   useEffect(() => {
-    if (showUpcomingEvents) {
-      fetchMembers();
-    }
-  }, [showUpcomingEvents]);
+    fetchEvents();
+    fetchMembers();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -31,10 +28,18 @@ export default function Navbar({
         setIsAccountDropdownOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
+
+  const fetchEvents = async () => {
+    try {
+      const response = await api.get('/events');
+      setEvents(response.data.events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    }
+  };
 
   const fetchMembers = async () => {
     try {
@@ -53,23 +58,15 @@ export default function Navbar({
       <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Left corner - Logo and Title */}
+            {/* Left - Logo and Title */}
             <div className="flex items-center space-x-3">
               <button
                 onClick={() => navigate('/dashboard')}
                 disabled={isLoading}
-                className={`focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all flex-shrink-0 ${isLoading
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                    : 'hover:opacity-80'
-                  }`}
+                className={`focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all flex-shrink-0 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:opacity-80'}`}
                 aria-label="Go to dashboard"
-                aria-disabled={isLoading}
               >
-                <img
-                  src={logo}
-                  alt="CEIT Logo"
-                  className="h-10 w-auto cursor-pointer"
-                />
+                <img src={logo} alt="CEIT Logo" className="h-10 w-auto cursor-pointer" />
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-white tracking-tight">Event Management</h1>
@@ -77,18 +74,14 @@ export default function Navbar({
               </div>
             </div>
 
-            {/* Right corner - Icons */}
+            {/* Right - Icons */}
             <div className="flex items-center space-x-4">
               {/* Home Icon */}
               <button
                 onClick={() => navigate('/dashboard')}
                 disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                    : 'hover:bg-white/10'
-                  }`}
+                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                 aria-label="Go to dashboard"
-                aria-disabled={isLoading}
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -99,12 +92,8 @@ export default function Navbar({
               <button
                 onClick={() => setIsMembersModalOpen(true)}
                 disabled={isLoading || isFetchingMembers}
-                className={`relative p-2 rounded-lg transition-colors duration-200 ${isLoading || isFetchingMembers
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                    : 'hover:bg-white/10 cursor-pointer'
-                  }`}
+                className={`relative p-2 rounded-lg transition-colors duration-200 ${isLoading || isFetchingMembers ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 cursor-pointer'}`}
                 aria-label="View members"
-                aria-disabled={isLoading || isFetchingMembers}
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -120,12 +109,8 @@ export default function Navbar({
               <button
                 onClick={() => navigate('/history')}
                 disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                    : 'hover:bg-white/10'
-                  }`}
+                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                 aria-label="View history"
-                aria-disabled={isLoading}
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -148,44 +133,27 @@ export default function Navbar({
                 <button
                   onClick={() => !isLoading && setIsAccountDropdownOpen(!isAccountDropdownOpen)}
                   disabled={isLoading}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${isLoading
-                      ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                      : 'hover:bg-white/10'
-                    }`}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                   aria-label="Account menu"
-                  aria-disabled={isLoading}
                 >
                   {user?.profile_picture ? (
-                    <img
-                      src={user.profile_picture}
-                      alt={user?.username}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
-                    />
+                    <img src={user.profile_picture} alt={user?.username} className="w-10 h-10 rounded-full object-cover border-2 border-white/30" />
                   ) : (
                     <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
                       {user?.username?.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
-                  <svg
-                    className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
+                  <svg className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
 
-                {/* Dropdown Menu */}
                 {isAccountDropdownOpen && !isLoading && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
                     <div className="py-1">
                       <button
-                        onClick={() => {
-                          setIsAccountDropdownOpen(false);
-                          navigate('/account');
-                        }}
+                        onClick={() => { setIsAccountDropdownOpen(false); navigate('/account'); }}
                         className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors flex items-center space-x-3"
                       >
                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,15 +163,11 @@ export default function Navbar({
                         <span className="font-medium">Settings</span>
                       </button>
 
-                      {/* Admin Panel Link - Only for admin users */}
                       {user?.role === 'Admin' && (
                         <>
                           <div className="border-t border-gray-100"></div>
                           <button
-                            onClick={() => {
-                              setIsAccountDropdownOpen(false);
-                              navigate('/admin');
-                            }}
+                            onClick={() => { setIsAccountDropdownOpen(false); navigate('/admin'); }}
                             className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
                           >
                             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,10 +176,7 @@ export default function Navbar({
                             <span className="font-medium">Admin Panel</span>
                           </button>
                           <button
-                            onClick={() => {
-                              setIsAccountDropdownOpen(false);
-                              navigate('/archive');
-                            }}
+                            onClick={() => { setIsAccountDropdownOpen(false); navigate('/archive'); }}
                             className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 transition-colors flex items-center space-x-3"
                           >
                             <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -228,10 +189,7 @@ export default function Navbar({
 
                       <div className="border-t border-gray-100"></div>
                       <button
-                        onClick={async () => {
-                          setIsAccountDropdownOpen(false);
-                          await logout();
-                        }}
+                        onClick={async () => { setIsAccountDropdownOpen(false); await logout(); }}
                         className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
                       >
                         <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -254,10 +212,7 @@ export default function Navbar({
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
             <div className="bg-gradient-to-r from-green-700 to-green-600 px-6 py-4 flex justify-between items-center">
               <h2 className="text-xl font-bold text-white">All Members</h2>
-              <button
-                onClick={() => setIsMembersModalOpen(false)}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-              >
+              <button onClick={() => setIsMembersModalOpen(false)} className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -288,11 +243,7 @@ export default function Navbar({
                     <div key={member.id} className="flex items-center justify-between bg-gray-50 hover:bg-green-50 rounded-xl p-4 transition-colors border border-gray-200 hover:border-green-300">
                       <div className="flex items-center space-x-3">
                         {member.profile_picture ? (
-                          <img
-                            src={member.profile_picture}
-                            alt={member.username}
-                            className="w-12 h-12 rounded-full object-cover border-2 border-green-200"
-                          />
+                          <img src={member.profile_picture} alt={member.username} className="w-12 h-12 rounded-full object-cover border-2 border-green-200" />
                         ) : (
                           <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-lg">
                             {member.username.charAt(0).toUpperCase()}
@@ -301,9 +252,7 @@ export default function Navbar({
                         <div>
                           <p className="font-semibold text-gray-900">{member.username}</p>
                           <p className="text-sm text-gray-500">{member.email}</p>
-                          {member.department && (
-                            <p className="text-xs text-gray-400">{member.department}</p>
-                          )}
+                          {member.department && <p className="text-xs text-gray-400">{member.department}</p>}
                           {member.role && (
                             <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
                               {member.role}
@@ -312,9 +261,7 @@ export default function Navbar({
                         </div>
                       </div>
                       {member.id === user?.id && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          You
-                        </span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">You</span>
                       )}
                     </div>
                   ))}
@@ -324,7 +271,6 @@ export default function Navbar({
           </div>
         </div>
       )}
-
     </>
   );
 }

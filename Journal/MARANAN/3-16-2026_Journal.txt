@@ -1,0 +1,8 @@
+7:00 - Time in
+
+7:00 - 9:00 : Implementing automatic logout interface when browser is closed for 1 hr
+9:00 - 10:00 : Improving UI (Removing Sunday restrictions)
+10:00 - 11:00 : Removed upcoming events button on navbar
+11:00 - 12:00 : Lunch  break
+12:00 - 2:00 : Merging, Implementing final changes before consultation
+2:00 - 4:00 : Debugging merged changes
