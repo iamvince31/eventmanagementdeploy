@@ -73,7 +73,7 @@ export default function Login() {
           remainingSeconds: response.remaining_seconds,
         });
 
-        // Start countdown timer
+        // Start countdown timer with cleanup
         const interval = setInterval(() => {
           setLockoutInfo(prev => {
             if (!prev || prev.remainingSeconds <= 1) {
@@ -86,6 +86,9 @@ export default function Login() {
             };
           });
         }, 1000);
+
+        // Store interval ID for cleanup
+        return () => clearInterval(interval);
       } else {
         // Show error message from backend
         const errorMessage = response?.errors?.email?.[0] || response?.message || 'Invalid credentials';

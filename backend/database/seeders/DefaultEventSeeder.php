@@ -69,8 +69,13 @@ class DefaultEventSeeder extends Seeder
             ['name' => 'College Academic Council Meeting', 'month' => 6, 'order' => 7],
             ['name' => 'Start of Vacation', 'month' => 6, 'order' => 8],
 
-            // July (month: 7) - No events
-            // August (month: 8) - No events
+            // July (month: 7) - Mid-Year Semester - 3 events
+            ['name' => 'Registration Period', 'month' => 7, 'order' => 1],
+            ['name' => 'Beginning of Classes', 'month' => 7, 'order' => 2],
+            ['name' => 'Midterm Exam', 'month' => 7, 'order' => 3],
+
+            // August (month: 8) - Mid-Year Semester - 1 event
+            ['name' => 'Final Exam', 'month' => 8, 'order' => 1],
         ];
 
         foreach ($events as $event) {

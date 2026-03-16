@@ -105,33 +105,51 @@ class EventRequestController extends Controller
                     'chairApprover:id,name,email,role'
                 ])
                 ->orderBy('created_at', 'desc')
-                ->get()
-                ->map(function ($request) {
-                    return [
-                        'id' => $request->id,
-                        'title' => $request->title,
-                        'description' => $request->description,
-                        'date' => $request->date,
-                        'time' => $request->time,
-                        'location' => $request->location,
-                        'event_type' => $request->event_type,
-                        'department' => $request->department,
-                        'status' => $request->status,
-                        'created_at' => $request->created_at,
-                        'requester' => $request->requester,
-                        'justification' => $request->justification,
-                        'decline_reason' => $request->decline_reason,
-                        'dean_decline_reason' => $request->dean_decline_reason,
-                        'chair_decline_reason' => $request->chair_decline_reason,
-                        'dean_approver' => $request->deanApprover,
-                        'dean_approved_at' => $request->dean_approved_at,
-                        'chair_approver' => $request->chairApprover,
-                        'chair_approved_at' => $request->chair_approved_at,
-                        'all_approvals_received' => $request->all_approvals_received,
-                    ];
-                });
+                ->get();
 
-            return response()->json(['requests' => $requests]);
+            // Transform to array to avoid N+1 queries
+            $transformedRequests = $requests->map(function ($request) {
+                return [
+                    'id' => $request->id,
+                    'title' => $request->title,
+                    'description' => $request->description,
+                    'date' => $request->date,
+                    'time' => $request->time,
+                    'location' => $request->location,
+                    'event_type' => $request->event_type,
+                    'department' => $request->department,
+                    'status' => $request->status,
+                    'created_at' => $request->created_at,
+                    'requester' => $request->requester ? [
+                        'id' => $request->requester->id,
+                        'name' => $request->requester->name,
+                        'email' => $request->requester->email,
+                        'role' => $request->requester->role,
+                        'department' => $request->requester->department,
+                    ] : null,
+                    'justification' => $request->justification,
+                    'decline_reason' => $request->decline_reason,
+                    'dean_decline_reason' => $request->dean_decline_reason,
+                    'chair_decline_reason' => $request->chair_decline_reason,
+                    'dean_approver' => $request->deanApprover ? [
+                        'id' => $request->deanApprover->id,
+                        'name' => $request->deanApprover->name,
+                        'email' => $request->deanApprover->email,
+                        'role' => $request->deanApprover->role,
+                    ] : null,
+                    'dean_approved_at' => $request->dean_approved_at,
+                    'chair_approver' => $request->chairApprover ? [
+                        'id' => $request->chairApprover->id,
+                        'name' => $request->chairApprover->name,
+                        'email' => $request->chairApprover->email,
+                        'role' => $request->chairApprover->role,
+                    ] : null,
+                    'chair_approved_at' => $request->chair_approved_at,
+                    'all_approvals_received' => $request->all_approvals_received,
+                ];
+            })->values();
+
+            return response()->json(['requests' => $transformedRequests]);
         }
         
         // Check authorization
@@ -156,40 +174,62 @@ class EventRequestController extends Controller
         // Dean sees ALL requests (no filter)
         // Admin sees ALL requests (no filter)
         
-        $requests = $query->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($request) use ($user) {
-                return [
-                    'id' => $request->id,
-                    'type' => 'event_request',
-                    'title' => $request->title,
-                    'description' => $request->description,
-                    'date' => $request->date,
-                    'time' => $request->time,
-                    'location' => $request->location,
-                    'event_type' => $request->event_type,
-                    'department' => $request->department,
-                    'status' => $request->status,
-                    'created_at' => $request->created_at,
-                    'requester' => $request->requester,
-                    'reviewer' => $request->reviewer,
-                    'justification' => $request->justification,
-                    'expected_attendees' => $request->expected_attendees,
-                    'rejection_reason' => $request->rejection_reason,
-                    'decline_reason' => $request->decline_reason,
-                    'dean_decline_reason' => $request->dean_decline_reason,
-                    'chair_decline_reason' => $request->chair_decline_reason,
-                    'reviewed_at' => $request->reviewed_at,
-                    'dean_approver' => $request->deanApprover,
-                    'dean_approved_at' => $request->dean_approved_at,
-                    'chair_approver' => $request->chairApprover,
-                    'chair_approved_at' => $request->chair_approved_at,
-                    'all_approvals_received' => $request->all_approvals_received,
-                ];
-            });
+        $requests = $query->orderBy('created_at', 'desc')->get();
+        
+        // Transform to array to avoid N+1 queries
+        $transformedRequests = $requests->map(function ($request) {
+            return [
+                'id' => $request->id,
+                'type' => 'event_request',
+                'title' => $request->title,
+                'description' => $request->description,
+                'date' => $request->date,
+                'time' => $request->time,
+                'location' => $request->location,
+                'event_type' => $request->event_type,
+                'department' => $request->department,
+                'status' => $request->status,
+                'created_at' => $request->created_at,
+                'requester' => $request->requester ? [
+                    'id' => $request->requester->id,
+                    'name' => $request->requester->name,
+                    'email' => $request->requester->email,
+                    'role' => $request->requester->role,
+                    'department' => $request->requester->department,
+                ] : null,
+                'reviewer' => $request->reviewer ? [
+                    'id' => $request->reviewer->id,
+                    'name' => $request->reviewer->name,
+                    'email' => $request->reviewer->email,
+                    'role' => $request->reviewer->role,
+                ] : null,
+                'justification' => $request->justification,
+                'expected_attendees' => $request->expected_attendees,
+                'rejection_reason' => $request->rejection_reason,
+                'decline_reason' => $request->decline_reason,
+                'dean_decline_reason' => $request->dean_decline_reason,
+                'chair_decline_reason' => $request->chair_decline_reason,
+                'reviewed_at' => $request->reviewed_at,
+                'dean_approver' => $request->deanApprover ? [
+                    'id' => $request->deanApprover->id,
+                    'name' => $request->deanApprover->name,
+                    'email' => $request->deanApprover->email,
+                    'role' => $request->deanApprover->role,
+                ] : null,
+                'dean_approved_at' => $request->dean_approved_at,
+                'chair_approver' => $request->chairApprover ? [
+                    'id' => $request->chairApprover->id,
+                    'name' => $request->chairApprover->name,
+                    'email' => $request->chairApprover->email,
+                    'role' => $request->chairApprover->role,
+                ] : null,
+                'chair_approved_at' => $request->chair_approved_at,
+                'all_approvals_received' => $request->all_approvals_received,
+            ];
+        })->values();
 
         return response()->json([
-            'requests' => $requests
+            'requests' => $transformedRequests
         ]);
     }
 

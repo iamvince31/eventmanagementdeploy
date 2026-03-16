@@ -53,19 +53,8 @@ const DefaultEvents = () => {
     'July', 'August', 'September', 'October', 'November', 'December'
   ];
 
-  // Check if a date is Sunday
-  const isSunday = (dateString) => {
-    if (!dateString) return false;
-    const date = new Date(dateString + 'T00:00:00');
-    return date.getDay() === 0; // 0 = Sunday
-  };
-
-  // Handle date change with Sunday validation
+  // Handle date change
   const handleDateChange = (dateString, setter, fieldName) => {
-    if (isSunday(dateString)) {
-      setError(`${fieldName} cannot be on a Sunday. Please select a different date.`);
-      return;
-    }
     setter(dateString);
     setError(''); // Clear any previous errors
   };
@@ -76,7 +65,8 @@ const DefaultEvents = () => {
     if (month >= 9 || month === 1) return 1;
     // 2nd Semester: February (2) to June (6)
     if (month >= 2 && month <= 6) return 2;
-    // July (7) and August (8) - Summer/Break
+    // Mid-Year Semester: July (7) and August (8)
+    if (month === 7 || month === 8) return 'mid-year';
     return null;
   };
 
@@ -580,42 +570,48 @@ const DefaultEvents = () => {
               const monthEvents = eventsByMonth[monthNumber] || [];
               const semester = getSemester(monthNumber);
               
-              // Semester badge
-              let semesterBadge = null;
+              // Semester text header
+              let semesterHeader = null;
               
               if (semester === 1) {
-                semesterBadge = (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-900 text-green-100">
-                    1st Semester
-                  </span>
-                );
+                semesterHeader = '1st Semester';
               } else if (semester === 2) {
-                semesterBadge = (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-800 text-green-50">
-                    2nd Semester
-                  </span>
-                );
+                semesterHeader = '2nd Semester';
+              } else if (semester === 'mid-year') {
+                semesterHeader = 'Mid-Year Semester';
               }
               
               const yearForMonth = getYearForMonth(monthNumber);
               
               return (
-                <div key={monthNumber} className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                  {/* Month Label Header */}
-                  <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <h3 className="text-xl font-bold text-white">{monthName} {yearForMonth}</h3>
-                        {semesterBadge}
-                      </div>
-                      <span className="text-sm text-green-200 font-medium">
-                        {monthEvents.length} {monthEvents.length === 1 ? 'event' : 'events'}
-                      </span>
+                <div key={monthNumber}>
+                  {/* Semester Header - Show only for first month of each semester */}
+                  {((semester === 1 && monthNumber === 9) || 
+                    (semester === 2 && monthNumber === 2) || 
+                    (semester === 'mid-year' && monthNumber === 7)) && (
+                    <div className="mb-6">
+                      <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-700 via-green-600 to-green-800 tracking-tight">
+                        {semesterHeader}
+                      </h2>
+                      <div className="mt-3 h-1.5 w-full bg-gradient-to-r from-green-600 via-green-500 to-transparent rounded-full"></div>
                     </div>
-                  </div>
+                  )}
+                  
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+                    {/* Month Label Header */}
+                    <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <h3 className="text-xl font-bold text-white">{monthName} {yearForMonth}</h3>
+                        </div>
+                        <span className="text-sm text-green-200 font-medium">
+                          {monthEvents.length} {monthEvents.length === 1 ? 'event' : 'events'}
+                        </span>
+                      </div>
+                    </div>
 
                   {/* Events Table */}
                   {monthEvents.length > 0 ? (
@@ -658,6 +654,7 @@ const DefaultEvents = () => {
                                           onDateSelect={(date) => handleDateChange(date, setSelectedDate, 'Start date')}
                                           minDate={`${currentSchoolYear.split('-')[0]}-09-01`}
                                           maxDate={`${currentSchoolYear.split('-')[1]}-08-31`}
+                                          excludeSundays={true}
                                         />
                                       </div>
                                       <div>
@@ -669,6 +666,7 @@ const DefaultEvents = () => {
                                           onDateSelect={(date) => handleDateChange(date, setSelectedEndDate, 'End date')}
                                           minDate={selectedDate || `${currentSchoolYear.split('-')[0]}-09-01`}
                                           maxDate={`${currentSchoolYear.split('-')[1]}-08-31`}
+                                          excludeSundays={true}
                                         />
                                       </div>
                                       <div className="flex gap-2">
@@ -880,6 +878,7 @@ const DefaultEvents = () => {
                       )}
                     </div>
                   )}
+                  </div>
                 </div>
               );
             })}

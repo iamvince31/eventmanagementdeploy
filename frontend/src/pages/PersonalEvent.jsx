@@ -54,17 +54,6 @@ export default function PersonalEvent() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    if (name === 'date' && value) {
-      const date = new Date(value + 'T00:00:00');
-      if (date.getDay() === 0) {
-        setMessage({ 
-          type: 'error', 
-          text: 'Personal events cannot be scheduled on Sundays. Please select a different date.' 
-        });
-        return;
-      }
-    }
-    
     setFormData(prev => ({
       ...prev,
       [name]: value

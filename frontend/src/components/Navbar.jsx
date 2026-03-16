@@ -15,16 +15,12 @@ export default function Navbar({
   const { user, logout } = useAuth();
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [events, setEvents] = useState([]);
-  const [isUpcomingModalOpen, setIsUpcomingModalOpen] = useState(false);
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [isFetchingEvents, setIsFetchingEvents] = useState(false);
   const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
   const [members, setMembers] = useState([]);
   const [isFetchingMembers, setIsFetchingMembers] = useState(false);
 
   useEffect(() => {
     if (showUpcomingEvents) {
-      fetchEvents();
       fetchMembers();
     }
   }, [showUpcomingEvents]);
@@ -40,28 +36,6 @@ export default function Navbar({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
 
-  const fetchEvents = async () => {
-    try {
-      setIsFetchingEvents(true);
-      const response = await api.get('/events');
-      const fetchedEvents = response.data.events;
-      setEvents(fetchedEvents);
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const upcoming = fetchedEvents.filter(event => {
-        const eventDate = new Date(event.date + 'T00:00:00');
-        // Exclude academic events (default events) from upcoming events
-        return eventDate >= today && !event.is_default_event;
-      });
-      setUpcomingEvents(upcoming);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    } finally {
-      setIsFetchingEvents(false);
-    }
-  };
-
   const fetchMembers = async () => {
     try {
       setIsFetchingMembers(true);
@@ -72,17 +46,6 @@ export default function Navbar({
     } finally {
       setIsFetchingMembers(false);
     }
-  };
-
-  const handleUpcomingIconClick = () => {
-    // Always show modal for consistent behavior across all pages
-    setIsUpcomingModalOpen(true);
-  };
-
-  const handleViewEvent = (event) => {
-    setIsUpcomingModalOpen(false);
-    // Navigate to dashboard and highlight the event date
-    navigate('/dashboard', { state: { highlightDate: event.date, viewEventId: event.id } });
   };
 
   return (
@@ -130,27 +93,6 @@ export default function Navbar({
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-              </button>
-
-              {/* Upcoming Events Icon */}
-              <button
-                onClick={handleUpcomingIconClick}
-                disabled={isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)}
-                className={`relative p-2 rounded-lg transition-colors duration-200 ${isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)
-                    ? 'opacity-50 cursor-not-allowed pointer-events-none'
-                    : 'hover:bg-white/10 cursor-pointer'
-                  }`}
-                aria-label="View upcoming events"
-                aria-disabled={isLoading || (!isFetchingEvents && upcomingCount === 0 && upcomingEvents.length === 0)}
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                {(upcomingCount > 0 || upcomingEvents.length > 0) && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {upcomingCount || upcomingEvents.length}
-                  </span>
-                )}
               </button>
 
               {/* Members Icon */}
@@ -383,88 +325,6 @@ export default function Navbar({
         </div>
       )}
 
-      {/* Upcoming Events Modal */}
-      {isUpcomingModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="bg-gradient-to-r from-green-700 to-green-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">Upcoming Events</h2>
-              <button
-                onClick={() => setIsUpcomingModalOpen(false)}
-                className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
-              {isFetchingEvents ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <svg className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="text-gray-500">Loading upcoming events...</p>
-                  </div>
-                </div>
-              ) : upcomingEvents.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-gray-500 text-lg">No upcoming events</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {upcomingEvents.map((event) => (
-                    <button
-                      key={event.id}
-                      onClick={() => handleViewEvent(event)}
-                      className="w-full bg-gray-50 hover:bg-green-50 rounded-xl p-4 transition-colors text-left border border-gray-200 hover:border-green-300"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900 mb-1">{event.title}</h3>
-                          <div className="flex items-center text-sm text-gray-600 mb-1">
-                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                            {new Date(event.date).toLocaleDateString('en-US', {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
-                          </div>
-                          <div className="flex items-center text-sm text-gray-600">
-                            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            {event.time}
-                          </div>
-                          {event.location && (
-                            <div className="flex items-center text-sm text-gray-600 mt-1">
-                              <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                              </svg>
-                              {event.location}
-                            </div>
-                          )}
-                        </div>
-                        <svg className="w-5 h-5 text-gray-400 flex-shrink-0 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

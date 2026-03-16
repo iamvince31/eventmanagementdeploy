@@ -107,23 +107,7 @@ class DefaultEventController extends Controller
             ], 404);
         }
 
-        // Validate that the date is not a Sunday
-        $date = \Carbon\Carbon::parse($request->date);
-        if ($date->dayOfWeek === 0) { // 0 = Sunday
-            return response()->json([
-                'error' => 'Events cannot be scheduled on Sundays.'
-            ], 422);
-        }
-
-        // Validate that end_date is not a Sunday if provided
-        if ($request->end_date) {
-            $endDate = \Carbon\Carbon::parse($request->end_date);
-            if ($endDate->dayOfWeek === 0) { // 0 = Sunday
-                return response()->json([
-                    'error' => 'Event end date cannot be on Sundays.'
-                ], 422);
-            }
-        }
+        // Sunday validation removed - events can now be scheduled on Sundays
 
         // Validate school year format (e.g., "2024-2025")
         if (!preg_match('/^\d{4}-\d{4}$/', $request->school_year)) {
@@ -149,6 +133,8 @@ class DefaultEventController extends Controller
         // Validate end_date if provided
         if ($request->end_date) {
             $endDate = \Carbon\Carbon::parse($request->end_date);
+            
+            // Sunday validation removed - end dates can now be on Sundays
             
             if ($endDate->lt($schoolYearStart) || $endDate->gt($schoolYearEnd)) {
                 return response()->json([
@@ -260,24 +246,6 @@ class DefaultEventController extends Controller
         $month = $request->month;
         $schoolYear = $request->school_year;
         $name = $request->name;
-
-        // Validate that the date is not a Sunday
-        $date = \Carbon\Carbon::parse($request->date);
-        if ($date->dayOfWeek === 0) { // 0 = Sunday
-            return response()->json([
-                'error' => 'Events cannot be scheduled on Sundays.'
-            ], 422);
-        }
-
-        // Validate that end_date is not a Sunday if provided
-        if ($request->end_date) {
-            $endDate = \Carbon\Carbon::parse($request->end_date);
-            if ($endDate->dayOfWeek === 0) {
-                return response()->json([
-                    'error' => 'Event end date cannot be on Sundays.'
-                ], 422);
-            }
-        }
 
         // Validate that the date is within the school year
         list($startYear, $endYear) = explode('-', $schoolYear);

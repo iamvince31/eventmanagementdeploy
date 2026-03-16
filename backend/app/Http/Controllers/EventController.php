@@ -123,6 +123,8 @@ class EventController extends Controller
             ], 422);
         }
 
+        // Sunday validation removed - events can now be scheduled on Sundays
+
         // Get member IDs
         $memberIds = $request->member_ids ? collect($request->member_ids)
             ->filter(fn($id) => $id != $user->id) // Exclude host
@@ -301,6 +303,8 @@ class EventController extends Controller
                 ], 422);
             }
         }
+
+        // Sunday validation removed - events can now be scheduled on Sundays
 
         $event->update($request->only(['title', 'description', 'location', 'event_type', 'date', 'time']));
 

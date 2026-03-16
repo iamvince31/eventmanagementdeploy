@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DefaultEventController;
+use App\Http\Controllers\DefaultEventControllerV2;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventRequestController;
 use App\Http\Controllers\UserController;
@@ -66,6 +67,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/hierarchy-approvals/{approval}/details', [EventRequestController::class , 'getApprovalDetails']);
 
     // Default Events (Academic Calendar) - View access for all authenticated users
+    Route::get('/default-events', [DefaultEventController::class, 'index']);
+    
+    // Default Events V2 (New Architecture with separate date tracking)
+    Route::get('/default-events/v2', [DefaultEventControllerV2::class, 'index']);
+    Route::get('/default-events/v2/scheduled', [DefaultEventControllerV2::class, 'getScheduledEvents']);
+    Route::get('/default-events/v2/statistics', [DefaultEventControllerV2::class, 'getStatistics']);
+    
     Route::get('/default-events', [DefaultEventController::class , 'index']);
 
     // Default Events (Academic Calendar) - Admin Only for modifications

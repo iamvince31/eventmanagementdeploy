@@ -3,13 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Navbar from '../components/Navbar';
-import logo from '../assets/CEIT-LOGO.png';
 
 export default function RequestEvent() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -23,32 +21,8 @@ export default function RequestEvent() {
     expectedAttendees: ''
   });
 
-  // Close account dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isAccountDropdownOpen && !event.target.closest('.account-dropdown-container')) {
-        setIsAccountDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isAccountDropdownOpen]);
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    
-    // Check if date field and if it's a Sunday
-    if (name === 'date' && value) {
-      const date = new Date(value + 'T00:00:00');
-      if (date.getDay() === 0) { // 0 = Sunday
-        setMessage({ 
-          type: 'error', 
-          text: 'Events cannot be scheduled on Sundays. Please select a different date.' 
-        });
-        return; // Don't update the date
-      }
-    }
     
     setFormData(prev => ({
       ...prev,
@@ -109,121 +83,7 @@ export default function RequestEvent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50">
-      {/* Navigation Bar */}
-      <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20" aria-label="Main navigation">
-        <div className="w-full px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Left corner - Logo and Title */}
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80 flex-shrink-0"
-                aria-label="Go to dashboard"
-              >
-                <img
-                  src={logo}
-                  alt="CEIT Logo"
-                  className="h-10 w-auto cursor-pointer"
-                />
-              </button>
-              <div>
-                <h1 className="text-2xl font-bold text-white tracking-tight">Event Management</h1>
-                <p className="text-xs text-green-200 font-medium">Request Meeting</p>
-              </div>
-            </div>
-
-            {/* Right corner - Navigation and Account */}
-            <div className="flex items-center space-x-4">
-              {/* Home Icon */}
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
-                aria-label="Go to dashboard"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                </svg>
-              </button>
-
-              {/* History Icon */}
-              <button
-                onClick={() => navigate('/history')}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
-                aria-label="View history"
-              >
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </button>
-
-              {/* Account Dropdown */}
-              <div className="relative account-dropdown-container">
-                <button
-                  onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
-                  aria-label="Account menu"
-                >
-                  {user?.profile_picture ? (
-                    <img 
-                      src={user.profile_picture} 
-                      alt={user?.username}
-                      className="w-10 h-10 rounded-full object-cover border-2 border-white/30"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                      {user?.username?.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <span className="text-sm font-medium text-white hidden sm:block">{user?.username}</span>
-                  <svg
-                    className={`w-4 h-4 text-white transition-transform duration-200 ${isAccountDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-
-                {/* Dropdown Menu */}
-                {isAccountDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setIsAccountDropdownOpen(false);
-                          navigate('/account');
-                        }}
-                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors flex items-center space-x-3"
-                      >
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <span className="font-medium">Settings</span>
-                      </button>
-
-                      <div className="border-t border-gray-100"></div>
-                      <button
-                        onClick={async () => {
-                          setIsAccountDropdownOpen(false);
-                          await logout();
-                        }}
-                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
-                      >
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span className="font-medium">Logout</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navbar showUpcomingEvents={true} isLoading={loading} />
 
       {/* Main Content */}
       <main className="w-full py-8 px-4 sm:px-6 lg:px-8">

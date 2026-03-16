@@ -2,6 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+  timeout: 30000, // 30 second timeout
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -17,10 +18,14 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 errors
+// Handle 401 errors and timeouts
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+      console.error('Request timeout:', error);
+      return Promise.reject(new Error('Request timed out. Please check your connection and try again.'));
+    }
     if (error.response?.status === 401) {
       // Clear all auth data
       localStorage.removeItem('token');

@@ -1,232 +1,171 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
-export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDate }) {
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDate, className = '', excludeSundays = false }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [displayValue, setDisplayValue] = useState('');
+  const datePickerRef = useRef(null);
 
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
-  const year = currentMonth.getFullYear();
-  const month = currentMonth.getMonth();
-
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(year, month - 1, 1));
-  };
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(year, month + 1, 1));
-  };
-
-  const isDateDisabled = (day) => {
-    const date = new Date(year, month, day);
-    
-    // Check if date is in the past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    date.setHours(0, 0, 0, 0);
-    
-    // Check if date is Sunday (0 = Sunday)
-    const isSunday = date.getDay() === 0;
-    
-    // Check minDate constraint
-    let isBeforeMin = false;
-    if (minDate) {
-      const min = new Date(minDate + 'T00:00:00');
-      min.setHours(0, 0, 0, 0);
-      isBeforeMin = date < min;
-    }
-    
-    // Check maxDate constraint
-    let isAfterMax = false;
-    if (maxDate) {
-      const max = new Date(maxDate + 'T00:00:00');
-      max.setHours(0, 0, 0, 0);
-      isAfterMax = date > max;
-    }
-    
-    return date < today || isSunday || isBeforeMin || isAfterMax;
-  };
-
-  const isDateSelected = (day) => {
-    if (!selectedDate) return false;
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    return selectedDate === dateStr;
-  };
-
-  const isToday = (day) => {
-    const today = new Date();
-    return (
-      day === today.getDate() &&
-      month === today.getMonth() &&
-      year === today.getFullYear()
-    );
-  };
-
-  const handleDateClick = (day) => {
-    if (isDateDisabled(day)) return;
-    
-    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    onDateSelect(dateStr);
-    setIsOpen(false);
-  };
-
-  const formatDisplayDate = () => {
-    if (!selectedDate) return 'Select date';
-    const date = new Date(selectedDate + 'T00:00:00');
+  // Format date for display
+  const formatDisplayDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
     });
   };
 
-  const renderCalendarDays = () => {
-    const days = [];
-    const prevMonthDays = new Date(year, month, 0).getDate();
-
-    // Previous month days
-    for (let i = firstDayOfMonth - 1; i >= 0; i--) {
-      const prevDay = prevMonthDays - i;
-      const prevDate = new Date(year, month - 1, prevDay);
-      const isPrevSunday = prevDate.getDay() === 0;
-      
-      days.push(
-        <div 
-          key={`prev-${i}`} 
-          className={`h-11 flex items-center justify-center text-sm ${
-            isPrevSunday ? 'text-gray-200' : 'text-gray-300'
-          }`}
-        >
-          {prevDay}
-        </div>
-      );
-    }
-
-    // Current month days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const isSunday = date.getDay() === 0;
-      const disabled = isDateDisabled(day);
-      const selected = isDateSelected(day);
-      const today = isToday(day);
-
-      days.push(
-        <button
-          key={day}
-          type="button"
-          onClick={() => handleDateClick(day)}
-          disabled={disabled}
-          title={isSunday ? 'Sundays are not available' : ''}
-          className={`h-11 flex items-center justify-center text-sm rounded-md transition-all ${
-            disabled
-              ? 'text-gray-300 bg-gray-100 cursor-not-allowed'
-              : selected
-                ? 'bg-green-600 text-white font-bold shadow-sm'
-                : today
-                  ? 'bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200'
-                  : 'text-gray-700 hover:bg-green-100 font-medium'
-          }`}
-        >
-          {day}
-        </button>
-      );
-    }
-
-    // Next month days to fill the grid
-    const remainingDays = 42 - days.length;
-    for (let day = 1; day <= remainingDays; day++) {
-      const nextDate = new Date(year, month + 1, day);
-      const isNextSunday = nextDate.getDay() === 0;
-      
-      days.push(
-        <div 
-          key={`next-${day}`} 
-          className={`h-11 flex items-center justify-center text-sm ${
-            isNextSunday ? 'text-gray-200' : 'text-gray-300'
-          }`}
-        >
-          {day}
-        </div>
-      );
-    }
-
-    return days;
-  };
+  // Update display value when selectedDate changes
+  useEffect(() => {
+    setDisplayValue(formatDisplayDate(selectedDate));
+  }, [selectedDate]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isOpen && !event.target.closest('.date-picker-container')) {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, []);
+
+  // Format date to YYYY-MM-DD without timezone conversion
+  const formatDateString = (year, month, day) => {
+    const yyyy = year;
+    const mm = String(month + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+  // Check if a date is disabled
+  const isDateDisabled = (year, month, day) => {
+    const dateString = formatDateString(year, month, day);
+    
+    // Check min/max date constraints
+    if (minDate && dateString < minDate) return true;
+    if (maxDate && dateString > maxDate) return true;
+    
+    // Check if Sundays should be excluded
+    if (excludeSundays) {
+      const date = new Date(year, month, day);
+      if (date.getDay() === 0) return true; // 0 = Sunday
+    }
+    
+    return false;
+  };
+
+  // Generate calendar days
+  const generateCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay()); // Start from Sunday
+    
+    const days = [];
+    const currentDate = new Date(startDate);
+    
+    // Generate 6 weeks (42 days) to fill the calendar grid
+    for (let i = 0; i < 42; i++) {
+      const day = currentDate.getDate();
+      const isCurrentMonth = currentDate.getMonth() === month;
+      const isToday = currentDate.toDateString() === new Date().toDateString();
+      const dateString = formatDateString(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const isSelected = dateString === selectedDate;
+      const isDisabled = isDateDisabled(currentDate.getFullYear(), currentDate.getMonth(), day);
+      const isWeekend = false; // Allow all days including weekends
+      
+      days.push({
+        day,
+        date: new Date(currentDate),
+        dateString,
+        isCurrentMonth,
+        isToday,
+        isSelected,
+        isDisabled,
+        isWeekend
+      });
+      
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+    
+    return days;
+  };
+
+  const handleDateClick = (dateString) => {
+    onDateSelect(dateString);
+    setIsOpen(false);
+  };
+
+  const navigateMonth = (direction) => {
+    setCurrentMonth(prev => {
+      const newMonth = new Date(prev);
+      newMonth.setMonth(prev.getMonth() + direction);
+      return newMonth;
+    });
+  };
+
+  const days = generateCalendarDays();
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   return (
-    <div className="relative date-picker-container">
-      {/* Date Input Display */}
+    <div className={`relative ${className}`} ref={datePickerRef}>
+      {/* Date Input Field */}
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 border-2 border-gray-300 rounded-lg shadow-sm text-sm text-left focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors bg-white hover:bg-gray-50 flex items-center justify-between"
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm text-left bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
       >
-        <span className={selectedDate ? 'text-gray-900 font-medium' : 'text-gray-400'}>
-          {formatDisplayDate()}
-        </span>
-        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
+        <div className="flex items-center justify-between">
+          <span className={displayValue ? 'text-gray-900' : 'text-gray-400'}>
+            {displayValue || 'Select date...'}
+          </span>
+          <svg 
+            className={`w-4 h-4 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
       </button>
 
       {/* Calendar Dropdown */}
       {isOpen && (
-        <div className="absolute z-50 mt-1 bg-white rounded-lg shadow-xl border border-gray-200 p-4 w-full max-w-md">
-          {/* Legend */}
-          <div className="mb-3 pb-3 border-b border-gray-200">
-            <div className="flex items-center justify-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-green-600 rounded"></div>
-                <span className="text-gray-600 font-medium">Available</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-gray-300 rounded"></div>
-                <span className="text-gray-600 font-medium">Unavailable</span>
-              </div>
-            </div>
-            <div className="text-center mt-2 text-xs text-gray-500">
-              Sundays are excluded
-            </div>
-          </div>
-
+        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 p-4 min-w-[280px]">
           {/* Month Navigation */}
-          <div className="flex justify-between items-center mb-4">
+          <div className="flex items-center justify-between mb-4">
             <button
               type="button"
-              onClick={prevMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => navigateMonth(-1)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <h3 className="text-base font-bold text-gray-900">
-              {monthNames[month]} {year}
+            
+            <h3 className="text-sm font-semibold text-gray-900">
+              {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
             </h3>
+            
             <button
               type="button"
-              onClick={nextMonth}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={() => navigateMonth(1)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
             >
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -234,11 +173,8 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
 
           {/* Day Headers */}
           <div className="grid grid-cols-7 gap-1 mb-2">
-            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
-              <div
-                key={day}
-                className="text-center text-sm font-semibold py-2 text-gray-600"
-              >
+            {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+              <div key={day} className="text-xs font-medium text-gray-500 text-center py-2">
                 {day}
               </div>
             ))}
@@ -246,7 +182,62 @@ export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDat
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-1">
-            {renderCalendarDays()}
+            {days.map((dayObj, index) => (
+              <button
+                key={index}
+                type="button"
+                onClick={() => !dayObj.isDisabled && dayObj.isCurrentMonth && handleDateClick(dayObj.dateString)}
+                disabled={dayObj.isDisabled || !dayObj.isCurrentMonth}
+                title={dayObj.isCurrentMonth ? '' : ''}
+                className={`
+                  h-8 w-8 text-xs rounded transition-colors relative
+                  ${dayObj.isCurrentMonth
+                    ? dayObj.isDisabled
+                      ? 'text-gray-300 cursor-not-allowed bg-gray-100'
+                      : dayObj.isSelected
+                        ? 'bg-green-600 text-white font-semibold'
+                        : dayObj.isToday
+                          ? 'bg-blue-100 text-blue-800 font-semibold'
+                          : 'text-gray-700 hover:bg-gray-100'
+                    : 'text-gray-300 cursor-default'
+                  }
+                `}
+              >
+                {dayObj.day}
+              </button>
+            ))}
+          </div>
+
+          {/* Today Button */}
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={() => {
+                const today = new Date();
+                const todayString = formatDateString(today.getFullYear(), today.getMonth(), today.getDate());
+                const isTodayDisabled = isDateDisabled(today.getFullYear(), today.getMonth(), today.getDate());
+                if (!isTodayDisabled) {
+                  handleDateClick(todayString);
+                }
+              }}
+              disabled={(() => {
+                const today = new Date();
+                return isDateDisabled(today.getFullYear(), today.getMonth(), today.getDate());
+              })()}
+              className="w-full px-3 py-2 text-xs font-medium text-green-700 bg-green-50 hover:bg-green-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-green-50"
+            >
+              Today
+            </button>
+          </div>
+
+          {/* Legend */}
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 bg-gray-100 rounded"></div>
+                <span>{excludeSundays ? 'Unavailable dates' : 'Past dates unavailable'}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}

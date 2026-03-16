@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DefaultEvent extends Model
 {
@@ -21,6 +22,22 @@ class DefaultEvent extends Model
         'date' => 'date',
         'end_date' => 'date',
     ];
+
+    /**
+     * Get all date assignments for this default event across different school years.
+     */
+    public function eventDates(): HasMany
+    {
+        return $this->hasMany(DefaultEventDate::class);
+    }
+
+    /**
+     * Get the date assignment for a specific school year.
+     */
+    public function getDateForSchoolYear(string $schoolYear): ?DefaultEventDate
+    {
+        return $this->eventDates()->forSchoolYear($schoolYear)->first();
+    }
 
     /**
      * Scope a query to only include events for a specific month.

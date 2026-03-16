@@ -24,6 +24,25 @@ export default {
       fontFamily: {
         'display': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
       },
+      animation: {
+        'fadeIn': 'fadeIn 0.2s ease-in-out',
+        'scaleIn': 'scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'fade-in-up': 'fadeInUp 0.3s ease-out',
+      },
+      keyframes: {
+        fadeIn: {
+          '0%': { opacity: '0', transform: 'scale(0.95)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        scaleIn: {
+          '0%': { opacity: '0', transform: 'scale(0.9) translateY(-10px)' },
+          '100%': { opacity: '1', transform: 'scale(1) translateY(0)' },
+        },
+        fadeInUp: {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
     },
   },
   plugins: [],

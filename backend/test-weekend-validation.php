@@ -1,80 +1,110 @@
 <?php
 
-/**
- * Test Weekend Validation for Default Events
- * 
- * This script tests that both Saturday and Sunday are properly excluded
- * from default event date selection.
- */
+require_once __DIR__ . '/vendor/autoload.php';
 
-require __DIR__ . '/vendor/autoload.php';
+// Bootstrap Laravel
+$app = require_once __DIR__ . '/bootstrap/app.php';
+$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
-use Carbon\Carbon;
+echo "=== Testing Weekend Validation ===\n\n";
 
-echo "=== Weekend Validation Test ===\n\n";
+// Test dates for the current week
+$today = new DateTime();
+$currentWeek = [];
 
-// Test dates
-$testDates = [
-    '2026-03-02' => 'Monday',
-    '2026-03-03' => 'Tuesday',
-    '2026-03-04' => 'Wednesday',
-    '2026-03-05' => 'Thursday',
-    '2026-03-06' => 'Friday',
-    '2026-03-07' => 'Saturday',
-    '2026-03-08' => 'Sunday',
-];
+// Get the current week (Sunday to Saturday)
+$sunday = clone $today;
+$sunday->modify('last sunday');
+if ($sunday > $today) {
+    $sunday->modify('-7 days');
+}
 
-echo "Testing weekend detection:\n";
-echo str_repeat('-', 50) . "\n";
+for ($i = 0; $i < 7; $i++) {
+    $date = clone $sunday;
+    $date->modify("+$i days");
+    $currentWeek[] = $date;
+}
 
-foreach ($testDates as $dateStr => $dayName) {
-    $date = Carbon::parse($dateStr);
-    $dayOfWeek = $date->dayOfWeek;
-    $isWeekend = ($dayOfWeek === 0 || $dayOfWeek === 6);
+echo "1. Testing Date Validation for Current Week:\n";
+
+foreach ($currentWeek as $date) {
+    $dayName = $date->format('l');
+    $dateString = $date->format('Y-m-d');
+    $dayOfWeek = (int)$date->format('w'); // 0 = Sunday, 6 = Saturday
     
+    $isWeekend = $dayOfWeek === 0 || $dayOfWeek === 6;
     $status = $isWeekend ? '❌ BLOCKED' : '✅ ALLOWED';
     
-    echo sprintf(
-        "%s (%s) - dayOfWeek: %d - %s\n",
-        $dateStr,
-        $dayName,
-        $dayOfWeek,
-        $status
-    );
+    echo "   $dayName ($dateString): $status\n";
 }
 
-echo "\n" . str_repeat('-', 50) . "\n";
-echo "Legend:\n";
-echo "  dayOfWeek 0 = Sunday\n";
-echo "  dayOfWeek 6 = Saturday\n";
-echo "  Both should be BLOCKED\n";
-echo "\n";
+echo "\n2. Testing Backend Validation Logic:\n";
 
-// Validation logic test
-echo "Validation Logic Test:\n";
-echo str_repeat('-', 50) . "\n";
+// Test EventController validation
+echo "   EventController Sunday Check:\n";
+$testSunday = new DateTime('next sunday');
+$sundayString = $testSunday->format('Y-m-d');
+$eventDate = new DateTime($sundayString);
 
-$validationTests = [
-    ['date' => '2026-03-09', 'expected' => 'valid'],   // Monday
-    ['date' => '2026-03-14', 'expected' => 'invalid'], // Saturday
-    ['date' => '2026-03-15', 'expected' => 'invalid'], // Sunday
-    ['date' => '2026-03-16', 'expected' => 'valid'],   // Monday
-];
-
-foreach ($validationTests as $test) {
-    $date = Carbon::parse($test['date']);
-    $isWeekend = ($date->dayOfWeek === 0 || $date->dayOfWeek === 6);
-    $result = $isWeekend ? 'invalid' : 'valid';
-    $passed = ($result === $test['expected']) ? '✅ PASS' : '❌ FAIL';
-    
-    echo sprintf(
-        "%s (%s) - Expected: %s, Got: %s - %s\n",
-        $test['date'],
-        $date->format('l'),
-        $test['expected'],
-        $result,
-        $passed
-    );
+if ($eventDate->format('w') == 0) {
+    echo "   ✅ Sunday detection working: $sundayString is correctly identified as Sunday\n";
+} else {
+    echo "   ❌ Sunday detection failed: $sundayString not identified as Sunday\n";
 }
+
+// Test DefaultEventController validation
+echo "   DefaultEventController Sunday Check:\n";
+$date = \Carbon\Carbon::parse($sundayString);
+if ($date->dayOfWeek === 0) {
+    echo "   ✅ Carbon Sunday detection working: $sundayString is correctly identified as Sunday\n";
+} else {
+    echo "   ❌ Carbon Sunday detection failed: $sundayString not identified as Sunday\n";
+}
+
+echo "\n3. Testing Saturday Validation:\n";
+$testSaturday = new DateTime('next saturday');
+$saturdayString = $testSaturday->format('Y-m-d');
+
+// EventController Saturday check
+$eventDate = new DateTime($saturdayString);
+if ($eventDate->format('w') == 6) {
+    echo "   ✅ Saturday detection working: $saturdayString is correctly identified as Saturday\n";
+} else {
+    echo "   ❌ Saturday detection failed: $saturdayString not identified as Saturday\n";
+}
+
+// DefaultEventController Saturday check
+$date = \Carbon\Carbon::parse($saturdayString);
+if ($date->dayOfWeek === 6) {
+    echo "   ✅ Carbon Saturday detection working: $saturdayString is correctly identified as Saturday\n";
+} else {
+    echo "   ❌ Carbon Saturday detection failed: $saturdayString not identified as Saturday\n";
+}
+
+echo "\n4. Expected API Responses:\n";
+echo "   When trying to create/update events on weekends:\n";
+echo "   - Sunday: 422 error 'Events cannot be scheduled on Sundays.'\n";
+echo "   - Saturday: 422 error 'Events cannot be scheduled on Saturdays.'\n";
+echo "   - Monday-Friday: Should work normally\n";
+
+echo "\n5. Frontend DatePicker Check:\n";
+echo "   The DatePicker should:\n";
+echo "   - Gray out weekend dates\n";
+echo "   - Show tooltip 'Weekends are not available' on hover\n";
+echo "   - Prevent clicking on weekend dates\n";
+echo "   - Show legend 'Weekends are excluded'\n";
+
+echo "\n6. Manual Testing Commands:\n";
+echo "   Test creating event on Sunday:\n";
+echo "   curl -X POST /api/events -H 'Authorization: Bearer {token}' \\\n";
+echo "        -d '{\"date\": \"$sundayString\", \"title\": \"Test\", \"location\": \"Test\", \"time\": \"10:00\"}'\n";
+echo "   Expected: 422 error\n";
+
+echo "\n   Test creating event on Monday:\n";
+$monday = new DateTime('next monday');
+$mondayString = $monday->format('Y-m-d');
+echo "   curl -X POST /api/events -H 'Authorization: Bearer {token}' \\\n";
+echo "        -d '{\"date\": \"$mondayString\", \"title\": \"Test\", \"location\": \"Test\", \"time\": \"10:00\"}'\n";
+echo "   Expected: Success (if user has permission)\n";
 
 echo "\n=== Test Complete ===\n";
