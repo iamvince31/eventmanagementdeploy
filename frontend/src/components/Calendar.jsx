@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 
-export default function Calendar({ events, defaultEvents = [], onDateSelect, highlightedDate, currentUser, onEditEvent, onDeleteEvent }) {
+export default function Calendar({ events, defaultEvents = [], userSchedules = [], onDateSelect, highlightedDate, currentUser, onEditEvent, onDeleteEvent }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showMoreModal, setShowMoreModal] = useState(false);
@@ -70,6 +70,126 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
     });
   };
 
+  const getScheduleEventsForDate = (dateStr) => {
+    const checkDate = new Date(dateStr);
+    const dayOfWeek = checkDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[dayOfWeek];
+
+    // Get current semester (based on today's date)
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    let currentSemester;
+    
+    if (currentMonth >= 9 || currentMonth <= 1) {
+      currentSemester = 'first';
+    } else if (currentMonth >= 2 && currentMonth <= 6) {
+      currentSemester = 'second';
+    } else if (currentMonth >= 7 && currentMonth <= 8) {
+      currentSemester = 'midyear';
+    }
+
+    // Check if the specific date falls within the current semester
+    const dateMonth = checkDate.getMonth() + 1;
+    let dateInCurrentSemester = false;
+    
+    if (currentSemester === 'first' && (dateMonth >= 9 || dateMonth <= 1)) {
+      dateInCurrentSemester = true;
+    } else if (currentSemester === 'second' && (dateMonth >= 2 && dateMonth <= 6)) {
+      dateInCurrentSemester = true;
+    } else if (currentSemester === 'midyear' && (dateMonth >= 7 && dateMonth <= 8)) {
+      dateInCurrentSemester = true;
+    }
+
+    // Filter schedules by day and only show during current semester
+    return userSchedules.filter(schedule => {
+      if (schedule.day !== dayName) {
+        return false;
+      }
+      
+      // Only show schedules during the current semester period
+      // This ensures Tuesday classes only show on Tuesdays within the current semester
+      return dateInCurrentSemester;
+    });
+  };
+
+  // Check if there are time conflicts on a specific date
+  const hasConflicts = (dateStr) => {
+    const regularEvents = getEventsForDate(dateStr);
+    const scheduleEvents = getScheduleEventsForDate(dateStr);
+    
+    // Collect all timed events (regular events + schedules)
+    const timedEvents = [];
+    
+    // Add regular events with time
+    regularEvents.forEach(event => {
+      if (event.time && event.time !== 'All Day') {
+        timedEvents.push({
+          time: event.time,
+          type: 'event',
+          id: event.id
+        });
+      }
+    });
+    
+    // Add schedule events
+    scheduleEvents.forEach(schedule => {
+      if (schedule.start_time && schedule.end_time) {
+        timedEvents.push({
+          start_time: schedule.start_time,
+          end_time: schedule.end_time,
+          type: 'schedule',
+          id: schedule.id
+        });
+      }
+    });
+    
+    // Check for overlaps
+    for (let i = 0; i < timedEvents.length; i++) {
+      for (let j = i + 1; j < timedEvents.length; j++) {
+        const event1 = timedEvents[i];
+        const event2 = timedEvents[j];
+        
+        // Helper function to parse time to minutes
+        const parseTimeToMinutes = (timeStr) => {
+          if (!timeStr) return null;
+          const parts = timeStr.split(':');
+          return parseInt(parts[0]) * 60 + parseInt(parts[1] || 0);
+        };
+        
+        // Get time ranges for both events
+        let time1Start, time1End, time2Start, time2End;
+        
+        if (event1.type === 'schedule') {
+          time1Start = parseTimeToMinutes(event1.start_time);
+          time1End = parseTimeToMinutes(event1.end_time);
+        } else {
+          // For point-in-time events, assume 1-hour duration
+          time1Start = parseTimeToMinutes(event1.time);
+          time1End = time1Start + 60; // 1 hour duration
+        }
+        
+        if (event2.type === 'schedule') {
+          time2Start = parseTimeToMinutes(event2.start_time);
+          time2End = parseTimeToMinutes(event2.end_time);
+        } else {
+          // For point-in-time events, assume 1-hour duration
+          time2Start = parseTimeToMinutes(event2.time);
+          time2End = time2Start + 60; // 1 hour duration
+        }
+        
+        // Check for overlap: two ranges overlap if one starts before the other ends
+        if (time1Start !== null && time2Start !== null && time1End !== null && time2End !== null) {
+          if (time1Start < time2End && time2Start < time1End) {
+            return true; // Overlap detected
+          }
+        }
+      }
+    }
+    
+    return false;
+  };
+
   const handleDateClick = (dateStr) => {
     setSelectedDate(dateStr);
     const regularEvents = getEventsForDate(dateStr);
@@ -82,8 +202,20 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
     e.stopPropagation();
     const regularEvents = getEventsForDate(dateStr);
     const academicEvents = getDefaultEventsForDate(dateStr);
+    const scheduleEvents = getScheduleEventsForDate(dateStr);
+    
+    // Group all schedules into a single entry
+    const groupedSchedules = scheduleEvents.length > 0 ? [{
+      is_schedule: true,
+      type: 'schedule',
+      day: scheduleEvents[0].day,
+      allSchedules: scheduleEvents,
+      isScheduleGroup: true,
+      clickedDate: dateStr
+    }] : [];
+    
     setMoreModalDate(dateStr);
-    setMoreModalEvents([...academicEvents, ...regularEvents]);
+    setMoreModalEvents([...academicEvents, ...groupedSchedules, ...regularEvents]);
     setShowMoreModal(true);
   };
 
@@ -100,9 +232,48 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
     return `${displayHour.toString().padStart(2, '0')}:${min} ${ampm}`;
   };
 
+  const formatTimeRange = (startTime, endTime) => {
+    if (!startTime || !endTime) return '';
+    
+    // Parse start time
+    const [startHours, startMinutes] = startTime.split(':');
+    const startHour = parseInt(startHours);
+    const startMin = startMinutes || '00';
+    const startAmpm = startHour >= 12 ? 'PM' : 'AM';
+    const startDisplayHour = startHour % 12 || 12;
+    
+    // Parse end time
+    const [endHours, endMinutes] = endTime.split(':');
+    const endHour = parseInt(endHours);
+    const endMin = endMinutes || '00';
+    const endAmpm = endHour >= 12 ? 'PM' : 'AM';
+    const endDisplayHour = endHour % 12 || 12;
+    
+    return `${startDisplayHour}:${startMin} ${startAmpm} - ${endDisplayHour}:${endMin} ${endAmpm}`;
+  };
+
   const handleEventClick = (event, e) => {
     e.stopPropagation();
-    setSelectedEvent(event);
+    
+    // If it's a schedule event, gather all schedules for that day
+    if (event.is_schedule || event.type === 'schedule') {
+      // Use the clicked date, or fall back to moreModalDate or selectedDate
+      const dateStr = event.clickedDate || moreModalDate || selectedDate;
+      const allSchedulesForDay = getScheduleEventsForDate(dateStr);
+      
+      // Create a combined schedule event with all schedules for the day
+      const combinedScheduleEvent = {
+        ...event,
+        allSchedules: allSchedulesForDay,
+        isScheduleGroup: true,
+        date: dateStr
+      };
+      
+      setSelectedEvent(combinedScheduleEvent);
+    } else {
+      setSelectedEvent(event);
+    }
+    
     setShowEventDetailModal(true);
     setShowMoreModal(false);
     setCurrentFileIndex(0); // Reset file index when opening new event
@@ -181,6 +352,9 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       const cellDate = new Date(cellYear, cellMonth, cellDay);
       cellDate.setHours(0, 0, 0, 0);
 
+      const isSunday = cellDate.getDay() === 0; // Check if it's Sunday
+      const isPastDate = cellDate < today && isCurrentMonth;
+
       const isCurrentDay = (
         cellDay === today.getDate() &&
         cellMonth === today.getMonth() &&
@@ -193,87 +367,164 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
 
       // Get events for this date (only for current month to avoid confusion)
       const academicEvents = isCurrentMonth ? getDefaultEventsForDate(dateStr) : [];
+      const scheduleEvents = isCurrentMonth ? getScheduleEventsForDate(dateStr) : [];
       const regularEvents = isCurrentMonth ? getEventsForDate(dateStr) : [];
-      const allEvents = [...academicEvents, ...regularEvents];
+      
+      // Group all schedules into a single entry for display
+      const groupedSchedules = scheduleEvents.length > 0 ? [{
+        is_schedule: true,
+        type: 'schedule',
+        day: scheduleEvents[0].day,
+        allSchedules: scheduleEvents,
+        isScheduleGroup: true,
+        clickedDate: dateStr
+      }] : [];
+      
+      const allEvents = [...academicEvents, ...groupedSchedules, ...regularEvents];
 
-      // Display limit: show first 2 items (academic events + regular events)
-      const displayLimit = 2;
+      // Display limit: show first 1 event total across all types to prevent text cutoff
+      const displayLimit = 1;
+      
+      // Get first 2 events from all combined events for display
+      const eventsToDisplay = allEvents.slice(0, displayLimit);
 
       // Check if this cell will show "View More" button
       const hasViewMore = allEvents.length > displayLimit;
+      
+      // Check for conflicts on this date
+      const dateHasConflicts = isCurrentMonth && !isPastDate && hasConflicts(dateStr);
+      
       days.push(
         <div
           key={`${cellYear}-${cellMonth}-${cellDay}`}
           onClick={() => {
-            if (isCurrentMonth) {
+            if (isCurrentMonth && !isPastDate) {
               handleDateClick(dateStr);
             }
           }}
-          className={`
-            h-full p-1.5 border border-gray-200 -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
-            ${isCurrentMonth ? 'cursor-default bg-white' : 'bg-gray-50/50'}
-            ${selected ? 'ring-2 ring-green-500 ring-inset z-10' : ''}
-            ${highlighted ? 'ring-2 ring-green-400 animate-pulse z-10' : ''}
+          className={`h-full p-0.5 border border-gray-200 -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
+            ${isCurrentMonth ? (isPastDate ? 'cursor-default bg-gray-50' : 'cursor-default bg-white') : 'bg-gray-50/50'}
+            ${selected && !isPastDate ? 'ring-2 ring-green-500 ring-inset z-10' : ''}
+            ${highlighted && !isPastDate ? 'ring-2 ring-green-400 animate-pulse z-10' : ''}
+            ${isPastDate ? 'opacity-60' : ''}
           `}
         >
-          {/* Date Number - Always show */}
-          <div className="flex justify-between items-start mb-0.5 sm:mb-1 flex-shrink-0">
-            <span className={`text-[10px] sm:text-xs font-semibold px-1 sm:px-1.5 py-0.5 rounded-full
-              ${isCurrentDay ? 'bg-green-600 text-white shadow-sm' : 
-                isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}
-            `}>
-              {cellDay}
-            </span>
+          {/* Date Number and Conflict Indicator */}
+          <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className={`text-[9px] sm:text-xs font-semibold px-1 py-0.5 rounded-full transition-colors leading-none
+                ${isCurrentDay ? 'bg-green-600 text-white shadow-sm' : 
+                  isPastDate ? 'text-gray-400' :
+                  isCurrentMonth ? 'text-gray-800' : 'text-gray-400'}
+              `}>
+                {cellDay}
+              </span>
+              {dateHasConflicts && (
+                <>
+                  <div className="relative group/conflict flex-shrink-0">
+                    <svg 
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-600 cursor-help drop-shadow-sm" 
+                      fill="currentColor" 
+                      viewBox="0 0 20 20"
+                    >
+                      <path 
+                        fillRule="evenodd" 
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" 
+                        clipRule="evenodd" 
+                      />
+                    </svg>
+                    {/* Tooltip */}
+                    <div className="absolute left-0 top-full mt-1.5 hidden group-hover/conflict:block z-50">
+                      <div className="bg-gray-900 text-white text-xs px-2.5 py-1.5 rounded-md shadow-lg whitespace-nowrap">
+                        <span className="font-medium">Schedule Conflict</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Events List - Only for current month */}
           {isCurrentMonth && (
-            <div className="flex-1 space-y-1.5 overflow-hidden">
-              {/* Academic Events (Blue Labels) - Clickable */}
-              {academicEvents.slice(0, displayLimit).map((event, idx) => (
-                <div
-                  key={`academic-${idx}`}
-                  className="text-[9px] sm:text-xs lg:text-sm px-1 sm:px-1.5 lg:px-2.5 py-0.5 sm:py-1 lg:py-1.5 bg-blue-500 text-white rounded-sm sm:rounded-md truncate font-normal shadow-sm sm:shadow-md cursor-pointer hover:bg-blue-600 transition-colors"
-                  title={event.name}
-                  onClick={(e) => handleEventClick(event, e)}
-                >
-                  {event.name}
-                </div>
-              ))}
-
-              {/* Regular Events (Title Labels) - Always allowed */}
-              {regularEvents.slice(0, displayLimit - academicEvents.length).map((event, idx) => {
+            <div className="flex-1 space-y-0.5 overflow-hidden">
+              {/* Display first 1 event of any type */}
+              {eventsToDisplay.map((event, idx) => {
+                const isAcademic = event.is_default_event || (!event.time && !event.is_schedule);
+                const isSchedule = event.is_schedule || event.type === 'schedule';
                 const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                 const isPersonal = event.is_personal;
                 const isMeeting = event.event_type === 'meeting';
 
-                return (
-                  <div
-                    key={`regular-${idx}`}
-                    className={`text-[9px] sm:text-xs lg:text-sm px-1 sm:px-1.5 lg:px-2.5 py-0.5 sm:py-1 lg:py-1.5 text-white rounded-sm sm:rounded-md truncate font-normal shadow-sm sm:shadow-md cursor-pointer transition-colors ${isPersonal
-                        ? 'bg-purple-500 hover:bg-purple-600'
-                        : isMeeting
-                        ? (isHosted ? 'bg-amber-800 hover:bg-amber-900' : 'bg-yellow-500 hover:bg-yellow-600')
-                        : (isHosted ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600')
-                    }`}
-                    title={`${event.title} ${
-                      isPersonal ? '(Personal)' : 
-                      isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : 
-                      (isHosted ? '(Hosting Event)' : '(Invited to Event)')
-                    }`}
-                    onClick={(e) => handleEventClick(event, e)}
-                  >
-                    {event.title}
-                  </div>
-                );
+                if (isAcademic) {
+                  return (
+                    <div
+                      key={`academic-${idx}`}
+                      className={`text-[8px] sm:text-xs px-1 py-0.5 rounded-sm truncate font-normal shadow-sm transition-all ${
+                        isPastDate 
+                          ? 'bg-gray-300 text-gray-600 opacity-75' 
+                          : 'bg-blue-500 text-white cursor-pointer hover:bg-blue-600'
+                      }`}
+                      title={event.name}
+                      onClick={(e) => !isPastDate && handleEventClick(event, e)}
+                    >
+                      {event.name}
+                    </div>
+                  );
+                } else if (isSchedule) {
+                  // Get day name from the date
+                  const scheduleDate = new Date(dateStr);
+                  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                  const dayName = dayNames[scheduleDate.getDay()];
+                  
+                  return (
+                    <div
+                      key={`schedule-${idx}`}
+                      className={`text-[8px] sm:text-xs px-1 py-0.5 rounded-sm truncate font-normal shadow-sm transition-all ${
+                        isPastDate 
+                          ? 'bg-gray-300 text-gray-600 opacity-75' 
+                          : 'bg-orange-500 text-white cursor-pointer hover:bg-orange-600'
+                      }`}
+                      title={`${dayName} Classes - Click to view schedule`}
+                      onClick={(e) => !isPastDate && handleEventClick({ ...event, clickedDate: dateStr }, e)}
+                    >
+                      {dayName} Classes
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div
+                      key={`regular-${idx}`}
+                      className={`text-[8px] sm:text-xs px-1 py-0.5 text-white rounded-sm truncate font-normal shadow-sm transition-all ${
+                        isPastDate
+                          ? 'bg-gray-400 opacity-75'
+                          : isPersonal
+                          ? 'bg-purple-500 hover:bg-purple-600 cursor-pointer'
+                          : isMeeting
+                          ? (isHosted ? 'bg-amber-800 hover:bg-amber-900 cursor-pointer' : 'bg-yellow-500 hover:bg-yellow-600 cursor-pointer')
+                          : (isHosted ? 'bg-red-500 hover:bg-red-600 cursor-pointer' : 'bg-green-500 hover:bg-green-600 cursor-pointer')
+                      }`}
+                      title={`${event.title} ${
+                        isPastDate ? '(Past Event)' :
+                        isPersonal ? '(Personal)' : 
+                        isMeeting ? (isHosted ? '(Hosting Meeting)' : '(Invited to Meeting)') : 
+                        (isHosted ? '(Hosting Event)' : '(Invited to Event)')
+                      }`}
+                      onClick={(e) => !isPastDate && handleEventClick(event, e)}
+                    >
+                      {event.title}
+                    </div>
+                  );
+                }
               })}
-              {/* "View More" button - only show when total events > 2 */}
-              {allEvents.length > displayLimit && (
+
+              {/* "View All" button - only show when total events > 1 and not past */}
+              {!isPastDate && allEvents.length > displayLimit && (
                 <button
                   onClick={(e) => handleMoreClick(e, dateStr)}
-                  className="text-[9px] sm:text-xs lg:text-sm text-green-600 hover:text-green-800 font-semibold px-0.5 sm:px-1 hover:underline transition-colors mt-auto"
+                  className="text-[8px] sm:text-xs text-green-600 hover:text-green-800 font-semibold px-0.5 hover:underline transition-colors mt-auto"
                 >
-                  <span className="hidden sm:inline">View More ({allEvents.length})</span>
+                  <span className="hidden sm:inline">View All ({allEvents.length})</span>
                   <span className="sm:hidden">+{allEvents.length - displayLimit}</span>
                 </button>
               )}
@@ -288,35 +539,35 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
 
   return (
     <>
-      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3 h-full flex flex-col">
+      <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-2 sm:p-3 h-full flex flex-col overflow-hidden">
         {/* Month Navigation */}
-        <div className="flex justify-between items-center mb-2 sm:mb-3 flex-shrink-0">
+        <div className="flex justify-between items-center mb-1 sm:mb-2 flex-shrink-0">
           <button
             onClick={prevMonth}
             disabled={isAtMinDate}
-            className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-colors ${isAtMinDate
+            className={`w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors ${isAtMinDate
                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-800'
               }`}
           >
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
 
-          <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-green-800 font-display tracking-tight">
+          <h2 className="text-base sm:text-lg lg:text-xl font-bold text-green-800 font-display tracking-tight">
             {monthNames[month]} {year}
           </h2>
 
           <button
             onClick={nextMonth}
             disabled={isAtMaxDate}
-            className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg transition-colors ${isAtMaxDate
+            className={`w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg transition-colors ${isAtMaxDate
                 ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
                 : 'bg-green-100 hover:bg-green-200 text-green-600 hover:text-green-800'
               }`}
           >
-            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 sm:w-3.5 sm:h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
             </svg>
           </button>
@@ -326,7 +577,7 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
           {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map(day => (
             <div
               key={day}
-              className="text-center text-[9px] sm:text-[10px] font-semibold text-green-600 uppercase tracking-wider py-1 sm:py-1.5"
+              className="text-center text-[8px] sm:text-[9px] font-semibold text-green-600 uppercase tracking-wider py-0.5 sm:py-1"
             >
               {day}
             </div>
@@ -334,38 +585,46 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-0 flex-1 min-h-0" style={{ gridAutoRows: '1fr' }}>
+        <div className="grid grid-cols-7 gap-0 flex-1 min-h-0 overflow-hidden" style={{ gridAutoRows: '1fr' }}>
           {renderCalendarDays()}
         </div>
 
-        {/* Legend */}
-        <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-gray-200 flex-shrink-0">
-          <div className="flex flex-wrap gap-1.5 sm:gap-2 lg:gap-3 text-[10px] sm:text-xs">
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-blue-500"></div>
-              <span className="text-gray-600 font-medium">Academic</span>
+        {/* Legend - 2 lines on mobile, scrollable on larger screens */}
+        <div className="mt-1 sm:mt-2 pt-1.5 sm:pt-2 flex-shrink-0 overflow-x-auto">
+          <div className="flex flex-wrap gap-2 sm:gap-3 text-[9px] sm:text-xs pb-1 max-w-full">
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-blue-500 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Academic Event</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-red-500"></div>
-              <span className="text-gray-600 font-medium">Hosting</span>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-orange-500 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Class Schedule</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-green-500"></div>
-              <span className="text-gray-600 font-medium">Invited</span>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-red-500 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Hosting Event</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-amber-800"></div>
-              <span className="text-gray-600 font-medium hidden sm:inline">Hosting Meeting</span>
-              <span className="text-gray-600 font-medium sm:hidden">Host Mtg</span>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-green-500 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Invited Event</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-yellow-500"></div>
-              <span className="text-gray-600 font-medium hidden sm:inline">Invited Meeting</span>
-              <span className="text-gray-600 font-medium sm:hidden">Inv Mtg</span>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-amber-800 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Hosting Meeting</span>
             </div>
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-purple-500"></div>
-              <span className="text-gray-600 font-medium">Personal</span>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-yellow-500 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Invited Meeting</span>
+            </div>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-purple-500 flex-shrink-0"></div>
+              <span className="text-gray-600 font-medium">Personal Event</span>
+            </div>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+              </svg>
+              <span className="text-gray-600 font-medium">Schedule Conflict</span>
             </div>
           </div>
         </div>
@@ -373,56 +632,71 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       {/* Event Detail Modal */}
       {showMoreModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-2xl sm:rounded-3xl shadow-2xl max-w-md w-full max-h-[85vh] sm:max-h-[80vh] overflow-hidden border border-gray-200">
-            {/* Modal Header - Day and Date */}
-            <div className="bg-white px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 flex flex-col items-center relative">
-              {/* Close Button */}
+          <div className="bg-white rounded-lg shadow-sm max-w-md w-full max-h-[85vh] sm:max-h-[80vh] overflow-hidden border border-gray-200 flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <div>
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                  {new Date(moreModalDate).toLocaleDateString('en-US', { weekday: 'long' })}
+                </p>
+                <h3 className="text-2xl font-semibold text-gray-900 mt-1">
+                  {new Date(moreModalDate).getDate()}
+                </h3>
+              </div>
               <button
                 onClick={() => setShowMoreModal(false)}
-                className="absolute top-3 sm:top-4 right-3 sm:right-4 text-gray-600 hover:text-gray-800 transition-colors"
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
               >
-                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-
-              {/* Day of Week */}
-              <div className="text-xs sm:text-sm font-medium text-gray-600 uppercase tracking-wider mb-1">
-                {new Date(moreModalDate).toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
-              </div>
-
-              {/* Date Number */}
-              <div className="text-5xl sm:text-6xl font-normal text-gray-800 mb-3 sm:mb-4">
-                {new Date(moreModalDate).getDate()}
-              </div>
             </div>
 
             {/* Modal Content - Events List */}
-            <div className="px-3 sm:px-4 pb-4 sm:pb-6 overflow-y-auto max-h-[calc(85vh-160px)] sm:max-h-[calc(80vh-180px)]">
-              <div className="space-y-2">
+            <div className="flex-1 overflow-y-auto">
+              <div className="divide-y divide-gray-100">
                 {moreModalEvents.map((event, idx) => {
-                  const isAcademic = event.is_default_event || !event.time;
+                  const isAcademic = event.is_default_event || (!event.time && !event.is_schedule);
+                  const isSchedule = event.is_schedule || event.type === 'schedule';
                   const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                   const isPersonal = event.is_personal;
                   const isMeeting = event.event_type === 'meeting';
 
                   return (
-                    <div key={idx}>
+                    <div
+                      key={idx}
+                      onClick={(e) => handleEventClick(event, e)}
+                      className="px-6 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    >
                       {isAcademic ? (
-                        // Academic Event - Blue Bar Style
-                        <div
-                          className="bg-blue-500 text-white rounded-lg px-3 sm:px-4 py-2 sm:py-3 font-medium cursor-pointer hover:bg-blue-600 transition-colors text-sm sm:text-base"
-                          onClick={(e) => handleEventClick(event, e)}
-                        >
-                          {event.name || event.title}
+                        // Academic Event
+                        <div className="flex items-start gap-3">
+                          <div className="w-2.5 h-2.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 text-sm">
+                              {event.name || event.title}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-1">Academic Calendar</p>
+                          </div>
+                        </div>
+                      ) : isSchedule ? (
+                        // Schedule Event - Show day name
+                        <div className="flex items-start gap-3">
+                          <div className="w-2.5 h-2.5 rounded-full bg-orange-500 mt-1.5 flex-shrink-0"></div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900 text-sm">
+                              {event.day} Classes
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-500">Click to view schedule</span>
+                            </div>
+                          </div>
                         </div>
                       ) : (
-                        // Regular Event - Consistent Color Dots
-                        <div 
-                          className="flex items-start gap-2 sm:gap-3 px-2 sm:px-3 py-2 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer"
-                          onClick={(e) => handleEventClick(event, e)}
-                        >
-                          <div className={`flex-shrink-0 w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full mt-1 sm:mt-1.5 ${
+                        // Regular Event
+                        <div className="flex items-start gap-3">
+                          <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${
                             isPersonal
                               ? 'bg-purple-500'
                               : isMeeting
@@ -430,13 +704,16 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
                               : (isHosted ? 'bg-red-500' : 'bg-green-500')
                           }`}></div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-gray-800 font-normal text-sm sm:text-base">
-                              <span className="font-medium">{formatTime(event.time)}</span> {event.title || '(No title)'}
-                            </div>
-                            <div className="text-xs text-gray-600 mt-0.5">
-                              {isPersonal ? 'Personal Event' : 
-                               isMeeting ? (isHosted ? 'Hosting Meeting' : 'Invited to Meeting') : 
-                               (isHosted ? 'Hosting Event' : 'Invited to Event')}
+                            <p className="font-medium text-gray-900 text-sm">
+                              {event.title || '(No title)'}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-gray-600">{formatTime(event.time)}</span>
+                              <span className="text-xs text-gray-500">
+                                {isPersonal ? 'Personal' : 
+                                 isMeeting ? (isHosted ? 'Hosting' : 'Invited') : 
+                                 (isHosted ? 'Hosting' : 'Invited')}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -452,384 +729,300 @@ export default function Calendar({ events, defaultEvents = [], onDateSelect, hig
       {/* Individual Event Detail Modal */}
       {showEventDetailModal && selectedEvent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
-          <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] sm:max-h-[85vh] overflow-hidden border border-gray-200">
-            {/* Modal Header - Only Close Button */}
-            <div className="px-3 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex justify-end items-center bg-white">
-              {/* Close Button */}
+          <div className="bg-white rounded-lg shadow-sm w-full max-w-5xl h-[90vh] 2xl:h-[75vh] overflow-hidden border border-gray-200 flex flex-col">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                  selectedEvent.is_default_event || (!selectedEvent.time && !selectedEvent.is_schedule) ? 'bg-blue-500' : 
+                  selectedEvent.is_schedule || selectedEvent.type === 'schedule' ? 'bg-orange-500' :
+                  selectedEvent.is_personal
+                    ? 'bg-purple-500'
+                    : selectedEvent.event_type === 'meeting'
+                    ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-amber-800' : 'bg-yellow-500')
+                    : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-red-500' : 'bg-green-500')
+                }`}></div>
+                <h3 className="text-lg font-semibold text-gray-900 truncate">
+                  {selectedEvent.isScheduleGroup 
+                    ? `${selectedEvent.day} Classes` 
+                    : (selectedEvent.title || selectedEvent.name)}
+                </h3>
+                {currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id && !selectedEvent.is_default_event && !selectedEvent.isScheduleGroup && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setShowEventDetailModal(false);
+                        onEditEvent(selectedEvent);
+                      }}
+                      className="p-1.5 text-gray-500 hover:bg-gray-100 rounded transition-colors flex-shrink-0"
+                      title="Edit Event"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEventToDelete(selectedEvent);
+                        setShowDeleteConfirm(true);
+                      }}
+                      className="p-1.5 text-red-500 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                      title="Delete Event"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+              </div>
               <button
                 onClick={() => setShowEventDetailModal(false)}
-                className="p-1.5 sm:p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                title="Close"
+                className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
               >
-                <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="flex flex-col lg:flex-row max-h-[calc(90vh-60px)] sm:max-h-[calc(85vh-70px)] overflow-y-auto">
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0 overflow-hidden">
               {/* Left Column - Event Details */}
-              <div className="flex-1 px-3 sm:px-6 py-3 sm:py-5 space-y-3 sm:space-y-4">
-                {/* Event Header - Name, Bullet Point, Edit/Delete Buttons, Date */}
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    {/* Color Bullet Point */}
-                    <div className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full flex-shrink-0 mt-0.5 sm:mt-1 ${
-                      selectedEvent.is_default_event || !selectedEvent.time ? 'bg-blue-500' : 
-                      selectedEvent.is_personal
-                        ? 'bg-purple-500'
-                        : selectedEvent.event_type === 'meeting'
-                        ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-amber-800' : 'bg-yellow-500')
-                        : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'bg-red-500' : 'bg-green-500')
-                    }`}></div>
-                    <h3 className="text-lg sm:text-xl font-semibold text-gray-900 break-words">
-                      {selectedEvent.title || selectedEvent.name}
-                    </h3>
+              <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col">
+                <div className="space-y-5">
+                  {/* Date */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Date</p>
+                    <p className="text-sm text-gray-900">
+                      {selectedEvent.end_date ? (
+                        <>
+                          {new Date(selectedEvent.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {new Date(selectedEvent.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </>
+                      ) : (
+                        new Date(selectedEvent.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+                      )}
+                    </p>
+                  </div>
 
-                    {/* Inline Edit/Delete Buttons */}
-                    {currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id && !selectedEvent.is_default_event && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setShowEventDetailModal(false);
-                            onEditEvent(selectedEvent);
-                          }}
-                          className="p-1 text-gray-600 hover:bg-gray-100 rounded transition-colors mt-0.5 sm:mt-1"
-                          title="Edit Event"
-                        >
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEventToDelete(selectedEvent);
-                            setShowDeleteConfirm(true);
-                          }}
-                          className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors mt-0.5 sm:mt-1"
-                          title="Delete Event"
-                        >
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                  <div className="text-xs sm:text-sm text-gray-700 ml-3 sm:ml-5">
-                    {selectedEvent.end_date ? (
-                      // Multi-day event - show date range
-                      <>
-                        {new Date(selectedEvent.date).toLocaleDateString('en-US', { 
-                          month: 'long', 
-                          day: 'numeric'
-                        })} - {new Date(selectedEvent.end_date).toLocaleDateString('en-US', { 
-                          month: 'long', 
-                          day: 'numeric',
-                          year: 'numeric'
+                  {/* Time */}
+                  {selectedEvent.time && selectedEvent.time !== 'All Day' && !selectedEvent.isScheduleGroup && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Time</p>
+                      <p className="text-sm text-gray-900 font-medium">{formatTime(selectedEvent.time)}</p>
+                    </div>
+                  )}
+
+                  {/* Class Schedule Details - Show all schedules for the day */}
+                  {selectedEvent.isScheduleGroup && selectedEvent.allSchedules && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Class Schedule</p>
+                      <div className="space-y-2">
+                        {selectedEvent.allSchedules.map((schedule, index) => {
+                          // Get the color from the schedule, default to orange if not set
+                          const scheduleColor = schedule.color || '#f97316'; // default orange-500
+                          
+                          return (
+                            <div key={index} className="flex items-start gap-3">
+                              <div 
+                                className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
+                                style={{ backgroundColor: scheduleColor }}
+                              ></div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900">
+                                  {schedule.description || schedule.title || 'Class'}
+                                </p>
+                                <div className="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
+                                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: scheduleColor }}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span className="font-medium">
+                                    {formatTimeRange(schedule.start_time, schedule.end_time)}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                          );
                         })}
-                      </>
-                    ) : (
-                      // Single day event - show full date with weekday
-                      new Date(selectedEvent.date).toLocaleDateString('en-US', { 
-                        weekday: 'long', 
-                        month: 'long', 
-                        day: 'numeric',
-                        year: 'numeric'
-                      })
-                    )}
-                  </div>
-                </div>
-                {/* Horizontal divider after date */}
-                <div className="border-t border-gray-200"></div>
-                
-                {/* Academic Event - School Year & Duration */}
-                {(selectedEvent.is_default_event || !selectedEvent.time) && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-                    {/* School Year */}
-                    {selectedEvent.school_year && (
-                      <div className="flex items-center gap-3">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                        </svg>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Location */}
+                  {selectedEvent.location && !selectedEvent.isScheduleGroup && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Location</p>
+                      <p className="text-sm text-gray-900">{selectedEvent.location}</p>
+                    </div>
+                  )}
+
+                  {/* Description */}
+                  {selectedEvent.description && !selectedEvent.isScheduleGroup && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Details</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{selectedEvent.description}</p>
+                    </div>
+                  )}
+
+                  {/* Academic Event Info - Only show for actual academic events, not schedules */}
+                  {(selectedEvent.is_default_event || (!selectedEvent.time && !selectedEvent.isScheduleGroup)) && (
+                    <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                      {selectedEvent.school_year && (
                         <div>
-                          <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">School Year</div>
-                          <div className="text-sm font-semibold text-blue-900">{selectedEvent.school_year}</div>
+                          <p className="text-xs font-medium text-blue-600 uppercase tracking-wide mb-1">Academic Year</p>
+                          <p className="text-sm font-semibold text-blue-900">{selectedEvent.school_year}</p>
+                        </div>
+                      )}
+                      <div className={selectedEvent.school_year ? 'pt-3 border-t border-blue-200' : ''}>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-xs font-medium text-blue-700">Official Academic Calendar</span>
                         </div>
                       </div>
-                    )}
-
-                    {/* Event Type Badge */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-blue-200">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-xs font-medium text-blue-700">Official Academic Calendar Event</span>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Time */}
-                {selectedEvent.time && selectedEvent.time !== 'All Day' && (
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <div className="text-sm sm:text-base text-gray-900 font-medium">{formatTime(selectedEvent.time)}</div>
-                  </div>
-                )}
-
-                {/* Location */}
-                {selectedEvent.location && (
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    </svg>
-                    <div className="text-sm sm:text-base text-gray-900">{selectedEvent.location}</div>
-                  </div>
-                )}
-
-                {/* Description */}
-                {selectedEvent.description && (
-                  <div className="flex items-start gap-2 sm:gap-3">
-                    <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h7" />
-                    </svg>
-                    <div className="text-sm sm:text-base text-gray-700 whitespace-pre-wrap">{selectedEvent.description}</div>
-                  </div>
-                )}
-                {/* Invited Participants Section - Compact */}
-                {!(selectedEvent.is_default_event || !selectedEvent.time) && (
-                  <div className="mt-3 sm:mt-4 pt-3 border-t border-gray-200">
-                    <div className="flex items-start gap-2 sm:gap-3">
-                      <svg className="w-4 h-4 sm:w-5 sm:h-5 text-gray-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                      </svg>
-                      <div className="flex-1">
-                        <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-2">Participants</h4>
-                        
-                        {/* Invited Members - Expanded */}
-                        {selectedEvent.members && selectedEvent.members.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-[10px] sm:text-xs font-medium text-gray-600 uppercase tracking-wide">
-                                Invited ({selectedEvent.members.length})
+                  {/* Participants */}
+                  {!(selectedEvent.is_default_event || !selectedEvent.time) && !selectedEvent.isScheduleGroup && selectedEvent.members && selectedEvent.members.length > 0 && (
+                    <div className="mt-6 pt-5 border-t border-gray-200 flex-1 flex flex-col min-h-0">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3 flex-shrink-0">Participants ({selectedEvent.members.length})</p>
+                      <div className="space-y-2 overflow-y-auto flex-1">
+                        {selectedEvent.members.map((member, index) => (
+                          <div key={member.id || index} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white text-xs font-semibold">
+                                {member.name ? member.name.charAt(0).toUpperCase() : 'M'}
                               </span>
                             </div>
-                            <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto pr-2">
-                              {selectedEvent.members.map((member, index) => (
-                                <div key={member.id || index} className="flex items-center gap-2 sm:gap-3 p-1.5 sm:p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors border border-gray-100">
-                                  <div className="w-7 h-7 sm:w-8 sm:h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
-                                    <span className="text-white text-xs sm:text-sm font-medium">
-                                      {member.name ? member.name.charAt(0).toUpperCase() : 'M'}
-                                    </span>
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-xs sm:text-sm font-medium text-gray-900 truncate">
-                                      {member.name || 'Member'}
-                                      {currentUser && member.id === currentUser.id && (
-                                        <span className="ml-2 text-xs text-green-600 font-normal">(You)</span>
-                                      )}
-                                    </div>
-                                    <div className="text-xs text-gray-500 truncate mt-0.5">{member.email}</div>
-                                  </div>
-                                </div>
-                              ))}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">
+                                {member.name || 'Member'}
+                                {currentUser && member.id === currentUser.id && (
+                                  <span className="ml-2 text-xs text-green-600 font-normal">(You)</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate">{member.email}</p>
                             </div>
                           </div>
-                        )}
-
-                        {/* No participants message - Compact */}
-                        {(!selectedEvent.members || selectedEvent.members.length === 0) && (
-                          <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                            <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                            </svg>
-                            <div className="text-gray-400 text-sm font-medium">No participants invited</div>
-                            <div className="text-gray-300 text-xs mt-1">This event has no invited participants</div>
-                          </div>
-                        )}
+                        ))}
                       </div>
                     </div>
-                  </div>
-                )}
-                {/* Regular Event Information Box - School Year & Badge Only - Closer */}
-                {!(selectedEvent.is_default_event || !selectedEvent.time) && selectedEvent.school_year && (
-                  <div className="mt-4 bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-                    {/* School Year */}
-                    <div className="flex items-center gap-3">
-                      <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                      <div>
-                        <div className="text-xs text-blue-600 font-medium uppercase tracking-wide">School Year</div>
-                        <div className="text-sm font-semibold text-blue-900">{selectedEvent.school_year}</div>
-                      </div>
-                    </div>
-
-                    {/* Event Type Badge */}
-                    <div className="flex items-center gap-2 pt-2 border-t border-blue-200">
-                      <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-xs font-medium text-blue-700">Regular Event</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Event Type Badge (when no school year) - Closer */}
-                {!(selectedEvent.is_default_event || !selectedEvent.time) && !selectedEvent.school_year && (
-                  <div className="pt-4 mt-4 border-t border-gray-200">
-                    <span className={`inline-flex items-center gap-2 text-xs font-medium ${
-                      selectedEvent.is_personal
-                        ? 'text-purple-700'
-                        : selectedEvent.event_type === 'meeting'
-                        ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'text-amber-900' : 'text-yellow-700')
-                        : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'text-red-700' : 'text-green-700')
-                    }`}>
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {selectedEvent.is_personal ? 'Personal Event' : 
-                       selectedEvent.event_type === 'meeting'
-                         ? (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'Hosting Meeting' : 'Invited to Meeting')
-                         : (currentUser && selectedEvent.host && selectedEvent.host.id === currentUser.id ? 'Hosting Event' : 'Invited to Event')}
-                    </span>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               {/* Right Column - File Viewer */}
               {selectedEvent.images && selectedEvent.images.length > 0 && (
-                <div className="w-[650px] border-l border-gray-200 bg-gray-50 flex flex-col">
-                  {/* File Viewer Header */}
-                  <div className="px-4 py-3 border-b border-gray-200 bg-white">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.586-6.586a2 2 0 00-2.828-2.828l-6.586 6.586a2 2 0 102.828 2.828L19 9" />
-                        </svg>
-                        <h4 className="text-sm font-semibold text-gray-900">Files ({selectedEvent.images.length})</h4>
-                      </div>
-                      {/* File counter */}
-                      {selectedEvent.images.length > 1 && (
-                        <span className="text-xs text-gray-500">
-                          {currentFileIndex + 1} of {selectedEvent.images.length}
-                        </span>
-                      )}
+                <div className="w-full lg:w-[500px] border-t lg:border-t-0 lg:border-l border-gray-100 bg-gray-50 flex flex-col">
+                  {/* File Header */}
+                  <div className="px-4 py-3 border-b border-gray-100 bg-white flex items-center justify-between flex-shrink-0">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-sm font-medium text-gray-900">Files ({selectedEvent.images.length})</span>
                     </div>
+                    {selectedEvent.images.length > 1 && (
+                      <span className="text-xs text-gray-500">{currentFileIndex + 1} of {selectedEvent.images.length}</span>
+                    )}
                   </div>
 
-                  {/* File Viewer Content */}
-                  <div className="flex-1 flex flex-col overflow-hidden">
+                  {/* File Viewer - Fixed Height */}
+                  <div className="flex-1 flex flex-col overflow-hidden min-h-0">
                     {selectedEvent.images[currentFileIndex] && (
-                      <>
-                        {/* Full Display Viewer with Navigation Buttons */}
-                        <div className="relative bg-white border-b border-gray-200 group">
-                          <div className="w-full h-[600px] flex items-center justify-center p-2">
-                            {selectedEvent.images[currentFileIndex].original_filename?.toLowerCase().endsWith('.pdf') ? (
-                              /* PDF Viewer - Full Display */
-                              <div className="w-full h-full border border-gray-200 rounded-lg overflow-hidden shadow-lg">
-                                <iframe
-                                  src={selectedEvent.images[currentFileIndex].url}
-                                  className="w-full h-full"
-                                  title={selectedEvent.images[currentFileIndex].original_filename}
-                                />
-                              </div>
-                            ) : (
-                              /* Image Viewer - Full Display */
-                              <div className="w-full h-full flex items-center justify-center bg-gray-50 rounded-lg shadow-lg">
-                                <img
-                                  src={selectedEvent.images[currentFileIndex].url}
-                                  alt={selectedEvent.images[currentFileIndex].original_filename}
-                                  className="max-w-full max-h-full object-contain rounded-lg"
-                                  style={{ minHeight: '200px', minWidth: '200px' }}
-                                  onError={(e) => {
-                                    e.target.style.display = 'none';
-                                    e.target.nextSibling.style.display = 'flex';
-                                  }}
-                                />
-                                <div className="hidden flex-col items-center justify-center text-gray-500 bg-gray-100 rounded-lg p-8 w-full h-full">
-                                  <svg className="w-16 h-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                                  </svg>
-                                  <p className="text-lg font-medium">Failed to load image</p>
-                                  <p className="text-sm text-gray-400 mt-1">Please try opening in a new tab</p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          {/* Navigation Buttons Inside Viewer */}
-                          {selectedEvent.images.length > 1 && (
-                            <>
-                              {/* Previous Button */}
-                              <button
-                                onClick={prevFile}
-                                className="absolute left-4 top-1/2 transform -translate-y-1/2 p-3 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full transition-all duration-200 opacity-0 hover:opacity-100 group-hover:opacity-100 shadow-lg"
-                                title="Previous file"
-                              >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                                </svg>
-                              </button>
-
-                              {/* Next Button */}
-                              <button
-                                onClick={nextFile}
-                                className="absolute right-4 top-1/2 transform -translate-y-1/2 p-3 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded-full transition-all duration-200 opacity-0 hover:opacity-100 group-hover:opacity-100 shadow-lg"
-                                title="Next file"
-                              >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                              </button>
-                            </>
+                      <div className="relative bg-white flex-1 flex items-center justify-center group overflow-hidden">
+                        <div className="w-full h-full flex items-center justify-center p-2">
+                          {selectedEvent.images[currentFileIndex].original_filename?.toLowerCase().endsWith('.pdf') ? (
+                            <div className="w-full h-full border border-gray-200 rounded overflow-hidden">
+                              <iframe
+                                src={selectedEvent.images[currentFileIndex].url}
+                                className="w-full h-full"
+                                title={selectedEvent.images[currentFileIndex].original_filename}
+                              />
+                            </div>
+                          ) : (
+                            <img
+                              src={selectedEvent.images[currentFileIndex].url}
+                              alt={selectedEvent.images[currentFileIndex].original_filename}
+                              className="max-w-full max-h-full object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.nextSibling.style.display = 'flex';
+                              }}
+                            />
                           )}
+                          <div className="hidden flex-col items-center justify-center text-gray-500 bg-gray-100 rounded p-8 w-full h-full">
+                            <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <p className="text-sm font-medium">Failed to load</p>
+                          </div>
                         </div>
 
-                        {/* File Thumbnails (if multiple files) */}
+                        {/* Navigation Buttons */}
                         {selectedEvent.images.length > 1 && (
-                          <div className="px-4 py-3 bg-gray-100 border-t border-gray-200">
-                            <div className="flex gap-2 overflow-x-auto pb-1">
-                              {selectedEvent.images.map((file, index) => (
-                                <button
-                                  key={index}
-                                  onClick={() => goToFile(index)}
-                                  className={`flex-shrink-0 w-16 h-16 rounded-lg border-2 transition-all ${
-                                    index === currentFileIndex
-                                      ? 'border-blue-500 bg-blue-50 shadow-md'
-                                      : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
-                                  }`}
-                                  title={file.original_filename}
-                                >
-                                  {file.original_filename?.toLowerCase().endsWith('.pdf') ? (
-                                    <div className="w-full h-full flex items-center justify-center">
-                                      <svg className={`w-8 h-8 ${index === currentFileIndex ? 'text-red-600' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                      </svg>
-                                    </div>
-                                  ) : (
-                                    <img
-                                      src={file.url}
-                                      alt={file.original_filename}
-                                      className="w-full h-full object-cover rounded-lg"
-                                      onError={(e) => {
-                                        e.target.style.display = 'none';
-                                        e.target.nextSibling.style.display = 'flex';
-                                      }}
-                                    />
-                                  )}
-                                  <div className="hidden w-full h-full items-center justify-center">
-                                    <svg className={`w-8 h-8 ${index === currentFileIndex ? 'text-blue-600' : 'text-blue-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
+                          <>
+                            <button
+                              onClick={prevFile}
+                              className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={nextFile}
+                              className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-black bg-opacity-60 hover:bg-opacity-80 text-white rounded transition-all opacity-0 group-hover:opacity-100"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                              </svg>
+                            </button>
+                          </>
                         )}
-                      </>
+                      </div>
+                    )}
+
+                    {/* Thumbnail Strip */}
+                    {selectedEvent.images.length > 1 && (
+                      <div className="px-2 py-2 border-t border-gray-100 bg-white flex gap-1 overflow-x-auto flex-shrink-0">
+                        {selectedEvent.images.map((file, index) => (
+                          <button
+                            key={index}
+                            onClick={() => goToFile(index)}
+                            className={`flex-shrink-0 w-12 h-12 rounded border-2 transition-all ${
+                              index === currentFileIndex
+                                ? 'border-blue-500 bg-blue-50'
+                                : 'border-gray-200 bg-white hover:border-gray-300'
+                            }`}
+                            title={file.original_filename}
+                          >
+                            {file.original_filename?.toLowerCase().endsWith('.pdf') ? (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <svg className="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <img
+                                src={file.url}
+                                alt={file.original_filename}
+                                className="w-full h-full object-cover rounded"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            )}
+                            <div className="hidden w-full h-full items-center justify-center">
+                              <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     )}
                   </div>
                 </div>

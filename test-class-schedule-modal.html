@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Schedule Modal - Visual Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6 text-gray-900">Class Schedule Modal - Visual Test</h1>
+        
+        <!-- Modal Preview -->
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+                    <h3 class="text-lg font-semibold text-gray-900">Monday Classes</h3>
+                </div>
+                <button class="p-2 text-gray-500 hover:bg-gray-100 rounded-lg">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="px-6 py-5">
+                <div class="space-y-5">
+                    <!-- Date -->
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Date</p>
+                        <p class="text-sm text-gray-900">Monday, March 19, 2026</p>
+                    </div>
+
+                    <!-- Class Schedule -->
+                    <div>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Class Schedule</p>
+                        <div class="space-y-2">
+                            <!-- ITEC 110 - Orange -->
+                            <div class="flex items-start gap-3">
+                                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1" 
+                                     style="background-color: #f97316;"></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900">ITEC 110</p>
+                                    <div class="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
+                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" 
+                                             viewBox="0 0 24 24" style="color: #f97316;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="font-medium">08:00 AM - 11:00 AM</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ITEC 111 - Blue -->
+                            <div class="flex items-start gap-3">
+                                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1" 
+                                     style="background-color: #3b82f6;"></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900">ITEC 111</p>
+                                    <div class="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
+                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" 
+                                             viewBox="0 0 24 24" style="color: #3b82f6;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="font-medium">01:00 PM - 04:00 PM</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- FITT 3 - Green -->
+                            <div class="flex items-start gap-3">
+                                <div class="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1" 
+                                     style="background-color: #10b981;"></div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-semibold text-gray-900">FITT 3</p>
+                                    <div class="flex items-center gap-2 text-xs text-gray-600 mt-0.5">
+                                        <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" 
+                                             viewBox="0 0 24 24" style="color: #10b981;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        <span class="font-medium">04:00 PM - 06:00 PM</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Highlights -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-semibold mb-4 text-gray-900">Key Features</h2>
+            <ul class="space-y-2 text-sm text-gray-700">
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>AM/PM Time Format:</strong> Times displayed in 12-hour format (e.g., "08:00 AM - 11:00 AM")</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Color Coding:</strong> Each class uses the color assigned in account settings</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Visual Indicators:</strong> Color dot next to each class for easy identification</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Clean List View:</strong> Simple, uncluttered display without cards or borders</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Complete Schedule:</strong> All classes for the day shown in a clean list</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <svg class="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span><strong>Minimal Design:</strong> No cards, borders, or backgrounds - just the essential information</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>

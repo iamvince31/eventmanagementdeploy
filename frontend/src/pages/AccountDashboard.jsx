@@ -35,6 +35,29 @@ export default function AccountDashboard() {
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
+  // Semester detection logic
+  const getCurrentSemester = () => {
+    const now = new Date();
+    const month = now.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+    
+    // First Semester: September (9) to January (1)
+    if (month >= 9 || month <= 1) {
+      return { name: 'First Semester', period: 'September - January', active: true };
+    }
+    // Second Semester: February (2) to June (6)
+    else if (month >= 2 && month <= 6) {
+      return { name: 'Second Semester', period: 'February - June', active: true };
+    }
+    // Mid-Year/Summer: July (7) to August (8)
+    else if (month >= 7 && month <= 8) {
+      return { name: 'Mid-Year/Summer', period: 'July - August', active: true };
+    }
+    
+    return { name: 'Break Period', period: 'Between Semesters', active: false };
+  };
+
+  const currentSemester = getCurrentSemester();
+
   const departments = [
     'Department of Information Technology',
     'Department of Agriculture and Food Engineering',
@@ -103,7 +126,8 @@ export default function AccountDashboard() {
             id: slot.id,
             startTime: slot.startTime,
             endTime: slot.endTime,
-            description: slot.description
+            description: slot.description,
+            color: slot.color || '#10b981'
           }));
         });
         setSchedule(formattedSchedule);
@@ -186,9 +210,16 @@ export default function AccountDashboard() {
   };
 
   const addNewClass = (day) => {
+    // Don't assign colors during editing - colors will be assigned by backend on save
     setSchedule(prev => ({
       ...prev,
-      [day]: [...(prev[day] || []), { id: Date.now(), startTime: '', endTime: '', description: '' }]
+      [day]: [...(prev[day] || []), { 
+        id: Date.now(), 
+        startTime: '', 
+        endTime: '', 
+        description: '',
+        color: null // No color until saved
+      }]
     }));
   };
 
@@ -501,11 +532,17 @@ export default function AccountDashboard() {
                         Required
                       </span>
                     )}
+                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/90">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      {currentSemester.name}
+                    </span>
                   </h3>
                   <p className="text-green-200 text-sm mt-1">
                     {scheduleLoading ? 'Loading schedule...' : user?.schedule_initialized
-                      ? `${getTotalScheduledClasses()} classes scheduled this week`
-                      : 'No schedule set - Required to create events'}
+                      ? `${getTotalScheduledClasses()} classes scheduled this week • ${currentSemester.period}`
+                      : `No schedule set - Required to create events • ${currentSemester.period}`}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -566,6 +603,20 @@ export default function AccountDashboard() {
               </div>
 
               <div className="p-6">
+                {/* Simple semester notice - only show during break periods */}
+                {!currentSemester.active && (
+                  <div className="mb-6 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center gap-2 text-orange-800">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium">
+                        Schedules are hidden during break periods and will reappear when the next semester begins.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {scheduleLoading ? (
                   <div className="space-y-4 animate-pulse">
                     {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
@@ -645,6 +696,11 @@ export default function AccountDashboard() {
                         <table className="w-full">
                           <thead>
                             <tr className="bg-green-200">
+                              {!scheduleEditMode && (
+                                <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 w-12">
+                                  Color
+                                </th>
+                              )}
                               <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
                                 Time Range
                               </th>
@@ -666,6 +722,15 @@ export default function AccountDashboard() {
                                   index % 2 === 0 ? 'bg-white' : 'bg-green-100/50'
                                 }`}
                               >
+                                {!scheduleEditMode && (
+                                  <td className="px-4 py-3">
+                                    <div 
+                                      className="w-8 h-8 rounded-full shadow-md border-2 border-white"
+                                      style={{ backgroundColor: slot.color || '#10b981' }}
+                                      title={`Color: ${slot.color || '#10b981'}`}
+                                    ></div>
+                                  </td>
+                                )}
                                 <td className="px-4 py-3">
                                   {scheduleEditMode ? (
                                     <div className="flex items-center gap-2">

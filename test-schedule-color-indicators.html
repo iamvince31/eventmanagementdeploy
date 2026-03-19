@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Schedule Color Indicators - Test Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 min-h-screen p-8">
+    <div class="max-w-6xl mx-auto">
+        <!-- Header -->
+        <div class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">Class Schedule Color Indicators</h1>
+            <p class="text-lg text-gray-600">Visual demonstration of deterministic color assignment</p>
+            <p class="text-sm text-gray-500 mt-2">Same class description = Same color across all days</p>
+        </div>
+
+        <!-- Color Palette Reference -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                </svg>
+                Color Palette (10 Colors)
+            </h2>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #10b981;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Green</p>
+                        <p class="text-xs text-gray-500">#10b981</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #3b82f6;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Blue</p>
+                        <p class="text-xs text-gray-500">#3b82f6</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #f59e0b;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Amber</p>
+                        <p class="text-xs text-gray-500">#f59e0b</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #ef4444;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Red</p>
+                        <p class="text-xs text-gray-500">#ef4444</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #8b5cf6;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Purple</p>
+                        <p class="text-xs text-gray-500">#8b5cf6</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #ec4899;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Pink</p>
+                        <p class="text-xs text-gray-500">#ec4899</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #06b6d4;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Cyan</p>
+                        <p class="text-xs text-gray-500">#06b6d4</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #f97316;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Orange</p>
+                        <p class="text-xs text-gray-500">#f97316</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #14b8a6;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Teal</p>
+                        <p class="text-xs text-gray-500">#14b8a6</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                    <div class="w-10 h-10 rounded-full shadow-md border-2 border-white" style="background-color: #6366f1;"></div>
+                    <div>
+                        <p class="font-semibold text-sm">Indigo</p>
+                        <p class="text-xs text-gray-500">#6366f1</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sample Schedule Display -->
+        <div class="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div class="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+                    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Sample Weekly Schedule
+                </h2>
+                <p class="text-green-200 text-sm mt-1">Notice how the same classes have the same colors across different days</p>
+            </div>
+
+            <div class="p-6">
+                <!-- Monday -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span class="px-3 py-1 bg-green-600 text-white rounded-lg">Monday</span>
+                    </h3>
+                    <div class="bg-green-100 border-2 border-green-300 rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-green-200">
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900 w-12">Color</th>
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">Time Range</th>
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">Class Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white border-b border-green-200">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #10b981;" title="#10b981"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">8:00 AM - 9:30 AM</td>
+                                    <td class="px-4 py-3 text-gray-900">Data Structures and Algorithms</td>
+                                </tr>
+                                <tr class="bg-green-100/50 border-b border-green-200">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #3b82f6;" title="#3b82f6"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">10:00 AM - 11:30 AM</td>
+                                    <td class="px-4 py-3 text-gray-900">Web Development Fundamentals</td>
+                                </tr>
+                                <tr class="bg-white">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #f59e0b;" title="#f59e0b"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">1:00 PM - 2:30 PM</td>
+                                    <td class="px-4 py-3 text-gray-900">Database Management Systems</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tuesday -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span class="px-3 py-1 bg-green-600 text-white rounded-lg">Tuesday</span>
+                    </h3>
+                    <div class="bg-green-100 border-2 border-green-300 rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-green-200">
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900 w-12">Color</th>
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">Time Range</th>
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">Class Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white border-b border-green-200">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #ef4444;" title="#ef4444"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">9:00 AM - 10:30 AM</td>
+                                    <td class="px-4 py-3 text-gray-900">Software Engineering Principles</td>
+                                </tr>
+                                <tr class="bg-green-100/50">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #8b5cf6;" title="#8b5cf6"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">2:00 PM - 3:30 PM</td>
+                                    <td class="px-4 py-3 text-gray-900">Computer Networks</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Wednesday -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+                        <span class="px-3 py-1 bg-green-600 text-white rounded-lg">Wednesday</span>
+                    </h3>
+                    <div class="bg-green-100 border-2 border-green-300 rounded-lg overflow-hidden">
+                        <table class="w-full">
+                            <thead>
+                                <tr class="bg-green-200">
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900 w-12">Color</th>
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">Time Range</th>
+                                    <th class="px-4 py-3 text-left text-sm font-bold text-gray-900">Class Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white border-b border-green-200">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #ec4899;" title="#ec4899"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">8:00 AM - 9:30 AM</td>
+                                    <td class="px-4 py-3 text-gray-900">Operating Systems</td>
+                                </tr>
+                                <tr class="bg-green-100/50 border-b border-green-200">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #06b6d4;" title="#06b6d4"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">11:00 AM - 12:30 PM</td>
+                                    <td class="px-4 py-3 text-gray-900">Mobile Application Development</td>
+                                </tr>
+                                <tr class="bg-white">
+                                    <td class="px-4 py-3">
+                                        <div class="w-8 h-8 rounded-full shadow-md border-2 border-white" style="background-color: #f97316;" title="#f97316"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium">1:30 PM - 3:00 PM</td>
+                                    <td class="px-4 py-3 text-gray-900">Artificial Intelligence</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features List -->
+        <div class="mt-8 bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Key Features</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="flex items-start gap-3 p-4 bg-green-50 rounded-lg">
+                    <svg class="w-6 h-6 text-green-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-1">Automatic Assignment</h3>
+                        <p class="text-sm text-gray-600">Colors are automatically assigned when you save your schedule</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 p-4 bg-blue-50 rounded-lg">
+                    <svg class="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-1">Visual Clarity</h3>
+                        <p class="text-sm text-gray-600">Quickly identify different classes by their unique colors</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 p-4 bg-purple-50 rounded-lg">
+                    <svg class="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-1">Persistent Colors</h3>
+                        <p class="text-sm text-gray-600">Colors remain consistent across sessions and page refreshes</p>
+                    </div>
+                </div>
+                <div class="flex items-start gap-3 p-4 bg-amber-50 rounded-lg">
+                    <svg class="w-6 h-6 text-amber-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <div>
+                        <h3 class="font-semibold text-gray-900 mb-1">10 Distinct Colors</h3>
+                        <p class="text-sm text-gray-600">Carefully selected palette for maximum visual distinction</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="mt-8 text-center text-gray-600">
+            <p class="text-sm">Implementation Date: March 19, 2026</p>
+            <p class="text-xs mt-1">Status: ✅ Complete and Ready for Use</p>
+        </div>
+    </div>
+</body>
+</html>

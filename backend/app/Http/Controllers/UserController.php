@@ -4,19 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class UserController extends Controller
 {
     public function index()
     {
-        // Get all users excluding admins, with role filtering
-        $users = User::where('role', '!=', 'Admin')
-            ->orderBy('role')
-            ->orderBy('name', 'asc')
-            ->get();
+        // Cache for 10 minutes - this is the key optimization
+        $members = Cache::remember('users_list_non_admin', 600, function () {
+            return User::where('role', '!=', 'Admin')
+                ->where('is_validated', true)
+                ->select('id', 'name', 'email', 'department', 'role', 'is_validated')
+                ->orderBy('role')
+                ->orderBy('name', 'asc')
+                ->limit(500) // Add limit to prevent huge result sets
+                ->get();
+        });
 
         return response()->json([
-            'members' => $users->map(fn($user) => [
+            'members' => $members->map(fn($user) => [
                 'id' => $user->id,
                 'username' => $user->name,
                 'email' => $user->email,

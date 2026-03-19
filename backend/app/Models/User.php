@@ -124,6 +124,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Event::class, 'host_id');
     }
 
+    public function schedules()
+    {
+        return $this->hasMany(UserSchedule::class);
+    }
+
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPasswordNotification($token));

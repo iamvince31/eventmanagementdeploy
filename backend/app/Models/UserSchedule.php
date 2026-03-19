@@ -11,7 +11,8 @@ class UserSchedule extends Model
         'day',
         'start_time',
         'end_time',
-        'description'
+        'description',
+        'color'
     ];
 
     public function user()

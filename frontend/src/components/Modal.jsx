@@ -55,6 +55,9 @@ export default function Modal({ isOpen, onClose, title, children, fullscreen = f
         <div className={`${noPadding ? 'p-0' : 'p-4 sm:p-5 lg:p-6'} overflow-y-auto flex-1 overscroll-contain`}>
           {children}
         </div>
+
+        {/* Bottom Spacing - matches header padding on laptop screens */}
+        <div className="hidden lg:block flex-shrink-0 h-6"></div>
       </div>
     </div>
   );

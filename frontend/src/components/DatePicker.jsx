@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 
-export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDate, className = '', excludeSundays = false }) {
+export default function DatePicker({ selectedDate, onDateSelect, minDate, maxDate, className = '', excludeSundays = true }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const datePickerRef = useRef(null);

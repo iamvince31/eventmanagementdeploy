@@ -205,40 +205,42 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
     setLoading(true);
 
+    // Declare formData outside try block so it's accessible in catch block
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('location', location);
+    formData.append('event_type', eventType);
+    formData.append('date', date);
+    formData.append('time', time);
+    
+    // Add justification for Faculty/Staff events
+    if ((currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') && 
+        eventType === 'event') {
+      formData.append('justification', justification);
+    }
+    
+    // Always append school_year (it should always have a value)
+    console.log('Submitting with school_year:', schoolYear);
+    formData.append('school_year', schoolYear);
+
+    images.forEach((image) => {
+      formData.append('images[]', image);
+    });
+
+    selectedMembers.forEach(id => {
+      formData.append('member_ids[]', id);
+    });
+
+    // Add approved_request_id if creating from an approved request
+    if (selectedApprovedRequest) {
+      console.log('Adding approved_request_id:', selectedApprovedRequest.id);
+      formData.append('approved_request_id', selectedApprovedRequest.id);
+    } else {
+      console.log('No approved request selected');
+    }
+
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('location', location);
-      formData.append('event_type', eventType);
-      formData.append('date', date);
-      formData.append('time', time);
-      
-      // Add justification for Faculty/Staff events
-      if ((currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') && 
-          eventType === 'event') {
-        formData.append('justification', justification);
-      }
-      
-      // Always append school_year (it should always have a value)
-      console.log('Submitting with school_year:', schoolYear);
-      formData.append('school_year', schoolYear);
-
-      images.forEach((image) => {
-        formData.append('images[]', image);
-      });
-
-      selectedMembers.forEach(id => {
-        formData.append('member_ids[]', id);
-      });
-
-      // Add approved_request_id if creating from an approved request
-      if (selectedApprovedRequest) {
-        console.log('Adding approved_request_id:', selectedApprovedRequest.id);
-        formData.append('approved_request_id', selectedApprovedRequest.id);
-      } else {
-        console.log('No approved request selected');
-      }
 
       if (editingEvent) {
         await api.post(`/events/${editingEvent.id}`, formData, {
@@ -264,7 +266,36 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     } catch (err) {
       console.error('Error creating event:', err);
       console.error('Error response:', err.response?.data);
-      setError(err.response?.data?.error || err.response?.data?.message || 'Operation failed');
+      
+      // Handle schedule conflict warning (409 status) - Auto-proceed without confirmation
+      if (err.response?.status === 409 && err.response?.data?.warning === 'schedule_conflict') {
+        const conflicts = err.response.data.conflicts;
+        
+        // Log conflicts for debugging
+        console.log('Schedule conflicts detected:', conflicts);
+        
+        // Automatically retry with ignore_conflicts flag (no user confirmation needed)
+        formData.append('ignore_conflicts', 'true');
+        
+        try {
+          const retryResponse = await api.post('/events', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+          
+          if (retryResponse.data.status === 'pending_approval') {
+            setSuccess(`Event submitted for approval. Waiting for approval from: ${retryResponse.data.approvers_needed.join(', ')}`);
+          } else {
+            setSuccess('Event created successfully');
+          }
+          resetForm();
+          onEventCreated();
+        } catch (retryErr) {
+          console.error('Error on retry:', retryErr);
+          setError(retryErr.response?.data?.error || retryErr.response?.data?.message || 'Operation failed');
+        }
+      } else {
+        setError(err.response?.data?.error || err.response?.data?.message || 'Operation failed');
+      }
     } finally {
       setLoading(false);
     }

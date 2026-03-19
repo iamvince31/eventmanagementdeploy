@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Dashboard Semester Test</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // Mock semester detection function
+        const getCurrentSemester = () => {
+            const now = new Date();
+            const month = now.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+            
+            // First Semester: September (9) to January (1)
+            if (month >= 9 || month <= 1) {
+                return { name: 'First Semester', period: 'September - January', active: true };
+            }
+            // Second Semester: February (2) to June (6)
+            else if (month >= 2 && month <= 6) {
+                return { name: 'Second Semester', period: 'February - June', active: true };
+            }
+            // Mid-Year/Summer: July (7) to August (8)
+            else if (month >= 7 && month <= 8) {
+                return { name: 'Mid-Year/Summer', period: 'July - August', active: true };
+            }
+            
+            return { name: 'Break Period', period: 'Between Semesters', active: false };
+        };
+
+        // Test component to demonstrate semester detection
+        const SemesterTest = () => {
+            const [testDate, setTestDate] = React.useState(new Date());
+            
+            const getTestSemester = (date) => {
+                const month = date.getMonth() + 1;
+                
+                if (month >= 9 || month <= 1) {
+                    return { name: 'First Semester', period: 'September - January', active: true };
+                }
+                else if (month >= 2 && month <= 6) {
+                    return { name: 'Second Semester', period: 'February - June', active: true };
+                }
+                else if (month >= 7 && month <= 8) {
+                    return { name: 'Mid-Year/Summer', period: 'July - August', active: true };
+                }
+                
+                return { name: 'Break Period', period: 'Between Semesters', active: false };
+            };
+
+            const currentSemester = getCurrentSemester();
+            const testSemester = getTestSemester(testDate);
+
+            const testDates = [
+                new Date(2026, 0, 15), // January
+                new Date(2026, 1, 15), // February
+                new Date(2026, 2, 15), // March
+                new Date(2026, 3, 15), // April
+                new Date(2026, 4, 15), // May
+                new Date(2026, 5, 15), // June
+                new Date(2026, 6, 15), // July
+                new Date(2026, 7, 15), // August
+                new Date(2026, 8, 15), // September
+                new Date(2026, 9, 15), // October
+                new Date(2026, 10, 15), // November
+                new Date(2026, 11, 15), // December
+            ];
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 p-8">
+                    <div className="max-w-4xl mx-auto">
+                        <h1 className="text-3xl font-bold text-gray-900 mb-8">Account Dashboard Semester Test</h1>
+                        
+                        {/* Current Semester Display */}
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mb-8">
+                            <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            Class Schedule
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                                                currentSemester.active 
+                                                    ? 'bg-green-500/20 text-green-100 border border-green-400/30' 
+                                                    : 'bg-orange-500/20 text-orange-100 border border-orange-400/30'
+                                            }`}>
+                                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                                {currentSemester.name}
+                                            </span>
+                                        </h3>
+                                        <p className="text-green-200 text-sm mt-1">
+                                            Current semester: {currentSemester.period}
+                                        </p>
+                                        {!currentSemester.active && (
+                                            <div className="mt-2 flex items-center gap-2 text-orange-200 text-sm">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Schedules are hidden during break periods
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="p-6">
+                                {/* Semester Information Panel */}
+                                <div className={`mb-6 p-4 rounded-lg border-2 ${
+                                    currentSemester.active 
+                                        ? 'bg-green-50 border-green-200' 
+                                        : 'bg-orange-50 border-orange-200'
+                                }`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`p-2 rounded-full ${
+                                                currentSemester.active ? 'bg-green-100' : 'bg-orange-100'
+                                            }`}>
+                                                <svg className={`w-5 h-5 ${
+                                                    currentSemester.active ? 'text-green-600' : 'text-orange-600'
+                                                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h4 className={`font-bold ${
+                                                    currentSemester.active ? 'text-green-800' : 'text-orange-800'
+                                                }`}>
+                                                    {currentSemester.name}
+                                                </h4>
+                                                <p className={`text-sm ${
+                                                    currentSemester.active ? 'text-green-600' : 'text-orange-600'
+                                                }`}>
+                                                    {currentSemester.period}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                                            currentSemester.active 
+                                                ? 'bg-green-200 text-green-800' 
+                                                : 'bg-orange-200 text-orange-800'
+                                        }`}>
+                                            {currentSemester.active ? 'Active Period' : 'Break Period'}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Test All Months */}
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+                            <div className="bg-gradient-to-r from-blue-700 via-blue-600 to-blue-800 px-8 py-6">
+                                <h3 className="text-2xl font-bold text-white">Semester Detection Test</h3>
+                                <p className="text-blue-200 text-sm mt-1">Test semester detection for all months</p>
+                            </div>
+                            
+                            <div className="p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {testDates.map((date, index) => {
+                                        const semester = getTestSemester(date);
+                                        const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+                                        
+                                        return (
+                                            <div key={index} className={`p-4 rounded-lg border-2 ${
+                                                semester.active 
+                                                    ? 'bg-green-50 border-green-200' 
+                                                    : 'bg-orange-50 border-orange-200'
+                                            }`}>
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <div className={`w-3 h-3 rounded-full ${
+                                                        semester.active ? 'bg-green-500' : 'bg-orange-500'
+                                                    }`}></div>
+                                                    <h4 className="font-bold text-gray-800">{monthName}</h4>
+                                                </div>
+                                                <p className={`text-sm font-medium ${
+                                                    semester.active ? 'text-green-700' : 'text-orange-700'
+                                                }`}>
+                                                    {semester.name}
+                                                </p>
+                                                <p className={`text-xs ${
+                                                    semester.active ? 'text-green-600' : 'text-orange-600'
+                                                }`}>
+                                                    {semester.period}
+                                                </p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Semester Guide */}
+                        <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <h5 className="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Semester System Guide
+                            </h5>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                                <div className="flex items-center gap-2 p-2 bg-blue-50 rounded border border-blue-200">
+                                    <div className="w-3 h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+                                    <div>
+                                        <p className="font-semibold text-blue-800">First Semester</p>
+                                        <p className="text-blue-600">September - January</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                                    <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0"></div>
+                                    <div>
+                                        <p className="font-semibold text-green-800">Second Semester</p>
+                                        <p className="text-green-600">February - June</p>
+                                    </div>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200">
+                                    <div className="w-3 h-3 bg-purple-500 rounded-full flex-shrink-0"></div>
+                                    <div>
+                                        <p className="font-semibold text-purple-800">Mid-Year/Summer</p>
+                                        <p className="text-purple-600">July - August</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <p className="text-xs text-gray-600 mt-3">
+                                <strong>Note:</strong> Class schedules are only visible on the calendar during active semester periods. 
+                                You can manage your schedule year-round, but it will be hidden during break periods between semesters.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<SemesterTest />, document.getElementById('root'));
+    </script>
+</body>
+</html>

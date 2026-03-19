@@ -107,7 +107,13 @@ class DefaultEventController extends Controller
             ], 404);
         }
 
-        // Sunday validation removed - events can now be scheduled on Sundays
+        // Sunday validation - default events cannot be scheduled on Sundays
+        $eventDate = \Carbon\Carbon::parse($request->date);
+        if ($eventDate->dayOfWeek === 0) { // 0 = Sunday
+            return response()->json([
+                'error' => 'Default events cannot be scheduled on Sundays.'
+            ], 422);
+        }
 
         // Validate school year format (e.g., "2024-2025")
         if (!preg_match('/^\d{4}-\d{4}$/', $request->school_year)) {
@@ -134,7 +140,12 @@ class DefaultEventController extends Controller
         if ($request->end_date) {
             $endDate = \Carbon\Carbon::parse($request->end_date);
             
-            // Sunday validation removed - end dates can now be on Sundays
+            // Sunday validation - end dates cannot be on Sundays
+            if ($endDate->dayOfWeek === 0) { // 0 = Sunday
+                return response()->json([
+                    'error' => 'Default event end dates cannot be on Sundays.'
+                ], 422);
+            }
             
             if ($endDate->lt($schoolYearStart) || $endDate->gt($schoolYearEnd)) {
                 return response()->json([

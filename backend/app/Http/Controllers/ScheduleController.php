@@ -8,13 +8,27 @@ use Illuminate\Support\Facades\Auth;
 
 class ScheduleController extends Controller
 {
+    // Predefined color palette for class schedules
+    private $colorPalette = [
+        '#10b981', // Green
+        '#3b82f6', // Blue
+        '#f59e0b', // Amber
+        '#ef4444', // Red
+        '#8b5cf6', // Purple
+        '#ec4899', // Pink
+        '#06b6d4', // Cyan
+        '#f97316', // Orange
+        '#14b8a6', // Teal
+        '#6366f1', // Indigo
+    ];
+
     public function index()
     {
         $user = Auth::user();
         
         // Fetch all schedules in one query with specific columns only
         $schedules = UserSchedule::where('user_id', $user->id)
-            ->select('id', 'day', 'start_time', 'end_time', 'description')
+            ->select('id', 'day', 'start_time', 'end_time', 'description', 'color')
             ->orderBy('day')
             ->orderBy('start_time')
             ->get();
@@ -29,7 +43,8 @@ class ScheduleController extends Controller
                 'id' => $schedule->id,
                 'startTime' => $schedule->start_time,
                 'endTime' => $schedule->end_time,
-                'description' => $schedule->description
+                'description' => $schedule->description,
+                'color' => $schedule->color
             ];
         }
 
@@ -59,6 +74,10 @@ class ScheduleController extends Controller
             // Prepare bulk insert data
             $schedules = [];
             $now = now();
+            
+            // Track unique class descriptions and assign colors
+            $classColorMap = [];
+            $colorIndex = 0;
             
             foreach ($request->schedule as $day => $classes) {
                 // Validate day name
@@ -90,12 +109,24 @@ class ScheduleController extends Controller
                         throw new \Exception("Start time must be before end time for {$day} (Start: {$normalizedStart}, End: {$normalizedEnd})");
                     }
                     
+                    // Get description and normalize it for color mapping
+                    $description = $class['description'] ?? '';
+                    $normalizedDescription = strtolower(trim($description));
+                    
+                    // Assign color based on class description (same description = same color)
+                    if (!isset($classColorMap[$normalizedDescription])) {
+                        $classColorMap[$normalizedDescription] = $this->colorPalette[$colorIndex % count($this->colorPalette)];
+                        $colorIndex++;
+                    }
+                    $color = $classColorMap[$normalizedDescription];
+                    
                     $schedules[] = [
                         'user_id' => $user->id,
                         'day' => $day,
                         'start_time' => $normalizedStart,
                         'end_time' => $normalizedEnd,
-                        'description' => $class['description'] ?? '',
+                        'description' => $description,
+                        'color' => $color,
                         'created_at' => $now,
                         'updated_at' => $now
                     ];

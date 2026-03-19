@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      screens: {
+        'laptop': '1440px',
+      },
       colors: {
         primary: {
           50: '#f0fdf4',

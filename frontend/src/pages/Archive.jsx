@@ -16,6 +16,7 @@ export default function Archive() {
     const [filterYear, setFilterYear] = useState('');
     const [filterMonth, setFilterMonth] = useState('');
     const [filterCategory, setFilterCategory] = useState('');
+    const [filterAcademicYear, setFilterAcademicYear] = useState('');
 
     const location = useLocation();
 
@@ -69,11 +70,17 @@ export default function Archive() {
         const matchesYear = filterYear === '' || eventYear === filterYear;
         const matchesMonth = filterMonth === '' || eventMonth === filterMonth;
         const matchesCategory = filterCategory === '' || event.event_type === filterCategory;
+        const matchesAcademicYear = filterAcademicYear === '' || event.school_year === filterAcademicYear;
 
-        return matchesYear && matchesMonth && matchesCategory;
+        return matchesYear && matchesMonth && matchesCategory && matchesAcademicYear;
     });
 
     const years = [...new Set(events.map(e => new Date(e.date).getFullYear()))].sort((a, b) => b - a);
+    const academicYears = [...new Set(events.map(e => e.school_year).filter(Boolean))].sort((a, b) => {
+        const [aStart] = a.split('-').map(Number);
+        const [bStart] = b.split('-').map(Number);
+        return bStart - aStart;
+    });
     const months = [
         { value: '1', label: 'January' },
         { value: '2', label: 'February' },
@@ -114,7 +121,21 @@ export default function Archive() {
                 <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between bg-white p-6 rounded-2xl shadow-sm border border-gray-100 gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Archived Events</h1>
-                        <p className="mt-2 text-gray-600">View deeply historical system events.</p>
+                        <p className="mt-2 text-gray-600">View past academic events from different academic years.</p>
+                        {events.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="font-semibold text-purple-600">{events.length}</span>
+                                    <span className="text-gray-500">Total Events</span>
+                                </div>
+                                {academicYears.length > 0 && (
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span className="font-semibold text-green-600">{academicYears.length}</span>
+                                        <span className="text-gray-500">Academic Years</span>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <button
                         onClick={handleArchivePastEvents}
@@ -150,6 +171,17 @@ export default function Archive() {
                     </div>
 
                     <select
+                        value={filterAcademicYear}
+                        onChange={(e) => setFilterAcademicYear(e.target.value)}
+                        className="text-sm border-gray-200 rounded-lg focus:ring-purple-500 focus:border-purple-500"
+                    >
+                        <option value="">All Academic Years</option>
+                        {academicYears.map(year => (
+                            <option key={year} value={year}>{year}</option>
+                        ))}
+                    </select>
+
+                    <select
                         value={filterYear}
                         onChange={(e) => setFilterYear(e.target.value)}
                         className="text-sm border-gray-200 rounded-lg focus:ring-purple-500 focus:border-purple-500"
@@ -181,12 +213,13 @@ export default function Archive() {
                         <option value="meeting">Meeting</option>
                     </select>
 
-                    {(filterYear || filterMonth || filterCategory) && (
+                    {(filterYear || filterMonth || filterCategory || filterAcademicYear) && (
                         <button
                             onClick={() => {
                                 setFilterYear('');
                                 setFilterMonth('');
                                 setFilterCategory('');
+                                setFilterAcademicYear('');
                             }}
                             className="text-sm text-purple-600 hover:text-purple-700 font-medium ml-auto"
                         >
@@ -254,6 +287,7 @@ export default function Archive() {
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Details</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Academic Year</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
                                         <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
@@ -270,6 +304,15 @@ export default function Archive() {
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">
+                                                {event.school_year ? (
+                                                    <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                        {event.school_year}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-gray-400">N/A</span>
+                                                )}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${event.event_type === 'meeting' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
                                                     }`}>
                                                     {event.event_type.charAt(0).toUpperCase() + event.event_type.slice(1)}
@@ -281,7 +324,6 @@ export default function Archive() {
                                                         {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                                                     </span>
                                                     <span className="text-xs">{event.time}</span>
-                                                    {event.school_year && <span className="text-[10px] text-gray-400 font-mono">{event.school_year}</span>}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

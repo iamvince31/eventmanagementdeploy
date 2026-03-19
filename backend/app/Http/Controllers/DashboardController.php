@@ -5,11 +5,63 @@ namespace App\Http\Controllers;
 use App\Models\Event;
 use App\Models\DefaultEvent;
 use App\Models\User;
+use App\Models\UserSchedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
 class DashboardController extends Controller
 {
+    /**
+     * Determine the current semester based on the date
+     * 
+     * @param \DateTime $date
+     * @return string|null
+     */
+    private function getCurrentSemester(\DateTime $date)
+    {
+        $month = (int)$date->format('m');
+        
+        // First Semester: September (9) to January (1)
+        if ($month >= 9 || $month <= 1) {
+            return 'first';
+        }
+        
+        // Second Semester: February (2) to June (6)
+        if ($month >= 2 && $month <= 6) {
+            return 'second';
+        }
+        
+        // Mid-Year/Summer: July (7) to August (8)
+        if ($month >= 7 && $month <= 8) {
+            return 'midyear';
+        }
+        
+        return null;
+    }
+
+    /**
+     * Check if a given date falls within the current semester
+     * 
+     * @param \DateTime $checkDate
+     * @param string $currentSemester
+     * @return bool
+     */
+    private function isDateInCurrentSemester(\DateTime $checkDate, string $currentSemester)
+    {
+        $month = (int)$checkDate->format('m');
+        
+        switch ($currentSemester) {
+            case 'first':
+                return $month >= 9 || $month <= 1;
+            case 'second':
+                return $month >= 2 && $month <= 6;
+            case 'midyear':
+                return $month >= 7 && $month <= 8;
+            default:
+                return false;
+        }
+    }
+
     /**
      * Get all dashboard data in a single optimized request
      */
@@ -28,7 +80,8 @@ class DashboardController extends Controller
             ? ($currentYear + 1) . "-" . ($currentYear + 2)
             : "{$currentYear}-" . ($currentYear + 1);
 
-        // Fetch events with optimized eager loading
+        // Fetch events with optimized eager loading - use index on host_id
+        // Limit to recent events to avoid huge result sets
         $events = Event::with([
                 'host:id,name,email',
                 'members:id,name,email',
@@ -39,27 +92,44 @@ class DashboardController extends Controller
                     $query->where('status', 'pending');
                 }
             ])
-            ->where(function ($query) use ($user) {
-                $query->where('host_id', $user->id)
-                    ->orWhereHas('members', function ($q) use ($user) {
-                        $q->where('users.id', $user->id);
-                    });
-            })
-            ->where(function ($query) use ($user) {
-                $query->where('is_personal', false)
-                    ->orWhere(function ($q) use ($user) {
-                        $q->where('is_personal', true)->where('host_id', $user->id);
-                    });
-            })
-            ->orderBy('date')
-            ->orderBy('time')
+            ->where('host_id', $user->id)
+            ->where('is_personal', false)
+            ->where('date', '>=', now()->subMonths(3)->format('Y-m-d')) // Only last 3 months
+            ->orderBy('date', 'desc')
+            ->orderBy('time', 'desc')
+            ->limit(100)
             ->get();
 
-        // Cache members list for 5 minutes
-        $members = Cache::remember('users_list', 300, function () {
+        // Get member events separately to avoid expensive orWhereHas
+        $memberEvents = Event::with([
+                'host:id,name,email',
+                'members:id,name,email',
+                'images:id,event_id,image_path,original_filename,order'
+            ])
+            ->withCount([
+                'rescheduleRequests as has_pending_reschedule_requests' => function ($query) {
+                    $query->where('status', 'pending');
+                }
+            ])
+            ->whereHas('members', function ($q) use ($user) {
+                $q->where('users.id', $user->id);
+            })
+            ->where('is_personal', false)
+            ->where('date', '>=', now()->subMonths(3)->format('Y-m-d')) // Only last 3 months
+            ->orderBy('date', 'desc')
+            ->orderBy('time', 'desc')
+            ->limit(100)
+            ->get();
+
+        // Merge and deduplicate
+        $allEvents = $events->merge($memberEvents)->unique('id');
+
+        // Cache members list for 10 minutes
+        $members = Cache::remember('users_list', 600, function () {
             return User::select('id', 'name', 'email', 'role', 'department')
                 ->where('is_validated', true)
                 ->orderBy('name')
+                ->limit(500)
                 ->get();
         });
 
@@ -70,10 +140,11 @@ class DashboardController extends Controller
                     ->orWhereNull('school_year');
             })
             ->orderBy('date')
+            ->limit(100)
             ->get();
 
         // Transform events
-        $transformedEvents = $events->map(function ($event) {
+        $transformedEvents = $allEvents->map(function ($event) {
             return [
                 'id' => $event->id,
                 'title' => $event->title,
@@ -116,9 +187,41 @@ class DashboardController extends Controller
             ];
         });
 
+        // Get current semester
+        $currentSemester = $this->getCurrentSemester($now);
+
+        // Fetch user schedules
+        $userSchedules = UserSchedule::where('user_id', $user->id)
+            ->select('id', 'day', 'start_time', 'end_time', 'description', 'color')
+            ->orderBy('day')
+            ->orderBy('start_time')
+            ->get();
+
+        // Transform user schedules for calendar display with semester filtering
+        $transformedSchedules = $userSchedules->map(function ($schedule) use ($currentSemester) {
+            // Format time to HH:MM (remove seconds if present)
+            $startTime = substr($schedule->start_time, 0, 5);
+            $endTime = substr($schedule->end_time, 0, 5);
+            
+            return [
+                'id' => 'schedule-' . $schedule->id,
+                'title' => $schedule->description ?: 'Class',
+                'description' => $schedule->description,
+                'day' => $schedule->day,
+                'start_time' => $startTime,
+                'end_time' => $endTime,
+                'time' => $startTime . ' - ' . $endTime,
+                'color' => $schedule->color,
+                'is_schedule' => true,
+                'type' => 'schedule',
+                'semester' => $currentSemester
+            ];
+        });
+
         return response()->json([
             'events' => $transformedEvents,
             'defaultEvents' => $transformedDefaultEvents,
+            'userSchedules' => $transformedSchedules,
             'members' => $members,
             'schoolYear' => $schoolYear,
             'nextSchoolYear' => $nextSchoolYear,

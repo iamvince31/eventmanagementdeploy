@@ -17,14 +17,18 @@ export default function NotificationBell({ events, user, onNotificationClick, ap
     event.members.some(member => member.id === user?.id && member.status === 'pending')
   );
 
-  // Fetch messages
+  // Fetch messages with debouncing
   useEffect(() => {
     if (user) {
-      fetchMessages();
-      // Fetch pending validations if user is admin
-      if (user.role === 'Admin') {
-        fetchPendingValidations();
-      }
+      const timer = setTimeout(() => {
+        fetchMessages();
+        // Fetch pending validations if user is admin
+        if (user.role === 'Admin') {
+          fetchPendingValidations();
+        }
+      }, 500); // Debounce by 500ms
+      
+      return () => clearTimeout(timer);
     }
   }, [user]);
 

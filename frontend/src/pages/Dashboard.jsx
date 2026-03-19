@@ -13,6 +13,7 @@ export default function Dashboard() {
   const { user, logout } = useAuth();
   const [events, setEvents] = useState([]);
   const [defaultEvents, setDefaultEvents] = useState([]);
+  const [userSchedules, setUserSchedules] = useState([]);
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
@@ -81,7 +82,7 @@ export default function Dashboard() {
     try {
       // Use the new optimized dashboard endpoint
       const response = await api.get('/dashboard');
-      const { events: fetchedEvents, defaultEvents: fetchedDefaultEvents, members: fetchedMembers } = response.data;
+      const { events: fetchedEvents, defaultEvents: fetchedDefaultEvents, userSchedules: fetchedUserSchedules, members: fetchedMembers } = response.data;
       
       // Filter out default events from the regular events list to avoid duplicates
       const regularEventsOnly = fetchedEvents.filter(event => !event.is_default_event);
@@ -89,8 +90,9 @@ export default function Dashboard() {
       setEvents(regularEventsOnly);
       setMembers(fetchedMembers);
       setDefaultEvents(fetchedDefaultEvents);
+      setUserSchedules(fetchedUserSchedules || []);
 
-      // Auto-select today's events (including default events)
+      // Auto-select today's events (including default events and schedule events)
       const today = new Date();
       const todayStr = today.toISOString().split('T')[0];
       const todayRegularEvents = regularEventsOnly.filter(event => event.date === todayStr);
@@ -117,8 +119,54 @@ export default function Dashboard() {
         members: [],
         images: []
       }));
+
+      // Get schedule events for today
+      const todayDate = new Date(todayStr);
+      const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const dayName = dayNames[dayOfWeek];
+
+      // Get current semester (based on today's date)
+      const currentDate = new Date();
+      const currentMonth = currentDate.getMonth() + 1;
+      let currentSemester;
       
-      setSelectedDateEvents([...todayRegularEvents, ...todayDefaultEvents]);
+      if (currentMonth >= 9 || currentMonth <= 1) {
+        currentSemester = 'first';
+      } else if (currentMonth >= 2 && currentMonth <= 6) {
+        currentSemester = 'second';
+      } else if (currentMonth >= 7 && currentMonth <= 8) {
+        currentSemester = 'midyear';
+      }
+
+      // Check if today falls within the current semester (it should, but let's be explicit)
+      const todayMonth = todayDate.getMonth() + 1;
+      let todayInCurrentSemester = false;
+      
+      if (currentSemester === 'first' && (todayMonth >= 9 || todayMonth <= 1)) {
+        todayInCurrentSemester = true;
+      } else if (currentSemester === 'second' && (todayMonth >= 2 && todayMonth <= 6)) {
+        todayInCurrentSemester = true;
+      } else if (currentSemester === 'midyear' && (todayMonth >= 7 && todayMonth <= 8)) {
+        todayInCurrentSemester = true;
+      }
+
+      const todayScheduleEvents = (fetchedUserSchedules || []).filter(schedule => {
+        if (schedule.day !== dayName) {
+          return false;
+        }
+        
+        // Only show schedules when today falls within the current semester
+        return todayInCurrentSemester;
+      }).map(schedule => ({
+        ...schedule,
+        is_schedule: true,
+        host: { id: user?.id || 0, username: user?.name || 'You', email: user?.email || '' },
+        members: [],
+        images: []
+      }));
+      
+      setSelectedDateEvents([...todayRegularEvents, ...todayDefaultEvents, ...todayScheduleEvents]);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -135,10 +183,6 @@ export default function Dashboard() {
   };
 
   const handleDelete = async (event) => {
-    if (!window.confirm(`Are you sure you want to delete "${event.title}"?`)) {
-      return;
-    }
-
     try {
       await api.delete(`/events/${event.id}`);
       await fetchData();
@@ -199,9 +243,56 @@ export default function Dashboard() {
       members: [],
       images: []
     }));
+
+    // Get schedule events for this date
+    const checkDate = new Date(date);
+    const dayOfWeek = checkDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const dayName = dayNames[dayOfWeek];
+
+    // Get current semester (based on today's date)
+    const currentDate = new Date();
+    const currentMonth = currentDate.getMonth() + 1;
+    let currentSemester;
     
-    // Combine regular events with default events
-    const allEvents = [...events, ...defaultEventsForDate];
+    if (currentMonth >= 9 || currentMonth <= 1) {
+      currentSemester = 'first';
+    } else if (currentMonth >= 2 && currentMonth <= 6) {
+      currentSemester = 'second';
+    } else if (currentMonth >= 7 && currentMonth <= 8) {
+      currentSemester = 'midyear';
+    }
+
+    // Check if the specific date falls within the current semester
+    const dateMonth = checkDate.getMonth() + 1;
+    let dateInCurrentSemester = false;
+    
+    if (currentSemester === 'first' && (dateMonth >= 9 || dateMonth <= 1)) {
+      dateInCurrentSemester = true;
+    } else if (currentSemester === 'second' && (dateMonth >= 2 && dateMonth <= 6)) {
+      dateInCurrentSemester = true;
+    } else if (currentSemester === 'midyear' && (dateMonth >= 7 && dateMonth <= 8)) {
+      dateInCurrentSemester = true;
+    }
+
+    const scheduleEventsForDate = userSchedules.filter(schedule => {
+      if (schedule.day !== dayName) {
+        return false;
+      }
+      
+      // Only show schedules during the current semester period
+      // This ensures Tuesday classes only show on Tuesdays within the current semester
+      return dateInCurrentSemester;
+    }).map(schedule => ({
+      ...schedule,
+      is_schedule: true,
+      host: { id: user?.id || 0, username: user?.name || 'You', email: user?.email || '' },
+      members: [],
+      images: []
+    }));
+    
+    // Combine regular events with default events and schedule events
+    const allEvents = [...events, ...defaultEventsForDate, ...scheduleEventsForDate];
     setSelectedDateEvents(allEvents);
   };
 
@@ -326,6 +417,7 @@ export default function Dashboard() {
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url.startsWith('/') ? url : '/' + url}`;
   };
+  const getImageUrl = (image) => getFixedImageUrl(typeof image === 'string' ? image : image?.url);
 
   // Helper function for add event click
   const handleAddEventClick = () => {
@@ -453,6 +545,7 @@ export default function Dashboard() {
               <Calendar
                 events={events}
                 defaultEvents={defaultEvents}
+                userSchedules={userSchedules}
                 onDateSelect={handleDateSelect}
                 highlightedDate={highlightedDate}
                 currentUser={user}
@@ -472,7 +565,9 @@ export default function Dashboard() {
         maxWidth="max-w-2xl"
       >
         {selectedEvent && (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="flex flex-col lg:grid lg:grid-cols-[1.05fr,1fr] lg:gap-6 space-y-4 sm:space-y-6 lg:space-y-0">
+            {/* Left Column: details, participants, actions */}
+            <div className="space-y-4 sm:space-y-6">
             {/* User's Own Schedule Conflict Warning */}
             {checkScheduleConflict(selectedEvent) && (
               <div className="bg-orange-50 border-l-4 border-orange-400 p-3 sm:p-4 rounded-xl">
@@ -604,159 +699,6 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Images/Files Carousel */}
-            {selectedEvent.images && selectedEvent.images.length > 0 && (
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Event Files ({selectedEvent.images.length})</h4>
-                <div className="relative">
-                  {/* Main File Display */}
-                  <div className="relative w-full h-48 sm:h-64 bg-gray-100 rounded-xl overflow-hidden">
-                    {(typeof selectedEvent.images[currentImageIndex] === 'string' 
-                      ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
-                      : selectedEvent.images[currentImageIndex].url
-                    ).toLowerCase().endsWith('.pdf') ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-3 sm:p-4">
-                        <svg className="w-16 h-16 sm:w-20 sm:h-20 text-red-600 mb-2 sm:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-gray-700 font-medium mb-1 text-sm sm:text-base">PDF Document</p>
-                        <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 text-center break-all px-2 sm:px-4">
-                          {typeof selectedEvent.images[currentImageIndex] === 'object' && selectedEvent.images[currentImageIndex].original_filename
-                            ? selectedEvent.images[currentImageIndex].original_filename
-                            : decodeURIComponent((typeof selectedEvent.images[currentImageIndex] === 'string' 
-                                ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
-                                : selectedEvent.images[currentImageIndex].url
-                              ).split('/').pop())}
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <a
-                            href={typeof selectedEvent.images[currentImageIndex] === 'string' 
-                              ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
-                              : selectedEvent.images[currentImageIndex].url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                            Open PDF
-                          </a>
-                          <a
-                            href={typeof selectedEvent.images[currentImageIndex] === 'string' 
-                              ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
-                              : selectedEvent.images[currentImageIndex].url}
-                            download={typeof selectedEvent.images[currentImageIndex] === 'object' && selectedEvent.images[currentImageIndex].original_filename
-                              ? selectedEvent.images[currentImageIndex].original_filename
-                              : undefined}
-                            className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            Download
-                          </a>
-                        </div>
-                      </div>
-                    ) : (
-                      <img
-                        src={typeof selectedEvent.images[currentImageIndex] === 'string' 
-                          ? getFixedImageUrl(selectedEvent.images[currentImageIndex]) 
-                          : selectedEvent.images[currentImageIndex].url}
-                        alt={`${selectedEvent.title} ${currentImageIndex + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                    
-                    {/* Navigation Arrows */}
-                    {selectedEvent.images.length > 1 && (
-                      <>
-                        <button
-                          onClick={() => setCurrentImageIndex(prev => 
-                            prev === 0 ? selectedEvent.images.length - 1 : prev - 1
-                          )}
-                          className="absolute left-1 sm:left-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 sm:p-2 transition-colors touch-manipulation"
-                          aria-label="Previous file"
-                        >
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => setCurrentImageIndex(prev => 
-                            prev === selectedEvent.images.length - 1 ? 0 : prev + 1
-                          )}
-                          className="absolute right-1 sm:right-2 top-1/2 transform -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-1.5 sm:p-2 transition-colors touch-manipulation"
-                          aria-label="Next file"
-                        >
-                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </>
-                    )}
-                    
-                    {/* File Counter */}
-                    {selectedEvent.images.length > 1 && (
-                      <div className="absolute bottom-1 sm:bottom-2 right-1 sm:right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
-                        {currentImageIndex + 1} / {selectedEvent.images.length}
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Thumbnail Strip */}
-                  {selectedEvent.images.length > 0 && (
-                    <div className={`flex space-x-1.5 sm:space-x-2 lg:space-x-3 mt-2 sm:mt-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 ${
-                      selectedEvent.images.length === 1 ? 'hidden lg:flex' : 'flex'
-                    }`}>
-                      {selectedEvent.images.map((image, index) => {
-                        const imageUrl = typeof image === 'string' ? getFixedImageUrl(image) : image.url;
-                        const isPdf = imageUrl.toLowerCase().endsWith('.pdf');
-                        const filename = isPdf 
-                          ? (typeof image === 'object' && image.original_filename 
-                              ? image.original_filename 
-                              : decodeURIComponent(imageUrl.split('/').pop()))
-                          : '';
-                        
-                        return (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentImageIndex(index)}
-                            className={`flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors touch-manipulation ${
-                              isPdf ? 'w-20 h-16 sm:w-24 sm:h-20 lg:w-28 lg:h-24' : 'w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20'
-                            } ${
-                              index === currentImageIndex 
-                                ? 'border-green-500' 
-                                : 'border-gray-200 hover:border-gray-300'
-                            }`}
-                            title={isPdf ? filename : `Image ${index + 1}`}
-                          >
-                            {isPdf ? (
-                              <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-1">
-                                <svg className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 text-red-600 mb-0.5 sm:mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                                </svg>
-                                <span className="text-xs lg:text-sm text-red-700 font-medium truncate w-full text-center px-0.5 sm:px-1">
-                                  <span className="lg:hidden">{filename.length > 12 ? filename.substring(0, 12) + '...' : filename}</span>
-                                  <span className="hidden lg:inline">{filename.length > 16 ? filename.substring(0, 16) + '...' : filename}</span>
-                                </span>
-                              </div>
-                            ) : (
-                              <img
-                                src={imageUrl}
-                                alt={`Thumbnail ${index + 1}`}
-                                className="w-full h-full object-cover"
-                              />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {/* Members Dropdown */}
             {selectedEvent.members && selectedEvent.members.length > 0 && (
               <div>
@@ -887,6 +829,142 @@ export default function Dashboard() {
               })()}
             </div>
           </div>
+
+          {/* Right Column: Event files */}
+          <div className="space-y-3 sm:space-y-4">
+            {selectedEvent.images && selectedEvent.images.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Event Files ({selectedEvent.images.length})</h4>
+                <div className="relative flex flex-row rounded-2xl bg-gray-50 shadow-sm border border-gray-100 p-2 sm:p-3 laptop:min-h-[32rem] gap-2 sm:gap-3">
+                  {/* Main File Display */}
+                  <div className="relative flex-1 h-64 sm:h-72 lg:h-[26rem] xl:h-[30rem] laptop:h-[34rem] bg-white rounded-xl overflow-hidden">
+                    {getImageUrl(selectedEvent.images[currentImageIndex]).toLowerCase().endsWith('.pdf') ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-3 sm:p-4">
+                        <svg className="w-16 h-16 sm:w-20 sm:h-20 text-red-600 mb-2 sm:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <p className="text-gray-700 font-medium mb-1 text-sm sm:text-base">PDF Document</p>
+                        <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 text-center break-all px-2 sm:px-4">
+                          {typeof selectedEvent.images[currentImageIndex] === 'object' && selectedEvent.images[currentImageIndex].original_filename
+                            ? selectedEvent.images[currentImageIndex].original_filename
+                            : decodeURIComponent(getImageUrl(selectedEvent.images[currentImageIndex]).split('/').pop())}
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <a
+                            href={getImageUrl(selectedEvent.images[currentImageIndex])}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 sm:px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                            Open PDF
+                          </a>
+                          <a
+                            href={getImageUrl(selectedEvent.images[currentImageIndex])}
+                            download={typeof selectedEvent.images[currentImageIndex] === 'object' && selectedEvent.images[currentImageIndex].original_filename
+                              ? selectedEvent.images[currentImageIndex].original_filename
+                              : undefined}
+                            className="px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs sm:text-sm font-medium flex items-center justify-center gap-2"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Download
+                          </a>
+                        </div>
+                      </div>
+                    ) : (
+                      <img
+                        src={getImageUrl(selectedEvent.images[currentImageIndex])}
+                        alt={`${selectedEvent.title} ${currentImageIndex + 1}`}
+                        className="w-full h-full object-contain bg-white"
+                      />
+                    )}
+                    
+                    {/* Navigation Arrows */}
+                    {selectedEvent.images.length > 1 && (
+                      <>
+                        <button
+                          onClick={() => setCurrentImageIndex(prev => 
+                            prev === 0 ? selectedEvent.images.length - 1 : prev - 1
+                          )}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-2.5 transition-colors touch-manipulation"
+                          aria-label="Previous file"
+                        >
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => setCurrentImageIndex(prev => 
+                            prev === selectedEvent.images.length - 1 ? 0 : prev + 1
+                          )}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 sm:p-2.5 transition-colors touch-manipulation"
+                          aria-label="Next file"
+                        >
+                          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                    
+                    {/* File Counter */}
+                    {selectedEvent.images.length > 1 && (
+                      <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                        {currentImageIndex + 1} / {selectedEvent.images.length}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Right Thumbnail Strip */}
+                  {selectedEvent.images.length > 1 && (
+                    <div className="flex flex-col gap-2 overflow-y-auto w-16 sm:w-20 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                      {selectedEvent.images.map((image, index) => {
+                        const imageUrl = getImageUrl(image);
+                        const isPdf = imageUrl.toLowerCase().endsWith('.pdf');
+                        const filename = isPdf 
+                          ? (typeof image === 'object' && image.original_filename 
+                              ? image.original_filename 
+                              : decodeURIComponent(imageUrl.split('/').pop()))
+                          : '';
+                        
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`flex-shrink-0 w-full aspect-square rounded-lg overflow-hidden border-2 transition-colors touch-manipulation ${
+                              index === currentImageIndex 
+                                ? 'border-green-500' 
+                                : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                            title={isPdf ? filename : `Image ${index + 1}`}
+                          >
+                            {isPdf ? (
+                              <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 p-1">
+                                <svg className="w-6 h-6 sm:w-8 sm:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                              </div>
+                            ) : (
+                              <img
+                                src={imageUrl}
+                                alt={`Thumbnail ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
         )}
       </Modal>
 

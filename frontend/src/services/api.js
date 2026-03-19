@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
-  timeout: 30000, // 30 second timeout
+  timeout: 60000, // Increased to 60 seconds for complex queries
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -19,7 +19,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 errors and timeouts
+// Handle 401 errors and timeouts with retry logic
 api.interceptors.response.use(
   (response) => response,
   (error) => {

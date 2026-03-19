@@ -123,7 +123,13 @@ class EventController extends Controller
             ], 422);
         }
 
-        // Sunday validation removed - events can now be scheduled on Sundays
+        // Sunday validation - events and meetings cannot be scheduled on Sundays
+        $eventDate = new \DateTime($request->date);
+        if ($eventDate->format('w') == 0) { // 0 = Sunday
+            return response()->json([
+                'error' => 'Events and meetings cannot be scheduled on Sundays.'
+            ], 422);
+        }
 
         // Get member IDs
         $memberIds = $request->member_ids ? collect($request->member_ids)
@@ -131,6 +137,19 @@ class EventController extends Controller
             ->unique()
             ->values()
             ->toArray() : [];
+
+        // Check for schedule conflicts with all participants (host + members)
+        $allParticipantIds = array_merge([$user->id], $memberIds);
+        $conflicts = $this->checkScheduleConflicts($allParticipantIds, $request->date, $request->time);
+        
+        // If conflicts exist and not explicitly ignored, return warning
+        if (!empty($conflicts) && !$request->ignore_conflicts) {
+            return response()->json([
+                'warning' => 'schedule_conflict',
+                'message' => 'Some participants have schedule conflicts',
+                'conflicts' => $conflicts
+            ], 409); // 409 Conflict status code
+        }
 
         // Faculty Members and Staff logic:
         // - Can create MEETINGS directly (no approval needed)
@@ -302,9 +321,15 @@ class EventController extends Controller
                     'error' => 'Event date and time cannot be in the past.'
                 ], 422);
             }
-        }
 
-        // Sunday validation removed - events can now be scheduled on Sundays
+            // Sunday validation - events and meetings cannot be scheduled on Sundays
+            $eventDate = new \DateTime($request->date);
+            if ($eventDate->format('w') == 0) { // 0 = Sunday
+                return response()->json([
+                    'error' => 'Events and meetings cannot be scheduled on Sundays.'
+                ], 422);
+            }
+        }
 
         $event->update($request->only(['title', 'description', 'location', 'event_type', 'date', 'time']));
 
@@ -450,5 +475,90 @@ class EventController extends Controller
             'message' => 'Invitation ' . $request->status . ' successfully',
             'status' => $request->status,
         ]);
+    }
+
+    /**
+     * Check for schedule conflicts for given users on a specific date/time
+     * Improved to check both class schedules and existing events
+     */
+    private function checkScheduleConflicts(array $userIds, string $date, string $time)
+    {
+        $conflicts = [];
+        
+        // Get day of week
+        $dateObj = new \DateTime($date);
+        $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        $dayName = $days[$dateObj->format('w')];
+
+        // Parse event time
+        $timeParts = explode(':', $time);
+        $eventHour = (int)$timeParts[0];
+        $eventMinute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+        
+        // Handle AM/PM
+        if (stripos($time, 'pm') !== false && $eventHour < 12) {
+            $eventHour += 12;
+        } elseif (stripos($time, 'am') !== false && $eventHour === 12) {
+            $eventHour = 0;
+        }
+        
+        $eventTimeStr = sprintf('%02d:%02d', $eventHour, $eventMinute);
+
+        // 1. Check class schedule conflicts
+        $schedules = \App\Models\UserSchedule::whereIn('user_id', $userIds)
+            ->where('day', $dayName)
+            ->with('user:id,name,email')
+            ->get();
+
+        foreach ($schedules as $schedule) {
+            // Check if event time falls within class schedule range
+            if ($eventTimeStr >= $schedule->start_time && $eventTimeStr < $schedule->end_time) {
+                $conflicts[] = [
+                    'type' => 'class_schedule',
+                    'user_id' => $schedule->user_id,
+                    'username' => $schedule->user->name,
+                    'email' => $schedule->user->email,
+                    'conflict_time' => $schedule->start_time . ' - ' . $schedule->end_time,
+                    'conflict_description' => $schedule->description,
+                    'conflict_detail' => 'Class Schedule'
+                ];
+            }
+        }
+
+        // 2. Check existing event conflicts (event-to-event)
+        $existingEvents = Event::where('date', $date)
+            ->where('time', $time)
+            ->whereHas('members', function($query) use ($userIds) {
+                $query->whereIn('users.id', $userIds);
+            })
+            ->orWhere(function($query) use ($date, $time, $userIds) {
+                $query->where('date', $date)
+                    ->where('time', $time)
+                    ->whereIn('host_id', $userIds);
+            })
+            ->with(['host:id,name,email', 'members:id,name,email'])
+            ->get();
+
+        foreach ($existingEvents as $event) {
+            // Check if any of the users are involved in this event
+            $involvedUsers = collect([$event->host])
+                ->merge($event->members)
+                ->whereIn('id', $userIds);
+
+            foreach ($involvedUsers as $user) {
+                $conflicts[] = [
+                    'type' => 'existing_event',
+                    'user_id' => $user->id,
+                    'username' => $user->name,
+                    'email' => $user->email,
+                    'conflict_time' => $time,
+                    'conflict_description' => $event->title,
+                    'conflict_detail' => ucfirst($event->event_type),
+                    'event_id' => $event->id
+                ];
+            }
+        }
+
+        return $conflicts;
     }
 }
