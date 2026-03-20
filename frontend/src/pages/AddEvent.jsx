@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { invalidateCache } from '../services/cache';
 import EventForm from '../components/EventForm';
 import Navbar from '../components/Navbar';
 import logo from '../assets/CEIT-LOGO.png';
@@ -17,7 +18,6 @@ export default function AddEvent() {
   const [hasSchedule, setHasSchedule] = useState(user?.schedule_initialized ?? false);
   const editingEvent = location.state?.event || null;
   const selectedDate = location.state?.selectedDate || null;
-  const approvedRequests = location.state?.approvedRequests || [];
 
   useEffect(() => {
     // Check if user is validated
@@ -26,9 +26,8 @@ export default function AddEvent() {
       return;
     }
     
-    // Faculty Members and Staff CAN now access /add-event
-    // They can create meetings directly or events that require approval
-    // No redirect needed anymore
+    // Faculty Members CAN access /add-event
+    // They can create meetings or events directly
     
     // Redirect personal events to personal event page
     if (editingEvent && editingEvent.is_personal) {
@@ -57,13 +56,12 @@ export default function AddEvent() {
 
 
 
-  // Redirect to dashboard if schedule not initialized (unless editing or has approved requests)
+  // Redirect to dashboard if schedule not initialized (unless editing)
   useEffect(() => {
-    if (!loading && !hasSchedule && !editingEvent && approvedRequests.length === 0) {
-      // User hasn't initialized schedule and has no approved requests, redirect to dashboard
+    if (!loading && !hasSchedule && !editingEvent) {
       navigate('/dashboard');
     }
-  }, [loading, hasSchedule, editingEvent, approvedRequests, navigate]);
+  }, [loading, hasSchedule, editingEvent, navigate]);
 
   const fetchUserSchedule = async () => {
     try {
@@ -92,7 +90,8 @@ export default function AddEvent() {
   };
 
   const handleEventCreated = () => {
-    // Navigate back with a timestamp to force Dashboard to refresh
+    // Bust the dashboard cache so fresh data is fetched on return
+    invalidateCache(`dashboard:${user?.id}`);
     navigate('/dashboard', { state: { refresh: Date.now() } });
   };
 
@@ -187,7 +186,7 @@ export default function AddEvent() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
-      <Navbar approvedRequests={approvedRequests} isLoading={loading} />
+      <Navbar isLoading={loading} />
 
       {/* Page Header */}
       <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
@@ -212,7 +211,6 @@ export default function AddEvent() {
             defaultDate={selectedDate}
             hasSchedule={hasSchedule}
             currentUser={user}
-            approvedRequests={approvedRequests}
           />
         </div>
       </main>

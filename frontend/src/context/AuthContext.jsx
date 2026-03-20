@@ -11,9 +11,38 @@ const getStorage = () => {
   return localStorage.getItem('rememberMe') === 'true' ? localStorage : sessionStorage;
 };
 
+// Read auth state synchronously from storage — no useEffect delay
+const initAuthState = () => {
+  const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+  const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+  const rememberMe = localStorage.getItem('rememberMe') === 'true';
+
+  if (!token || !savedUser) return { user: null };
+
+  // For non-remembered sessions, check if 1hr has passed
+  if (!rememberMe) {
+    const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
+    const elapsed = Date.now() - lastActivity;
+    if (lastActivity && elapsed > SESSION_TIMEOUT_MS) {
+      // Expired — clear storage
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      sessionStorage.removeItem('token');
+      sessionStorage.removeItem('user');
+      return { user: null };
+    }
+  }
+
+  try {
+    return { user: JSON.parse(savedUser) };
+  } catch {
+    return { user: null };
+  }
+};
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(() => initAuthState().user);
+  const [loading] = useState(false); // No longer needed for initial auth
   const sessionTimerRef = useRef(null);
 
   const clearSessionTimer = () => {
@@ -58,28 +87,10 @@ export const AuthProvider = ({ children }) => {
   }, [startSessionTimer]);
 
   useEffect(() => {
-    // Try localStorage first (remember me), then sessionStorage
-    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
-    const rememberMe = localStorage.getItem('rememberMe') === 'true';
-
-    if (token && savedUser) {
-      // For non-remembered sessions, check if 1hr has passed since last activity
-      if (!rememberMe) {
-        const lastActivity = parseInt(localStorage.getItem(LAST_ACTIVITY_KEY) || '0', 10);
-        const elapsed = Date.now() - lastActivity;
-        if (lastActivity && elapsed > SESSION_TIMEOUT_MS) {
-          // Session expired while browser was closed
-          performLogout();
-          setLoading(false);
-          return;
-        }
-        startSessionTimer();
-      }
-
-      setUser(JSON.parse(savedUser));
+    // Start session timer if user is already logged in (non-remembered)
+    if (user && localStorage.getItem('rememberMe') !== 'true') {
+      startSessionTimer();
     }
-    setLoading(false);
   }, []);
 
   // Attach activity listeners for non-remembered sessions

@@ -96,7 +96,12 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isCoordinator()
     {
-        return $this->role === 'Coordinator';
+        return in_array($this->role, [
+            'Coordinator',
+            'Research Coordinator',
+            'Extension Coordinator',
+            'GAD Coordinator',
+        ]);
     }
 
     public function isFacultyMember()
@@ -106,12 +111,19 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canCreateEvents()
     {
-        return in_array($this->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'CEIT Official']);
+        return in_array($this->role, [
+            'Admin', 'Dean', 'Chairperson', 'Coordinator',
+            'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator',
+            'CEIT Official',
+        ]);
     }
 
     public function needsApprovalForEvents()
     {
-        return in_array($this->role, ['Chairperson', 'Coordinator']);
+        return in_array($this->role, [
+            'Chairperson', 'Coordinator',
+            'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator',
+        ]);
     }
 
     public function events()

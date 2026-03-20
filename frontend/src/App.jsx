@@ -10,7 +10,6 @@ import Dashboard from './pages/Dashboard';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
 import PersonalEvent from './pages/PersonalEvent';
-import EventRequests from './pages/EventRequests';
 import Admin from './pages/Admin';
 import DefaultEvents from './pages/DefaultEvents';
 import History from './pages/History';
@@ -172,11 +171,6 @@ function App() {
             <ProtectedRoute>
               <PersonalEvent />
             </ProtectedRoute>
-          } />
-          <Route path="/event-requests" element={
-            <RoleProtectedRoute allowedRoles={['Admin', 'Dean', 'Chairperson', 'Faculty Member', 'Staff']}>
-              <EventRequests />
-            </RoleProtectedRoute>
           } />
           <Route path="/history" element={
             <ProtectedRoute>

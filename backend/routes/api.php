@@ -4,7 +4,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DefaultEventController;
 use App\Http\Controllers\DefaultEventControllerV2;
 use App\Http\Controllers\EventController;
-use App\Http\Controllers\EventRequestController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\SetupAdminController;
@@ -40,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class , 'index']);
     Route::get('/events', [EventController::class , 'index']);
     Route::post('/events', [EventController::class , 'store']);
-    Route::post('/events/validate-hierarchy', [EventController::class , 'validateHierarchy']);
+
     Route::put('/events/{event}', [EventController::class , 'update']);
     Route::delete('/events/{event}', [EventController::class , 'destroy']);
     Route::post('/events/{event}/respond', [EventController::class , 'respondToInvitation']);
@@ -49,22 +48,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/personal-events', [App\Http\Controllers\PersonalEventController::class , 'store']);
     Route::put('/personal-events/{event}', [App\Http\Controllers\PersonalEventController::class , 'update']);
     Route::delete('/personal-events/{event}', [App\Http\Controllers\PersonalEventController::class , 'destroy']);
-
-    // Event Requests
-    Route::get('/event-requests', [EventRequestController::class , 'index']);
-    Route::post('/event-requests', [EventRequestController::class , 'store']);
-    Route::get('/event-requests/my-requests', [EventRequestController::class , 'myRequests']);
-    Route::get('/event-requests/has-approved', [EventRequestController::class , 'hasApprovedRequests']);
-    Route::post('/event-requests/{eventRequest}/review', [EventRequestController::class , 'review']);
-    Route::post('/event-requests/{eventRequest}/approve', [EventRequestController::class , 'approve']);
-    Route::post('/event-requests/{eventRequest}/decline', [EventRequestController::class , 'decline']);
-    Route::post('/event-requests/{eventRequest}/revert', [EventRequestController::class , 'revert']);
-    Route::delete('/event-requests/{eventRequest}', [EventRequestController::class , 'destroy']);
-
-
-    // Hierarchy Approvals
-    Route::post('/hierarchy-approvals/{approval}/review', [EventRequestController::class , 'reviewHierarchyApproval']);
-    Route::get('/hierarchy-approvals/{approval}/details', [EventRequestController::class , 'getApprovalDetails']);
 
     // Default Events (Academic Calendar) - View access for all authenticated users
     Route::get('/default-events', [DefaultEventController::class, 'index']);
@@ -103,11 +86,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/schedules', [ScheduleController::class , 'store']);
         Route::delete('/schedules/{id}', [ScheduleController::class , 'destroy']);
         Route::post('/schedules/check-conflicts', [ScheduleController::class , 'checkConflicts']);
-
-        // Reschedule Requests
-        Route::get('/events/{event}/reschedule-requests', [App\Http\Controllers\EventRescheduleRequestController::class , 'index']);
-        Route::post('/events/{event}/reschedule', [App\Http\Controllers\EventRescheduleRequestController::class , 'store']);
-        Route::post('/reschedule-requests/{id}/respond', [App\Http\Controllers\EventRescheduleRequestController::class , 'respond']);
 
         // Messages
         Route::get('/messages', [App\Http\Controllers\MessageController::class , 'index']);

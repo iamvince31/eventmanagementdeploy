@@ -3,10 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
-use App\Models\EventRequest;
 use App\Models\User;
-use App\Services\HierarchyService;
-use App\Services\EventApprovalWorkflow;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -20,11 +17,6 @@ class EventController extends Controller
                 'host:id,name,email',
                 'members:id,name,email',
                 'images:id,event_id,image_path,original_filename,order'
-            ])
-            ->withCount([
-                'rescheduleRequests as has_pending_reschedule_requests' => function ($query) {
-                    $query->where('status', 'pending');
-                }
             ])
             ->where(function ($query) use ($user) {
                 // User is the host
@@ -61,7 +53,6 @@ class EventController extends Controller
                 'date' => $event->date,
                 'time' => $event->time,
                 'school_year' => $event->school_year,
-                'has_pending_reschedule_requests' => $event->has_pending_reschedule_requests > 0,
                 'host' => [
                     'id' => $event->host->id,
                     'username' => $event->host->name,
@@ -138,89 +129,19 @@ class EventController extends Controller
             ->values()
             ->toArray() : [];
 
-        // Check for schedule conflicts with all participants (host + members)
-        $allParticipantIds = array_merge([$user->id], $memberIds);
-        $conflicts = $this->checkScheduleConflicts($allParticipantIds, $request->date, $request->time);
-        
-        // If conflicts exist and not explicitly ignored, return warning
-        if (!empty($conflicts) && !$request->ignore_conflicts) {
-            return response()->json([
-                'warning' => 'schedule_conflict',
-                'message' => 'Some participants have schedule conflicts',
-                'conflicts' => $conflicts
-            ], 409); // 409 Conflict status code
-        }
-
-        // Faculty Members and Staff logic:
-        // - Can create MEETINGS directly (no approval needed)
-        // - Must request approval for EVENTS (requires Dean + Chairperson approval)
-        if (in_array($user->role, ['Faculty Member', 'Staff'])) {
-            if ($request->event_type === 'meeting') {
-                // Meetings can be created directly
-                return $this->createEventDirectly($request, $user, $memberIds);
-            } else {
-                // Events require approval - create event request
-                return $this->createEventRequest($request, $user, $memberIds);
-            }
-        }
-        
-        // All other roles (Admin, Dean, Chairperson, Coordinator, CEIT Official) can create both events and meetings directly
-        if (!in_array($user->role, ['Admin', 'Dean', 'Chairperson', 'Coordinator', 'CEIT Official'])) {
+        // Only authorized roles can create events
+        if (!in_array($user->role, [
+            'Admin', 'Dean', 'Chairperson', 'Coordinator',
+            'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator',
+            'CEIT Official', 'Faculty Member',
+        ])) {
             return response()->json([
                 'error' => 'Unauthorized to create events.'
             ], 403);
         }
 
-        // Create event directly for authorized roles
+        // Create event directly for all roles
         return $this->createEventDirectly($request, $user, $memberIds);
-    }
-
-    /**
-     * Create event request for Faculty/Staff events (requires approval)
-     */
-    private function createEventRequest(Request $request, User $user, array $memberIds)
-    {
-        // Validate justification is required for Faculty/Staff events
-        $request->validate([
-            'justification' => 'required|string',
-        ], [
-            'justification.required' => 'Justification is required for event requests.',
-        ]);
-
-        // Create event request that requires Dean + Chairperson approval
-        $eventRequest = EventRequest::create([
-            'title' => $request->title,
-            'description' => $request->description,
-            'location' => $request->location,
-            'event_type' => $request->event_type,
-            'justification' => $request->justification,
-            'date' => $request->date,
-            'time' => $request->time,
-            'school_year' => $request->school_year,
-            'requested_by' => $user->id,
-            'department' => $user->department,
-            'status' => 'pending',
-            'requires_dean_approval' => true,
-            'requires_chair_approval' => true,
-        ]);
-
-        // Store member IDs as JSON for later use when event is approved
-        if (!empty($memberIds)) {
-            $eventRequest->update([
-                'member_ids' => json_encode($memberIds)
-            ]);
-        }
-
-        // Handle image uploads - store temporarily or attach to request
-        // For now, we'll note that images will need to be re-uploaded when approved
-        // Or we could store them with the request
-
-        return response()->json([
-            'message' => 'Event submitted for approval. Requires approval from Dean and Chairperson.',
-            'status' => 'pending_approval',
-            'event_request' => $eventRequest,
-            'approvers_needed' => ['Dean', 'Chairperson'],
-        ], 201);
     }
 
     /**
@@ -387,52 +308,6 @@ class EventController extends Controller
 
         return response()->json(['message' => 'Event updated successfully', 'event' => $event->load(['host', 'members', 'images'])]);
     }
-
-    // COMMENTED OUT - Hierarchy validation feature disabled
-    /**
-     * Validate hierarchy rules for real-time feedback
-     */
-    // public function validateHierarchy(Request $request)
-    // {
-    //     $user = $request->user();
-    //     
-    //     $request->validate([
-    //         'member_ids' => 'nullable|array',
-    //         'member_ids.*' => 'integer|exists:users,id',
-    //     ]);
-    //
-    //     $memberIds = $request->member_ids ? collect($request->member_ids)
-    //         ->filter(fn($id) => $id != $user->id) // Exclude host
-    //         ->unique()
-    //         ->values()
-    //         ->toArray() : [];
-    //
-    //     if (empty($memberIds)) {
-    //         return response()->json([
-    //             'requires_approval' => false,
-    //             'violations' => [],
-    //             'approvers_needed' => [],
-    //         ]);
-    //     }
-    //
-    //     $hierarchyService = new HierarchyService();
-    //     $validationResult = $hierarchyService->validateInvitations($user, $memberIds);
-    //
-    //     // Get approver details if needed
-    //     $approverDetails = [];
-    //     if (!empty($validationResult->approversNeeded)) {
-    //         $approvers = User::whereIn('id', $validationResult->approversNeeded)
-    //             ->select('id', 'name', 'role')
-    //             ->get();
-    //         $approverDetails = $approvers->toArray();
-    //     }
-    //
-    //     return response()->json([
-    //         'requires_approval' => $validationResult->requiresApproval,
-    //         'violations' => $validationResult->violations,
-    //         'approvers_needed' => $approverDetails,
-    //     ]);
-    // }
 
     public function destroy(Request $request, Event $event)
     {

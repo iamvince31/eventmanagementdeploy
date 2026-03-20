@@ -26,7 +26,7 @@
 | Email | Role | Department |
 |-------|------|------------|
 | maria.santos.ceit1@cvsu.edu.ph | CEIT Official | College of Engineering and Information Technology |
-| juan.dela cruz.ceit2@cvsu.edu.ph | CEIT Official | College of Engineering and Information Technology |
+| juan.delacruz.ceit2@cvsu.edu.ph | CEIT Official | College of Engineering and Information Technology |
 | ana.reyes.ceit3@cvsu.edu.ph | CEIT Official | College of Engineering and Information Technology |
 | pedro.garcia.ceit4@cvsu.edu.ph | CEIT Official | College of Engineering and Information Technology |
 | sofia.martinez.ceit5@cvsu.edu.ph | CEIT Official | College of Engineering and Information Technology |
@@ -55,217 +55,207 @@
 
 ---
 
-## 5. CHAIRPERSONS (5 accounts - 1 per Department)
+## 8. CHAIRPERSONS (5 accounts - 1 per Department)
 
 | Email | Role | Department |
 |-------|------|------------|
-| maria.garcia.chair.dafe@cvsu.edu.ph | Chairperson | Department of Agricultural and Food Engineering |
-| john.rivera.chair.dceee@cvsu.edu.ph | Chairperson | Department of Civil and Environmental Engineering and Energy |
-| sarah.reyes.chair.dcea@cvsu.edu.ph | Chairperson | Department of Computer Engineering and Architecture |
-| michael.cruz.chair.diet@cvsu.edu.ph | Chairperson | Department of Industrial and Electrical Technology |
-| anna.delacruz.chair.dit@cvsu.edu.ph | Chairperson | Department of Information Technology |
+| maria.garcia.chair.DAFE@cvsu.edu.ph | Chairperson | Department of Agricultural and Food Engineering |
+| john.rivera.chair.DCEEE@cvsu.edu.ph | Chairperson | Department of Civil and Environmental Engineering and Energy |
+| sarah.reyes.chair.DCEA@cvsu.edu.ph | Chairperson | Department of Computer Engineering and Architecture |
+| michael.cruz.chair.DIET@cvsu.edu.ph | Chairperson | Department of Industrial and Electrical Technology |
+| anna.delacruz.chair.DIT@cvsu.edu.ph | Chairperson | Department of Information Technology |
 
 ---
 
-## 6. FACULTY MEMBERS (50 accounts - 10 per Department)
+## 6. CEIT FACULTY MEMBERS (10 accounts - College Level)
+
+| Email | Role | Department |
+|-------|------|------------|
+| bernard.castillo.fac1.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| rowena.delarosa.fac2.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| nestor.evangelista.fac3.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| maribel.fajardo.fac4.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| gregorio.gutierrez.fac5.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| leonora.hidalgo.fac6.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| arsenio.ignacio.fac7.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| perpetua.jacinto.fac8.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| wilfredo.lacson.fac9.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+| consolacion.macapagal.fac10.CEIT@cvsu.edu.ph | Faculty Member | College of Engineering and Information Technology |
+
+---
+
+## 7. DEPARTMENT COORDINATORS (15 accounts - 3 per Department)
+
+### Research Coordinators
+| Email | Role | Department |
+|-------|------|------------|
+| jose.santos.rescoord.DAFE@cvsu.edu.ph | Research Coordinator | Department of Agricultural and Food Engineering |
+| maricel.flores.rescoord.DCEEE@cvsu.edu.ph | Research Coordinator | Department of Civil and Environmental Engineering and Energy |
+| renato.aguilar.rescoord.DCEA@cvsu.edu.ph | Research Coordinator | Department of Computer Engineering and Architecture |
+| teresita.domingo.rescoord.DIET@cvsu.edu.ph | Research Coordinator | Department of Industrial and Electrical Technology |
+| danilo.pascual.rescoord.DIT@cvsu.edu.ph | Research Coordinator | Department of Information Technology |
+
+### Extension Coordinators
+| Email | Role | Department |
+|-------|------|------------|
+| rosario.cabrera.extcoord.DAFE@cvsu.edu.ph | Extension Coordinator | Department of Agricultural and Food Engineering |
+| ernesto.salazar.extcoord.DCEEE@cvsu.edu.ph | Extension Coordinator | Department of Civil and Environmental Engineering and Energy |
+| lourdes.vargas.extcoord.DCEA@cvsu.edu.ph | Extension Coordinator | Department of Computer Engineering and Architecture |
+| rodrigo.medina.extcoord.DIET@cvsu.edu.ph | Extension Coordinator | Department of Industrial and Electrical Technology |
+| corazon.espinosa.extcoord.DIT@cvsu.edu.ph | Extension Coordinator | Department of Information Technology |
+
+### GAD Coordinators
+| Email | Role | Department |
+|-------|------|------------|
+| natividad.herrera.gadcoord.DAFE@cvsu.edu.ph | GAD Coordinator | Department of Agricultural and Food Engineering |
+| alfredo.ibarra.gadcoord.DCEEE@cvsu.edu.ph | GAD Coordinator | Department of Civil and Environmental Engineering and Energy |
+| milagros.jimenez.gadcoord.DCEA@cvsu.edu.ph | GAD Coordinator | Department of Computer Engineering and Architecture |
+| victorino.molina.gadcoord.DIET@cvsu.edu.ph | GAD Coordinator | Department of Industrial and Electrical Technology |
+| felicidad.ocampo.gadcoord.DIT@cvsu.edu.ph | GAD Coordinator | Department of Information Technology |
+
+---
+
+## 9. FACULTY MEMBERS (50 accounts - 10 per Department)
 
 ### DAFE - Department of Agricultural and Food Engineering
 | Email | Role |
 |-------|------|
-| jennifer.lopez.fac1.dafe@cvsu.edu.ph | Faculty Member |
-| antonio.gonzales.fac2.dafe@cvsu.edu.ph | Faculty Member |
-| lisa.villanueva.fac3.dafe@cvsu.edu.ph | Faculty Member |
-| ramon.aquino.fac4.dafe@cvsu.edu.ph | Faculty Member |
-| diana.bautista.fac5.dafe@cvsu.edu.ph | Faculty Member |
-| eduardo.mendoza.fac6.dafe@cvsu.edu.ph | Faculty Member |
-| cristina.castro.fac7.dafe@cvsu.edu.ph | Faculty Member |
-| roberto.morales.fac8.dafe@cvsu.edu.ph | Faculty Member |
-| angela.navarro.fac9.dafe@cvsu.edu.ph | Faculty Member |
-| francisco.ortiz.fac10.dafe@cvsu.edu.ph | Faculty Member |
+| jennifer.lopez.fac1.DAFE@cvsu.edu.ph | Faculty Member |
+| antonio.gonzales.fac2.DAFE@cvsu.edu.ph | Faculty Member |
+| lisa.villanueva.fac3.DAFE@cvsu.edu.ph | Faculty Member |
+| ramon.aquino.fac4.DAFE@cvsu.edu.ph | Faculty Member |
+| diana.bautista.fac5.DAFE@cvsu.edu.ph | Faculty Member |
+| eduardo.mendoza.fac6.DAFE@cvsu.edu.ph | Faculty Member |
+| cristina.castro.fac7.DAFE@cvsu.edu.ph | Faculty Member |
+| roberto.morales.fac8.DAFE@cvsu.edu.ph | Faculty Member |
+| angela.navarro.fac9.DAFE@cvsu.edu.ph | Faculty Member |
+| francisco.ortiz.fac10.DAFE@cvsu.edu.ph | Faculty Member |
 
 ### DCEEE - Department of Civil and Environmental Engineering and Energy
 | Email | Role |
 |-------|------|
-| jennifer.lopez.fac1.dceee@cvsu.edu.ph | Faculty Member |
-| antonio.gonzales.fac2.dceee@cvsu.edu.ph | Faculty Member |
-| lisa.villanueva.fac3.dceee@cvsu.edu.ph | Faculty Member |
-| ramon.aquino.fac4.dceee@cvsu.edu.ph | Faculty Member |
-| diana.bautista.fac5.dceee@cvsu.edu.ph | Faculty Member |
-| eduardo.mendoza.fac6.dceee@cvsu.edu.ph | Faculty Member |
-| cristina.castro.fac7.dceee@cvsu.edu.ph | Faculty Member |
-| roberto.morales.fac8.dceee@cvsu.edu.ph | Faculty Member |
-| angela.navarro.fac9.dceee@cvsu.edu.ph | Faculty Member |
-| francisco.ortiz.fac10.dceee@cvsu.edu.ph | Faculty Member |
+| jennifer.lopez.fac1.DCEEE@cvsu.edu.ph | Faculty Member |
+| antonio.gonzales.fac2.DCEEE@cvsu.edu.ph | Faculty Member |
+| lisa.villanueva.fac3.DCEEE@cvsu.edu.ph | Faculty Member |
+| ramon.aquino.fac4.DCEEE@cvsu.edu.ph | Faculty Member |
+| diana.bautista.fac5.DCEEE@cvsu.edu.ph | Faculty Member |
+| eduardo.mendoza.fac6.DCEEE@cvsu.edu.ph | Faculty Member |
+| cristina.castro.fac7.DCEEE@cvsu.edu.ph | Faculty Member |
+| roberto.morales.fac8.DCEEE@cvsu.edu.ph | Faculty Member |
+| angela.navarro.fac9.DCEEE@cvsu.edu.ph | Faculty Member |
+| francisco.ortiz.fac10.DCEEE@cvsu.edu.ph | Faculty Member |
 
 ### DCEA - Department of Computer Engineering and Architecture
 | Email | Role |
 |-------|------|
-| jennifer.lopez.fac1.dcea@cvsu.edu.ph | Faculty Member |
-| antonio.gonzales.fac2.dcea@cvsu.edu.ph | Faculty Member |
-| lisa.villanueva.fac3.dcea@cvsu.edu.ph | Faculty Member |
-| ramon.aquino.fac4.dcea@cvsu.edu.ph | Faculty Member |
-| diana.bautista.fac5.dcea@cvsu.edu.ph | Faculty Member |
-| eduardo.mendoza.fac6.dcea@cvsu.edu.ph | Faculty Member |
-| cristina.castro.fac7.dcea@cvsu.edu.ph | Faculty Member |
-| roberto.morales.fac8.dcea@cvsu.edu.ph | Faculty Member |
-| angela.navarro.fac9.dcea@cvsu.edu.ph | Faculty Member |
-| francisco.ortiz.fac10.dcea@cvsu.edu.ph | Faculty Member |
+| jennifer.lopez.fac1.DCEA@cvsu.edu.ph | Faculty Member |
+| antonio.gonzales.fac2.DCEA@cvsu.edu.ph | Faculty Member |
+| lisa.villanueva.fac3.DCEA@cvsu.edu.ph | Faculty Member |
+| ramon.aquino.fac4.DCEA@cvsu.edu.ph | Faculty Member |
+| diana.bautista.fac5.DCEA@cvsu.edu.ph | Faculty Member |
+| eduardo.mendoza.fac6.DCEA@cvsu.edu.ph | Faculty Member |
+| cristina.castro.fac7.DCEA@cvsu.edu.ph | Faculty Member |
+| roberto.morales.fac8.DCEA@cvsu.edu.ph | Faculty Member |
+| angela.navarro.fac9.DCEA@cvsu.edu.ph | Faculty Member |
+| francisco.ortiz.fac10.DCEA@cvsu.edu.ph | Faculty Member |
 
 ### DIET - Department of Industrial and Electrical Technology
 | Email | Role |
 |-------|------|
-| jennifer.lopez.fac1.diet@cvsu.edu.ph | Faculty Member |
-| antonio.gonzales.fac2.diet@cvsu.edu.ph | Faculty Member |
-| lisa.villanueva.fac3.diet@cvsu.edu.ph | Faculty Member |
-| ramon.aquino.fac4.diet@cvsu.edu.ph | Faculty Member |
-| diana.bautista.fac5.diet@cvsu.edu.ph | Faculty Member |
-| eduardo.mendoza.fac6.diet@cvsu.edu.ph | Faculty Member |
-| cristina.castro.fac7.diet@cvsu.edu.ph | Faculty Member |
-| roberto.morales.fac8.diet@cvsu.edu.ph | Faculty Member |
-| angela.navarro.fac9.diet@cvsu.edu.ph | Faculty Member |
-| francisco.ortiz.fac10.diet@cvsu.edu.ph | Faculty Member |
+| jennifer.lopez.fac1.DIET@cvsu.edu.ph | Faculty Member |
+| antonio.gonzales.fac2.DIET@cvsu.edu.ph | Faculty Member |
+| lisa.villanueva.fac3.DIET@cvsu.edu.ph | Faculty Member |
+| ramon.aquino.fac4.DIET@cvsu.edu.ph | Faculty Member |
+| diana.bautista.fac5.DIET@cvsu.edu.ph | Faculty Member |
+| eduardo.mendoza.fac6.DIET@cvsu.edu.ph | Faculty Member |
+| cristina.castro.fac7.DIET@cvsu.edu.ph | Faculty Member |
+| roberto.morales.fac8.DIET@cvsu.edu.ph | Faculty Member |
+| angela.navarro.fac9.DIET@cvsu.edu.ph | Faculty Member |
+| francisco.ortiz.fac10.DIET@cvsu.edu.ph | Faculty Member |
 
 ### DIT - Department of Information Technology
 | Email | Role |
 |-------|------|
-| jennifer.lopez.fac1.dit@cvsu.edu.ph | Faculty Member |
-| antonio.gonzales.fac2.dit@cvsu.edu.ph | Faculty Member |
-| lisa.villanueva.fac3.dit@cvsu.edu.ph | Faculty Member |
-| ramon.aquino.fac4.dit@cvsu.edu.ph | Faculty Member |
-| diana.bautista.fac5.dit@cvsu.edu.ph | Faculty Member |
-| eduardo.mendoza.fac6.dit@cvsu.edu.ph | Faculty Member |
-| cristina.castro.fac7.dit@cvsu.edu.ph | Faculty Member |
-| roberto.morales.fac8.dit@cvsu.edu.ph | Faculty Member |
-| angela.navarro.fac9.dit@cvsu.edu.ph | Faculty Member |
-| anna.delacruz.chair.dit@cvsu.edu.ph | Faculty Member |
-
----
-
-## 7. STAFF (50 accounts - 10 per Department)
-
-### DAFE - Department of Agricultural and Food Engineering
-| Email | Role |
-|-------|------|
-| gloria.perez.staff1.dafe@cvsu.edu.ph | Staff |
-| manuel.ramirez.staff2.dafe@cvsu.edu.ph | Staff |
-| teresa.silva.staff3.dafe@cvsu.edu.ph | Staff |
-| jorge.vargas.staff4.dafe@cvsu.edu.ph | Staff |
-| beatriz.herrera.staff5.dafe@cvsu.edu.ph | Staff |
-| alberto.jimenez.staff6.dafe@cvsu.edu.ph | Staff |
-| rosa.flores.staff7.dafe@cvsu.edu.ph | Staff |
-| enrique.diaz.staff8.dafe@cvsu.edu.ph | Staff |
-| margarita.ruiz.staff9.dafe@cvsu.edu.ph | Staff |
-| victor.moreno.staff10.dafe@cvsu.edu.ph | Staff |
-
-### DCEEE - Department of Civil and Environmental Engineering and Energy
-| Email | Role |
-|-------|------|
-| gloria.perez.staff1.dceee@cvsu.edu.ph | Staff |
-| manuel.ramirez.staff2.dceee@cvsu.edu.ph | Staff |
-| teresa.silva.staff3.dceee@cvsu.edu.ph | Staff |
-| jorge.vargas.staff4.dceee@cvsu.edu.ph | Staff |
-| beatriz.herrera.staff5.dceee@cvsu.edu.ph | Staff |
-| alberto.jimenez.staff6.dceee@cvsu.edu.ph | Staff |
-| rosa.flores.staff7.dceee@cvsu.edu.ph | Staff |
-| enrique.diaz.staff8.dceee@cvsu.edu.ph | Staff |
-| margarita.ruiz.staff9.dceee@cvsu.edu.ph | Staff |
-| victor.moreno.staff10.dceee@cvsu.edu.ph | Staff |
-
-### DCEA - Department of Computer Engineering and Architecture
-| Email | Role |
-|-------|------|
-| gloria.perez.staff1.dcea@cvsu.edu.ph | Staff |
-| manuel.ramirez.staff2.dcea@cvsu.edu.ph | Staff |
-| teresa.silva.staff3.dcea@cvsu.edu.ph | Staff |
-| jorge.vargas.staff4.dcea@cvsu.edu.ph | Staff |
-| beatriz.herrera.staff5.dcea@cvsu.edu.ph | Staff |
-| alberto.jimenez.staff6.dcea@cvsu.edu.ph | Staff |
-| rosa.flores.staff7.dcea@cvsu.edu.ph | Staff |
-| enrique.diaz.staff8.dcea@cvsu.edu.ph | Staff |
-| margarita.ruiz.staff9.dcea@cvsu.edu.ph | Staff |
-| victor.moreno.staff10.dcea@cvsu.edu.ph | Staff |
-
-### DIET - Department of Industrial and Electrical Technology
-| Email | Role |
-|-------|------|
-| gloria.perez.staff1.diet@cvsu.edu.ph | Staff |
-| manuel.ramirez.staff2.diet@cvsu.edu.ph | Staff |
-| teresa.silva.staff3.diet@cvsu.edu.ph | Staff |
-| jorge.vargas.staff4.diet@cvsu.edu.ph | Staff |
-| beatriz.herrera.staff5.diet@cvsu.edu.ph | Staff |
-| alberto.jimenez.staff6.diet@cvsu.edu.ph | Staff |
-| rosa.flores.staff7.diet@cvsu.edu.ph | Staff |
-| enrique.diaz.staff8.diet@cvsu.edu.ph | Staff |
-| margarita.ruiz.staff9.diet@cvsu.edu.ph | Staff |
-| victor.moreno.staff10.diet@cvsu.edu.ph | Staff |
-
-### DIT - Department of Information Technology
-| Email | Role |
-|-------|------|
-| anna.delacruz.chair.dit@cvsu.edu.ph | Staff |
-| manuel.ramirez.staff2.dit@cvsu.edu.ph | Staff |
-| teresa.silva.staff3.dit@cvsu.edu.ph | Staff |
-| jorge.vargas.staff4.dit@cvsu.edu.ph | Staff |
-| beatriz.herrera.staff5.dit@cvsu.edu.ph | Staff |
-| alberto.jimenez.staff6.dit@cvsu.edu.ph | Staff |
-| rosa.flores.staff7.dit@cvsu.edu.ph | Staff |
-| enrique.diaz.staff8.dit@cvsu.edu.ph | Staff |
-| margarita.ruiz.staff9.dit@cvsu.edu.ph | Staff |
-| victor.moreno.staff10.dit@cvsu.edu.ph | Staff |
+| jennifer.lopez.fac1.DIT@cvsu.edu.ph | Faculty Member |
+| antonio.gonzales.fac2.DIT@cvsu.edu.ph | Faculty Member |
+| lisa.villanueva.fac3.DIT@cvsu.edu.ph | Faculty Member |
+| ramon.aquino.fac4.DIT@cvsu.edu.ph | Faculty Member |
+| diana.bautista.fac5.DIT@cvsu.edu.ph | Faculty Member |
+| eduardo.mendoza.fac6.DIT@cvsu.edu.ph | Faculty Member |
+| cristina.castro.fac7.DIT@cvsu.edu.ph | Faculty Member |
+| roberto.morales.fac8.DIT@cvsu.edu.ph | Faculty Member |
+| angela.navarro.fac9.DIT@cvsu.edu.ph | Faculty Member |
+| francisco.ortiz.fac10.DIT@cvsu.edu.ph | Faculty Member |
 
 ---
 
 ## Summary
 
-| Role | Count | Department Level |
-|------|-------|------------------|
-| Admin | 1 | Administration |
-| Dean | 1 | College Level |
-| CEIT Official | 10 | College Level |
-| Coordinator | 10 | College Level |
-| Chairperson | 5 | Department Level (1 per dept) |
-| Faculty Member | 50 | Department Level (10 per dept) |
-| Staff | 50 | Department Level (10 per dept) |
-| **TOTAL** | **127** | |
+| Role | Count | Department Level | Schedule Pattern |
+|------|-------|------------------|-----------------|
+| Admin | 1 | Administration | None |
+| Dean | 1 | College Level | Admin-heavy (10 slots/week) |
+| CEIT Official | 10 | College Level | Coordination (7 slots/week) |
+| Coordinator | 10 | College Level | Coordination (7 slots/week) |
+| Faculty Member (CEIT) | 10 | College Level | Class schedule (10 slots/week) |
+| Chairperson | 5 | Department Level (1 per dept) | Admin-heavy (10 slots/week) |
+| Research Coordinator | 5 | Department Level (1 per dept) | Coordination (7 slots/week) |
+| Extension Coordinator | 5 | Department Level (1 per dept) | Coordination (7 slots/week) |
+| GAD Coordinator | 5 | Department Level (1 per dept) | Coordination (7 slots/week) |
+| Faculty Member | 50 | Department Level (10 per dept) | Class schedule (10 slots/week) |
+| **TOTAL** | **102** | | |
 
 ---
 
 ## Quick Reference - Key Accounts
 
-### For Testing Admin Features
+### Admin
 - **Email:** admin@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** Admin
 
-### For Testing Dean Features
+### Dean
 - **Email:** dean.rodriguez@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** Dean
 
-### For Testing CEIT Official Features
+### CEIT Official
 - **Email:** maria.santos.ceit1@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** CEIT Official
 
-### For Testing Coordinator Features
+### Coordinator
 - **Email:** carlos.aquino.coord1@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** Coordinator
 
-### For Testing Chairperson Features (DIT)
-- **Email:** anna.dela cruz.chair.dit@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** Chairperson
+### CEIT Faculty Member
+- **Email:** bernard.castillo.fac1.CEIT@cvsu.edu.ph
 
-### For Testing Faculty Features (DIT)
-- **Email:** jennifer.lopez.fac1.dit@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** Faculty Member
+### Chairperson (DIT)
+- **Email:** anna.delacruz.chair.DIT@cvsu.edu.ph
 
-### For Testing Staff Features (DIT)
-- **Email:** gloria.perez.staff1.dit@cvsu.edu.ph
-- **Password:** 11111111
-- **Role:** Staff
+### Research Coordinator (DIT)
+- **Email:** danilo.pascual.rescoord.DIT@cvsu.edu.ph
+
+### Extension Coordinator (DIT)
+- **Email:** corazon.espinosa.extcoord.DIT@cvsu.edu.ph
+
+### GAD Coordinator (DIT)
+- **Email:** felicidad.ocampo.gadcoord.DIT@cvsu.edu.ph
+
+### Faculty Member (DIT)
+- **Email:** jennifer.lopez.fac1.DIT@cvsu.edu.ph
+
+> All accounts use password: `11111111`
+
+---
+
+## Email Format
+
+```
+[firstname].[lastname].[role][n]@cvsu.edu.ph              → College-level roles (CEIT Officials, Coordinators)
+[firstname].[lastname].fac[n].CEIT@cvsu.edu.ph            → College-level Faculty
+[firstname].[lastname].chair.[DEPT]@cvsu.edu.ph           → Chairpersons
+[firstname].[lastname].rescoord.[DEPT]@cvsu.edu.ph        → Research Coordinators
+[firstname].[lastname].extcoord.[DEPT]@cvsu.edu.ph        → Extension Coordinators
+[firstname].[lastname].gadcoord.[DEPT]@cvsu.edu.ph        → GAD Coordinators
+[firstname].[lastname].fac[n].[DEPT]@cvsu.edu.ph          → Department Faculty
+```
+
+No spaces in any email. All names are single-word (e.g. `delacruz`, not `dela cruz`).
 
 ---
 
@@ -286,5 +276,5 @@
 - All accounts are pre-validated (`is_validated = true`)
 - All accounts have verified emails (`email_verified_at = now()`)
 - All accounts have initialized schedules (`schedule_initialized = true`)
-- Password for all accounts: `11111111`
-- To seed the database: `php artisan db:seed --class=TestUsersSeeder`
+- Schedules are seeded automatically — visible immediately on `/account`
+- To seed: `php artisan db:seed --class=TestUsersSeeder`

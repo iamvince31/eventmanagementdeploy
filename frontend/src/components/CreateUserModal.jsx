@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import api from '../services/api';
 
-export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
+export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists = false }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -14,16 +14,6 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
-  const roles = [
-    'Admin',
-    'Dean',
-    'Chairperson',
-    'Coordinator',
-    'Faculty Member',
-    'Staff',
-    'CEIT Official'
-  ];
-
   const departments = [
     'College of Engineering and Information Technology',
     'Department of Agricultural and Food Engineering',
@@ -32,6 +22,18 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
     'Department of Industrial and Electrical Technology',
     'Department of Information Technology'
   ];
+
+  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
+  const DEPT_ROLES = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'];
+
+  const getRolesForDepartment = (dept) => {
+    if (!dept) return [...CEIT_ROLES, ...DEPT_ROLES]; // show all if none selected
+    if (dept === 'College of Engineering and Information Technology') return CEIT_ROLES;
+    return DEPT_ROLES;
+  };
+
+  const availableRoles = getRolesForDepartment(formData.department)
+    .filter(r => !(r === 'Dean' && deanExists));
 
   const generateFullName = () => {
     const capitalizeWords = (text) => {
@@ -51,7 +53,17 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      // Reset role if it's not valid for the newly selected department
+      if (name === 'department') {
+        const valid = getRolesForDepartment(value);
+        if (!valid.includes(updated.role)) {
+          updated.role = valid[0] || '';
+        }
+      }
+      return updated;
+    });
 
     // Clear error when user starts typing
     if (errors[name]) {
@@ -302,7 +314,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }) {
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
-              {roles.map(role => (
+              {availableRoles.map(role => (
                 <option key={role} value={role}>{role}</option>
               ))}
             </select>

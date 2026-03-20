@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { getCache, setCache, invalidateCache } from '../services/cache';
 import logo from "../assets/CEIT-LOGO.png";
 import Navbar from '../components/Navbar';
 import CreatePermanentAdminModal from '../components/CreatePermanentAdminModal';
@@ -34,10 +35,27 @@ export default function Admin() {
     'Dean',
     'Chairperson',
     'Coordinator',
+    'Research Coordinator',
+    'Extension Coordinator',
+    'GAD Coordinator',
     'Faculty Member',
-    'Staff',
     'CEIT Official'
   ];
+
+  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
+  const DEPT_ROLES = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'];
+
+  const deanExists = users.some(u => u.role === 'Dean');
+
+  const getRolesForDepartment = (dept, excludingUserId = null) => {
+    // Check if dean exists, optionally ignoring the user being edited
+    const deanTaken = users.some(u => u.role === 'Dean' && u.id !== excludingUserId);
+    let base;
+    if (!dept) base = roles;
+    else if (dept === 'College of Engineering and Information Technology') base = CEIT_ROLES;
+    else base = DEPT_ROLES;
+    return deanTaken ? base.filter(r => r !== 'Dean') : base;
+  };
 
   const departments = [
     'Department of Agricultural and Food Engineering',
@@ -85,8 +103,24 @@ export default function Admin() {
   }, [isAccountDropdownOpen]);
 
   const fetchUsers = async () => {
+    const cacheKey = `admin-users`;
+    const cached = getCache(cacheKey);
+
+    if (cached) {
+      setUsers(cached);
+      setLoading(false);
+      // Background refresh
+      try {
+        const response = await api.get('/users/all');
+        setCache(cacheKey, response.data.members || []);
+        setUsers(response.data.members || []);
+      } catch { /* silently fail */ }
+      return;
+    }
+
     try {
       const response = await api.get('/users/all');
+      setCache(cacheKey, response.data.members || []);
       setUsers(response.data.members || []);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -130,7 +164,7 @@ export default function Admin() {
   const handleRoleChange = async (userId, newRole) => {
     try {
       await api.put(`/users/${userId}/role`, { role: newRole });
-      // Refresh users list
+      invalidateCache('admin-users');
       await fetchUsers();
       setEditingUserId(null);
     } catch (error) {
@@ -142,7 +176,7 @@ export default function Admin() {
   const handleValidateUser = async (userId) => {
     try {
       await api.post(`/users/${userId}/validate`);
-      // Refresh users list
+      invalidateCache('admin-users');
       await fetchUsers();
     } catch (error) {
       console.error('Error validating user:', error);
@@ -153,7 +187,7 @@ export default function Admin() {
   const handleRevokeValidation = async (userId) => {
     try {
       await api.post(`/users/${userId}/revoke-validation`);
-      // Refresh users list
+      invalidateCache('admin-users');
       await fetchUsers();
     } catch (error) {
       console.error('Error revoking validation:', error);
@@ -177,9 +211,11 @@ export default function Admin() {
       'Dean': 'bg-blue-100 text-blue-800',
       'Chairperson': 'bg-indigo-100 text-indigo-800',
       'Coordinator': 'bg-cyan-100 text-cyan-800',
+      'Research Coordinator': 'bg-sky-100 text-sky-800',
+      'Extension Coordinator': 'bg-teal-100 text-teal-800',
+      'GAD Coordinator': 'bg-violet-100 text-violet-800',
       'Faculty Member': 'bg-green-100 text-green-800',
-      'Staff': 'bg-emerald-100 text-emerald-800',
-      'CEIT Official': 'bg-teal-100 text-teal-800'
+      'CEIT Official': 'bg-orange-100 text-orange-800'
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
@@ -199,6 +235,7 @@ export default function Admin() {
         role: editingUser.role,
         department: editingUser.department
       });
+      invalidateCache('admin-users');
       await fetchUsers();
       setIsEditUserModalOpen(false);
       setEditingUser(null);
@@ -530,7 +567,7 @@ export default function Admin() {
                                 onChange={(e) => setSelectedRole(e.target.value)}
                                 className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500"
                               >
-                                {roles.map(role => (
+                                {getRolesForDepartment(u.department, u.id).map(role => (
                                   <option key={role} value={role}>
                                     {role}
                                   </option>
@@ -691,6 +728,7 @@ export default function Admin() {
       <CreateUserModal
         isOpen={showCreateUserModal}
         onClose={() => setShowCreateUserModal(false)}
+        deanExists={deanExists}
         onSuccess={() => {
           fetchUsers();
           setShowCreateUserModal(false);
@@ -731,7 +769,15 @@ export default function Admin() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Department</label>
                 <select
                   value={editingUser.department}
-                  onChange={(e) => setEditingUser(prev => ({ ...prev, department: e.target.value }))}
+                  onChange={(e) => setEditingUser(prev => {
+                    const newDept = e.target.value;
+                    const valid = getRolesForDepartment(newDept, prev.id);
+                    return {
+                      ...prev,
+                      department: newDept,
+                      role: valid.includes(prev.role) ? prev.role : (valid[0] || prev.role),
+                    };
+                  })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Select Department</option>
@@ -749,7 +795,7 @@ export default function Admin() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
                 >
                   <option value="">Select Role</option>
-                  {roles.map(role => (
+                  {getRolesForDepartment(editingUser.department, editingUser.id).map(role => (
                     <option key={role} value={role}>{role}</option>
                   ))}
                 </select>

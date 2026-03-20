@@ -1,0 +1,7 @@
+7:00 - Time in WFG
+
+7:00 - 11:00 : Added 3 new coordinators per department, Research Coordinator, Extension coordinator, GAD Coordinator branched to department and also faculty as well
+11:00 - 12:00 : Lunch break
+12:00 - 2:00 : Determining security risks, Reviewing System Implementation
+2:00 - 3:00 : Merging All Changes to teammates / Fixing issues on Admin modals and implementation of new users
+3:00 - 5:00 : Fixing bugs on /account time

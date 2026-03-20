@@ -87,11 +87,6 @@ class DashboardController extends Controller
                 'members:id,name,email',
                 'images:id,event_id,image_path,original_filename,order'
             ])
-            ->withCount([
-                'rescheduleRequests as has_pending_reschedule_requests' => function ($query) {
-                    $query->where('status', 'pending');
-                }
-            ])
             ->where('host_id', $user->id)
             ->where('is_personal', false)
             ->where('date', '>=', now()->subMonths(3)->format('Y-m-d')) // Only last 3 months
@@ -105,11 +100,6 @@ class DashboardController extends Controller
                 'host:id,name,email',
                 'members:id,name,email',
                 'images:id,event_id,image_path,original_filename,order'
-            ])
-            ->withCount([
-                'rescheduleRequests as has_pending_reschedule_requests' => function ($query) {
-                    $query->where('status', 'pending');
-                }
             ])
             ->whereHas('members', function ($q) use ($user) {
                 $q->where('users.id', $user->id);
@@ -143,8 +133,15 @@ class DashboardController extends Controller
             ->limit(100)
             ->get();
 
-        // Transform events
+        // Transform events — ensure date is always Y-m-d string
         $transformedEvents = $allEvents->map(function ($event) {
+            $date = $event->date;
+            if ($date instanceof \DateTime) {
+                $date = $date->format('Y-m-d');
+            } elseif (is_string($date) && strlen($date) > 10) {
+                $date = substr($date, 0, 10);
+            }
+
             return [
                 'id' => $event->id,
                 'title' => $event->title,
@@ -155,10 +152,9 @@ class DashboardController extends Controller
                     'url' => asset('storage/' . $img->image_path),
                     'original_filename' => $img->original_filename,
                 ]),
-                'date' => $event->date,
+                'date' => $date,
                 'time' => $event->time,
                 'school_year' => $event->school_year,
-                'has_pending_reschedule_requests' => $event->has_pending_reschedule_requests > 0,
                 'host' => [
                     'id' => $event->host->id,
                     'username' => $event->host->name,

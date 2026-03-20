@@ -1,18 +1,12 @@
 import { useState, useEffect } from 'react';
 import api from '../services/api';
 import DatePicker from './DatePicker';
-import HierarchyWarning from './HierarchyWarning';
 
-export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, hasSchedule = true, currentUser, approvedRequests = [] }) {
+export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, currentUser }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState('');
-  const [eventType, setEventType] = useState(
-    // Faculty and Staff default to 'meeting' but can choose 'event'
-    // Other roles default to 'event'
-    currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff' ? 'meeting' : 'event'
-  );
-  const [justification, setJustification] = useState(''); // For Faculty/Staff events only
+  const [eventType, setEventType] = useState('event');
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [date, setDate] = useState('');
@@ -27,17 +21,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [searchMember, setSearchMember] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
-  
-  // Approved request state
-  const [selectedApprovedRequest, setSelectedApprovedRequest] = useState(null);
-  
-  // Hierarchy validation state
-  const [hierarchyValidation, setHierarchyValidation] = useState({
-    requiresApproval: false,
-    violations: [],
-    approversNeeded: [],
-  });
-  const [validatingHierarchy, setValidatingHierarchy] = useState(false);
 
   // Calculate school year based on date
   const getSchoolYearFromDate = (dateString) => {
@@ -111,101 +94,18 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setDate(editingEvent.date);
       setTime(editingEvent.time);
       setSelectedMembers(editingEvent.members.map(m => m.id));
-    } else if (approvedRequests.length === 1 && !selectedApprovedRequest) {
-      // Auto-select if there's only one approved request
-      const request = approvedRequests[0];
-      console.log('Auto-selecting approved request:', request);
-      handleApprovedRequestSelect(request);
     }
-  }, [editingEvent, approvedRequests, selectedApprovedRequest]);
-
-  // Handle approved request selection
-  const handleApprovedRequestSelect = (request) => {
-    setSelectedApprovedRequest(request);
-    setTitle(request.title);
-    setDescription(request.description || '');
-    setLocation(request.location || '');
-    setEventType(request.event_type || 'event');
-    
-    // Parse date properly - handle both date strings and timestamps
-    const requestDate = request.date.includes('T') 
-      ? request.date.split('T')[0]  // Extract YYYY-MM-DD from timestamp
-      : request.date;
-    setDate(requestDate);
-    setTime(request.time);
-    
-    // Auto-invite the approvers (Dean/Chairperson who approved) AND any originally invited members
-    const approverIds = [];
-    if (request.dean_approver?.id) approverIds.push(request.dean_approver.id);
-    if (request.chair_approver?.id) approverIds.push(request.chair_approver.id);
-    
-    // Add originally invited members from the request
-    if (request.member_ids && Array.isArray(request.member_ids)) {
-      approverIds.push(...request.member_ids);
-    }
-    
-    console.log('Auto-inviting approvers and original members:', approverIds);
-    setSelectedMembers([...new Set(approverIds)]); // Remove duplicates
-  };
-
-  // Validate hierarchy when selected members change (skip if using approved request)
-  // DISABLED - Hierarchy validation feature disabled
-  useEffect(() => {
-    // Reset validation state
-    setHierarchyValidation({
-      requiresApproval: false,
-      violations: [],
-      approversNeeded: [],
-    });
-  }, [selectedMembers, editingEvent, selectedApprovedRequest]);
-
-  // DISABLED - Hierarchy validation feature disabled
-  /*
-  const validateHierarchy = async () => {
-    if (selectedMembers.length === 0) return;
-    
-    setValidatingHierarchy(true);
-    try {
-      const response = await api.post('/events/validate-hierarchy', {
-        member_ids: selectedMembers
-      });
-      
-      setHierarchyValidation(response.data);
-    } catch (error) {
-      console.error('Error validating hierarchy:', error);
-      // Reset validation on error
-      setHierarchyValidation({
-        requiresApproval: false,
-        violations: [],
-        approversNeeded: [],
-      });
-    } finally {
-      setValidatingHierarchy(false);
-    }
-  };
-  */
+  }, [editingEvent]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    // Validate justification for Faculty/Staff creating events
-    if ((currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') && 
-        eventType === 'event' && 
-        !justification.trim()) {
-      setError('Justification is required for event requests');
-      return;
-    }
-
-    // Validate date/time before submission
-    if (!validateDateTime()) {
-      return;
-    }
+    if (!validateDateTime()) return;
 
     setLoading(true);
 
-    // Declare formData outside try block so it's accessible in catch block
     const formData = new FormData();
     formData.append('title', title);
     formData.append('description', description);
@@ -213,35 +113,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     formData.append('event_type', eventType);
     formData.append('date', date);
     formData.append('time', time);
-    
-    // Add justification for Faculty/Staff events
-    if ((currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') && 
-        eventType === 'event') {
-      formData.append('justification', justification);
-    }
-    
-    // Always append school_year (it should always have a value)
-    console.log('Submitting with school_year:', schoolYear);
     formData.append('school_year', schoolYear);
 
-    images.forEach((image) => {
-      formData.append('images[]', image);
-    });
-
-    selectedMembers.forEach(id => {
-      formData.append('member_ids[]', id);
-    });
-
-    // Add approved_request_id if creating from an approved request
-    if (selectedApprovedRequest) {
-      console.log('Adding approved_request_id:', selectedApprovedRequest.id);
-      formData.append('approved_request_id', selectedApprovedRequest.id);
-    } else {
-      console.log('No approved request selected');
-    }
+    images.forEach((image) => formData.append('images[]', image));
+    selectedMembers.forEach(id => formData.append('member_ids[]', id));
 
     try {
-
       if (editingEvent) {
         await api.post(`/events/${editingEvent.id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
@@ -249,48 +126,28 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         });
         setSuccess('Event updated successfully');
       } else {
-        const response = await api.post('/events', formData, {
+        await api.post('/events', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
-
-        // Handle different response types
-        if (response.data.status === 'pending_approval') {
-          setSuccess(`Event submitted for approval. Waiting for approval from: ${response.data.approvers_needed.join(', ')}`);
-        } else {
-          setSuccess('Event created successfully');
-        }
+        setSuccess('Event created successfully');
         resetForm();
       }
 
       onEventCreated();
     } catch (err) {
-      console.error('Error creating event:', err);
-      console.error('Error response:', err.response?.data);
-      
-      // Handle schedule conflict warning (409 status) - Auto-proceed without confirmation
+      console.error('Error saving event:', err.response?.data);
+
+      // Schedule conflict — auto-retry with ignore flag
       if (err.response?.status === 409 && err.response?.data?.warning === 'schedule_conflict') {
-        const conflicts = err.response.data.conflicts;
-        
-        // Log conflicts for debugging
-        console.log('Schedule conflicts detected:', conflicts);
-        
-        // Automatically retry with ignore_conflicts flag (no user confirmation needed)
         formData.append('ignore_conflicts', 'true');
-        
         try {
-          const retryResponse = await api.post('/events', formData, {
+          await api.post('/events', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
           });
-          
-          if (retryResponse.data.status === 'pending_approval') {
-            setSuccess(`Event submitted for approval. Waiting for approval from: ${retryResponse.data.approvers_needed.join(', ')}`);
-          } else {
-            setSuccess('Event created successfully');
-          }
+          setSuccess('Event created successfully');
           resetForm();
           onEventCreated();
         } catch (retryErr) {
-          console.error('Error on retry:', retryErr);
           setError(retryErr.response?.data?.error || retryErr.response?.data?.message || 'Operation failed');
         }
       } else {
@@ -306,7 +163,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setDescription('');
     setLocation('');
     setEventType('event');
-    setJustification('');
     setImages([]);
     setImagePreviews([]);
     const now = new Date();
@@ -508,88 +364,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         </div>
       )}
 
-      {/* Hierarchy Warning */}
-      <HierarchyWarning 
-        violations={hierarchyValidation.violations}
-        approversNeeded={hierarchyValidation.approversNeeded}
-        validating={validatingHierarchy}
-      />
-
       <form onSubmit={handleSubmit}>
-        {/* Faculty/Staff Event Type Notice */}
-        {(currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') && !editingEvent && (
-          <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-start space-x-3">
-              <div className="bg-blue-100 rounded-lg p-2 flex-shrink-0">
-                <svg className="w-5 h-5 text-blue-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-blue-900 mb-2">Event Type Information</h3>
-                <div className="space-y-2 text-sm text-blue-700">
-                  <p><span className="font-semibold">Meetings:</span> Can be created freely without approval</p>
-                  <p><span className="font-semibold">Events:</span> Require approval from Dean and Chairperson before being posted to calendar</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Approved Request Selector - Only show if there are approved requests */}
-        {approvedRequests.length > 0 && !editingEvent && (
-          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-5 shadow-sm">
-            <div className="flex items-start space-x-3">
-              <div className="bg-green-100 rounded-lg p-2 flex-shrink-0">
-                <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-sm font-bold text-green-900 mb-2">Approved Event Request</h3>
-                {approvedRequests.length === 1 ? (
-                  <div className="bg-white rounded-lg p-4 border border-green-200">
-                    <p className="text-sm font-semibold text-gray-900 mb-2">{approvedRequests[0].title}</p>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      <p><span className="font-medium">Date:</span> {new Date(approvedRequests[0].date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at {approvedRequests[0].time}</p>
-                      <p><span className="font-medium">Location:</span> {approvedRequests[0].location}</p>
-                      {approvedRequests[0].description && (
-                        <p className="mt-2"><span className="font-medium">Description:</span> {approvedRequests[0].description}</p>
-                      )}
-                    </div>
-                    <p className="text-xs text-green-700 mt-3 font-medium">✓ Form pre-filled with request details. You can now invite members and finalize the event.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <p className="text-sm text-gray-700">Select which approved request to create an event for:</p>
-                    {approvedRequests.map((request) => (
-                      <button
-                        key={request.id}
-                        type="button"
-                        onClick={() => handleApprovedRequestSelect(request)}
-                        className={`w-full text-left bg-white rounded-lg p-4 border-2 transition-all ${
-                          selectedApprovedRequest?.id === request.id
-                            ? 'border-green-500 shadow-md'
-                            : 'border-green-200 hover:border-green-300 hover:shadow-sm'
-                        }`}
-                      >
-                        <p className="text-sm font-semibold text-gray-900 mb-2">{request.title}</p>
-                        <div className="space-y-1 text-xs text-gray-600">
-                          <p><span className="font-medium">Date:</span> {new Date(request.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at {request.time}</p>
-                          <p><span className="font-medium">Location:</span> {request.location}</p>
-                        </div>
-                        {selectedApprovedRequest?.id === request.id && (
-                          <p className="text-xs text-green-700 mt-2 font-medium">✓ Selected</p>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Event Details Box (1/3 width) */}
           <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -648,98 +423,31 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               {/* Event Type Selection */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-3">Type</label>
-                {currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff' ? (
-                  // Faculty and Staff can choose between event and meeting
-                  <div className="space-y-3">
-                    <div className="flex space-x-4">
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="eventType"
-                          value="event"
-                          checked={eventType === 'event'}
-                          onChange={(e) => setEventType(e.target.value)}
-                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 font-medium">Event</span>
-                      </label>
-                      <label className="flex items-center cursor-pointer">
-                        <input
-                          type="radio"
-                          name="eventType"
-                          value="meeting"
-                          checked={eventType === 'meeting'}
-                          onChange={(e) => setEventType(e.target.value)}
-                          className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300"
-                        />
-                        <span className="ml-2 text-sm text-gray-700 font-medium">Meeting</span>
-                      </label>
-                    </div>
-                    {eventType === 'event' && (
-                      <div className="flex items-start space-x-2 bg-amber-50 border border-amber-200 rounded-lg p-2">
-                        <svg className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <p className="text-xs text-amber-700">Requires Dean + Chairperson approval</p>
-                      </div>
-                    )}
-                    {eventType === 'meeting' && (
-                      <div className="flex items-start space-x-2 bg-green-50 border border-green-200 rounded-lg p-2">
-                        <svg className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="text-xs text-green-700">No approval needed - created immediately</p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  // Dean, CEIT Official, Chairperson, Coordinator can choose
-                  <div className="flex space-x-4">
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="eventType"
-                        value="event"
-                        checked={eventType === 'event'}
-                        onChange={(e) => setEventType(e.target.value)}
-                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700 font-medium">Event</span>
-                    </label>
-                    <label className="flex items-center cursor-pointer">
-                      <input
-                        type="radio"
-                        name="eventType"
-                        value="meeting"
-                        checked={eventType === 'meeting'}
-                        onChange={(e) => setEventType(e.target.value)}
-                        className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300"
-                      />
-                      <span className="ml-2 text-sm text-gray-700 font-medium">Meeting</span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Justification Textbox - Only for Faculty/Staff when Event is selected */}
-              {(currentUser?.role === 'Faculty Member' || currentUser?.role === 'Staff') && eventType === 'event' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Justification <span className="text-red-500">*</span>
+                <div className="flex space-x-4">
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eventType"
+                      value="event"
+                      checked={eventType === 'event'}
+                      onChange={(e) => setEventType(e.target.value)}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700 font-medium">Event</span>
                   </label>
-                  <textarea
-                    rows="3"
-                    required
-                    value={justification}
-                    onChange={(e) => setJustification(e.target.value)}
-                    placeholder="Explain why this event is necessary and its expected benefits..."
-                    className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-amber-600/20 focus:border-amber-600 transition-colors resize-none"
-                  />
-                  <p className="mt-1 text-xs text-gray-500">
-                    This justification will be reviewed by the Dean and Chairperson during the approval process.
-                  </p>
+                  <label className="flex items-center cursor-pointer">
+                    <input
+                      type="radio"
+                      name="eventType"
+                      value="meeting"
+                      checked={eventType === 'meeting'}
+                      onChange={(e) => setEventType(e.target.value)}
+                      className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700 font-medium">Meeting</span>
+                  </label>
                 </div>
-              )}
+              </div>
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">

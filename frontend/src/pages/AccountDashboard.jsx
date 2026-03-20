@@ -1,9 +1,146 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import logo from '../assets/CEIT-LOGO.png';
 import api from '../services/api';
+import { getCache, setCache, invalidateCache } from '../services/cache';
+
+// Scrollbar-hidden style for time columns
+const noScrollbar = {
+  overflowY: 'scroll',
+  scrollbarWidth: 'none',       // Firefox
+  msOverflowStyle: 'none',      // IE/Edge
+};
+
+// Time input: text box showing "HH:MM AM/PM" + dropdown attached below the input
+function TimePickerInput({ value, onChange }) {
+  const to12 = (v) => {
+    if (!v) return '';
+    const [hStr, mStr] = v.split(':');
+    const h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    return `${String(h12).padStart(2, '0')}:${mStr} ${ampm}`;
+  };
+
+  const to24 = (display) => {
+    const match = display.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) return null;
+    let h = parseInt(match[1], 10);
+    const m = match[2];
+    const ap = match[3].toUpperCase();
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    if (h < 0 || h > 23 || parseInt(m) < 0 || parseInt(m) > 59) return null;
+    return `${String(h).padStart(2, '0')}:${m}`;
+  };
+
+  const parse = (v) => {
+    if (!v) return { hour12: 7, minute: '00', ampm: 'AM' };
+    const [hStr, mStr] = v.split(':');
+    const h = parseInt(hStr, 10);
+    return { hour12: h % 12 || 12, minute: mStr || '00', ampm: h >= 12 ? 'PM' : 'AM' };
+  };
+
+  const [display, setDisplay] = useState(to12(value));
+  const [open, setOpen] = useState(false);
+  const [dropPos, setDropPos] = useState({ top: 0, left: 0 });
+  const ref = useRef(null);
+  const { hour12, minute, ampm } = parse(value);
+
+  useEffect(() => { setDisplay(to12(value)); }, [value]);
+
+  // Recalculate position on open — viewport-relative for fixed positioning
+  const openDropdown = () => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setDropPos({ top: rect.bottom + 4, left: rect.left });
+    }
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const emit = (h12, m, ap) => {
+    let h = parseInt(h12, 10);
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    onChange(`${String(h).padStart(2, '0')}:${m}`);
+  };
+
+  const handleBlur = (e) => {
+    if (ref.current && ref.current.contains(e.relatedTarget)) return;
+    const parsed = to24(display);
+    if (parsed) { onChange(parsed); setDisplay(to12(parsed)); }
+    else setDisplay(to12(value));
+  };
+
+  const hours = Array.from({ length: 12 }, (_, i) => i + 1);
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+
+  const colItem = (active, onClick, label) => (
+    <button
+      key={label}
+      onMouseDown={e => { e.preventDefault(); onClick(); }}
+      className={`w-full text-center px-2 py-1 text-sm rounded transition-colors ${
+        active ? 'bg-green-600 text-white font-semibold' : 'hover:bg-green-100 text-gray-700'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  return (
+    <div ref={ref} className="relative inline-block">
+      <div className="flex items-center border border-green-400 rounded-lg focus-within:ring-2 focus-within:ring-green-600 bg-white">
+        <input
+          type="text"
+          value={display}
+          placeholder="07:00 AM"
+          onChange={e => setDisplay(e.target.value)}
+          onFocus={openDropdown}
+          onBlur={handleBlur}
+          className="px-2 py-1.5 text-sm w-24 focus:outline-none bg-transparent"
+        />
+        <button
+          tabIndex={-1}
+          onMouseDown={e => { e.preventDefault(); open ? setOpen(false) : openDropdown(); }}
+          className="px-1.5 text-green-500 hover:text-green-700"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+      </div>
+
+      {open && (
+        <div
+          className="fixed z-[9999] bg-white border border-green-300 rounded-lg shadow-xl flex"
+          style={{ top: dropPos.top, left: dropPos.left }}
+        >
+          {/* Hours — scrollable, no scrollbar */}
+          <div className="flex flex-col w-12 border-r border-green-200 py-1" style={{ ...noScrollbar, maxHeight: '11rem' }}>
+            <style>{`.no-sb::-webkit-scrollbar{display:none}`}</style>
+            {hours.map(h => colItem(hour12 === h, () => emit(h, minute, ampm), String(h).padStart(2, '0')))}
+          </div>
+          {/* Minutes — scrollable, no scrollbar */}
+          <div className="flex flex-col w-12 border-r border-green-200 py-1 no-sb" style={{ ...noScrollbar, maxHeight: '11rem' }}>
+            {minutes.map(m => colItem(minute === m, () => emit(hour12, m, ampm), m))}
+          </div>
+          {/* AM/PM — fixed, no scroll needed */}
+          <div className="flex flex-col py-1 w-12">
+            {['AM', 'PM'].map(ap => colItem(ampm === ap, () => { emit(hour12, minute, ap); setOpen(false); }, ap))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
@@ -114,31 +251,46 @@ export default function AccountDashboard() {
 
   const fetchSchedule = async () => {
     setScheduleLoading(true);
+    const cacheKey = `schedule:${user?.id}`;
+    const cached = getCache(cacheKey);
+
+    if (cached) {
+      setSchedule(cached);
+      setScheduleLoading(false);
+      // Background refresh
+      try {
+        const response = await api.get('/schedules');
+        if (response.data.schedule) {
+          const formatted = {};
+          days.forEach(day => {
+            formatted[day] = (response.data.schedule[day] || []).map(slot => ({
+              id: slot.id, startTime: slot.startTime, endTime: slot.endTime, description: slot.description
+            }));
+          });
+          setCache(cacheKey, formatted);
+          setSchedule(formatted);
+        }
+      } catch { /* silently fail */ }
+      return;
+    }
+
     try {
       const response = await api.get('/schedules');
       const data = response.data;
-      
       if (data.schedule) {
-        // Convert the API response to the format expected by the component
         const formattedSchedule = {};
         days.forEach(day => {
           formattedSchedule[day] = (data.schedule[day] || []).map(slot => ({
-            id: slot.id,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            description: slot.description,
-            color: slot.color || '#10b981'
+            id: slot.id, startTime: slot.startTime, endTime: slot.endTime, description: slot.description
           }));
         });
+        setCache(cacheKey, formattedSchedule);
         setSchedule(formattedSchedule);
       }
     } catch (error) {
       console.error('Error fetching schedule:', error);
-      // Set empty schedule on error so UI still shows
       const emptySchedule = {};
-      days.forEach(day => {
-        emptySchedule[day] = [];
-      });
+      days.forEach(day => { emptySchedule[day] = []; });
       setSchedule(emptySchedule);
     } finally {
       setScheduleLoading(false);
@@ -253,6 +405,7 @@ export default function AccountDashboard() {
       setScheduleEditMode(false);
       
       // Refresh schedule to get IDs from database and updated initialized status
+      invalidateCache(`schedule:${user?.id}`);
       await fetchSchedule();
       
       // Update user context to reflect schedule_initialized = true
@@ -321,6 +474,7 @@ export default function AccountDashboard() {
       setScheduleEditMode(false);
       
       // Refresh schedule to get IDs from database and updated initialized status
+      invalidateCache(`schedule:${user?.id}`);
       await fetchSchedule();
       
       // Update user context to reflect schedule_initialized = true
@@ -465,7 +619,7 @@ export default function AccountDashboard() {
                     Schedule Setup Required
                   </h3>
                   <p className="text-amber-700 mb-4">
-                    Welcome! Before you can access the event management features, you need to set up your class schedule. 
+                    Welcome! Before you can access the event management features, you need to set up your schedule. 
                     This helps prevent scheduling conflicts with your classes. You can save an empty schedule if you don't have classes yet.
                   </p>
                   <div className="flex items-center space-x-4">
@@ -516,14 +670,14 @@ export default function AccountDashboard() {
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
             {/* Class Schedule Section - 3/5 width */}
             <div className="lg:col-span-3">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-visible hover:shadow-xl transition-shadow duration-300 h-full">
                 <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6 flex justify-between items-center">
                 <div>
                   <h3 className="text-2xl font-bold text-white flex items-center gap-2">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Class Schedule
+                    Weekly Schedule
                     {!user?.schedule_initialized && !scheduleSaving && (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white animate-pulse">
                         <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -692,7 +846,7 @@ export default function AccountDashboard() {
                         {scheduleEditMode && <p className="text-sm mt-1">Click "Add Class" to add a class</p>}
                       </div>
                     ) : (
-                      <div className="bg-white rounded-lg overflow-hidden border border-green-300">
+                      <div className="bg-white rounded-lg overflow-visible border border-green-300">
                         <table className="w-full">
                           <thead>
                             <tr className="bg-green-200">
@@ -734,18 +888,14 @@ export default function AccountDashboard() {
                                 <td className="px-4 py-3">
                                   {scheduleEditMode ? (
                                     <div className="flex items-center gap-2">
-                                      <input
-                                        type="time"
+                                      <TimePickerInput
                                         value={slot.startTime}
-                                        onChange={(e) => updateClassSlot(selectedDay, slot.id, 'startTime', e.target.value)}
-                                        className="px-2 py-1.5 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 w-28"
+                                        onChange={(v) => updateClassSlot(selectedDay, slot.id, 'startTime', v)}
                                       />
                                       <span className="text-gray-500 font-bold">-</span>
-                                      <input
-                                        type="time"
+                                      <TimePickerInput
                                         value={slot.endTime}
-                                        onChange={(e) => updateClassSlot(selectedDay, slot.id, 'endTime', e.target.value)}
-                                        className="px-2 py-1.5 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 w-28"
+                                        onChange={(v) => updateClassSlot(selectedDay, slot.id, 'endTime', v)}
                                       />
                                     </div>
                                   ) : (
@@ -1026,7 +1176,7 @@ export default function AccountDashboard() {
                 <ol className="text-xs text-blue-700 list-decimal list-inside space-y-1">
                   <li>Administrator reviews your account</li>
                   <li>You'll gain access to all features</li>
-                  <li>Set up your class schedule</li>
+                  <li>Set up your weekly schedule</li>
                   <li>Create and manage events</li>
                 </ol>
               </div>
