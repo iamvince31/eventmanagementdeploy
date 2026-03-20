@@ -20,17 +20,6 @@ return new class extends Migration
             $table->index('is_personal', 'idx_events_is_personal');
         });
 
-        // Add indexes to event_requests table
-        Schema::table('event_requests', function (Blueprint $table) {
-            $table->index('status', 'idx_event_requests_status');
-            $table->index('department', 'idx_event_requests_department');
-            $table->index('dean_approved_by', 'idx_event_requests_dean_approved_by');
-            $table->index('chair_approved_by', 'idx_event_requests_chair_approved_by');
-            $table->index(['status', 'requested_by'], 'idx_event_requests_status_requester');
-            $table->index(['status', 'department'], 'idx_event_requests_status_dept');
-            $table->index('date', 'idx_event_requests_date');
-        });
-
         // Add index to event_user pivot table
         Schema::table('event_user', function (Blueprint $table) {
             $table->index('status', 'idx_event_user_status');
@@ -77,16 +66,6 @@ return new class extends Migration
             $table->dropIndex('idx_events_school_year');
             $table->dropIndex('idx_events_event_type');
             $table->dropIndex('idx_events_is_personal');
-        });
-
-        Schema::table('event_requests', function (Blueprint $table) {
-            $table->dropIndex('idx_event_requests_status');
-            $table->dropIndex('idx_event_requests_department');
-            $table->dropIndex('idx_event_requests_dean_approved_by');
-            $table->dropIndex('idx_event_requests_chair_approved_by');
-            $table->dropIndex('idx_event_requests_status_requester');
-            $table->dropIndex('idx_event_requests_status_dept');
-            $table->dropIndex('idx_event_requests_date');
         });
 
         Schema::table('event_user', function (Blueprint $table) {

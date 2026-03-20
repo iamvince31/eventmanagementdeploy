@@ -5,4 +5,6 @@
 10:00 - 11:00 : Removed upcoming events button on navbar
 11:00 - 12:00 : Lunch  break
 12:00 - 2:00 : Merging, Implementing final changes before consultation
-2:00 - 4:00 : Debugging merged changes
+2:00 - 3:00 : Debugging merged changes
+2:00 - 4:00 : Fixed bug on dean x chairperson approval posting bug on faculty inviting only the dean and faculty itself on faculty conducting an event
+4:00 - 5:00 : Supervisor consultation on the status of the system

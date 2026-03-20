@@ -1,0 +1,6 @@
+7:00 : Time in
+
+7:00 - 11:00 : Determining what needs to be implemented and changed 
+11:00 - 12:00 : Lunch break
+12:00 - 2:00 :  Removing event requests to faculty-staff based on suggestion
+2:00 - 5:00 : Optimizing again the system because of its slow loading times

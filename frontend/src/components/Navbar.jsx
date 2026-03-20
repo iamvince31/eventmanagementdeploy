@@ -6,7 +6,6 @@ import api from '../services/api';
 import logo from "../assets/CvSU Logo.png";
 
 export default function Navbar({
-  approvedRequests = [],
   isLoading = false
 }) {
   const navigate = useNavigate();
@@ -138,7 +137,6 @@ export default function Navbar({
                   events={events}
                   user={user}
                   onNotificationClick={(event) => navigate('/dashboard', { state: { viewEvent: event } })}
-                  approvedRequests={approvedRequests}
                   isDisabled={isLoading}
                 />
               </div>
@@ -226,7 +224,6 @@ export default function Navbar({
                   events={events}
                   user={user}
                   onNotificationClick={(event) => navigate('/dashboard', { state: { viewEvent: event } })}
-                  approvedRequests={approvedRequests}
                   isDisabled={isLoading}
                 />
               </div>

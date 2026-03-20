@@ -380,13 +380,14 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
         clickedDate: dateStr
       }] : [];
       
+      // allEvents includes schedules for "View All" modal, but eventsToDisplay excludes them
+      // so regular/academic events are never displaced by the schedule indicator
       const allEvents = [...academicEvents, ...groupedSchedules, ...regularEvents];
+      const nonScheduleEvents = [...academicEvents, ...regularEvents];
 
-      // Display limit: show first 1 event total across all types to prevent text cutoff
+      // Display limit: show first 1 non-schedule event to prevent text cutoff
       const displayLimit = 1;
-      
-      // Get first 2 events from all combined events for display
-      const eventsToDisplay = allEvents.slice(0, displayLimit);
+      const eventsToDisplay = nonScheduleEvents.slice(0, displayLimit);
 
       // Check if this cell will show "View More" button
       const hasViewMore = allEvents.length > displayLimit;
@@ -394,6 +395,12 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
       // Check for conflicts on this date
       const dateHasConflicts = isCurrentMonth && !isPastDate && hasConflicts(dateStr);
       
+      // Check if this day has a weekly schedule (regardless of semester — for the full year tint)
+      const dayOfWeek = cellDate.getDay();
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const cellDayName = dayNames[dayOfWeek];
+      const hasWeeklySchedule = userSchedules.some(s => s.day === cellDayName);
+
       days.push(
         <div
           key={`${cellYear}-${cellMonth}-${cellDay}`}
@@ -402,12 +409,14 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
               handleDateClick(dateStr);
             }
           }}
-          className={`h-full p-0.5 border border-gray-200 -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
+          className={`h-full p-0.5 border -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
+            ${hasWeeklySchedule && isCurrentMonth ? 'border-green-400' : 'border-gray-200'}
             ${isCurrentMonth ? (isPastDate ? 'cursor-default bg-gray-50' : 'cursor-default bg-white') : 'bg-gray-50/50'}
             ${selected && !isPastDate ? 'ring-2 ring-green-500 ring-inset z-10' : ''}
             ${highlighted && !isPastDate ? 'ring-2 ring-green-400 animate-pulse z-10' : ''}
             ${isPastDate ? 'opacity-60' : ''}
           `}
+          style={hasWeeklySchedule && isCurrentMonth ? { backgroundColor: isPastDate ? 'rgba(20,83,45,0.07)' : 'rgba(22,163,74,0.1)' } : undefined}
         >
           {/* Date Number and Conflict Indicator */}
           <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
@@ -450,8 +459,7 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
             <div className="flex-1 space-y-0.5 overflow-hidden">
               {/* Display first 1 event of any type */}
               {eventsToDisplay.map((event, idx) => {
-                const isAcademic = event.is_default_event || (!event.time && !event.is_schedule);
-                const isSchedule = event.is_schedule || event.type === 'schedule';
+                const isAcademic = event.is_default_event === true;
                 const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                 const isPersonal = event.is_personal;
                 const isMeeting = event.event_type === 'meeting';
@@ -469,26 +477,6 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
                       onClick={(e) => !isPastDate && handleEventClick(event, e)}
                     >
                       {event.name}
-                    </div>
-                  );
-                } else if (isSchedule) {
-                  // Get day name from the date
-                  const scheduleDate = new Date(dateStr);
-                  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                  const dayName = dayNames[scheduleDate.getDay()];
-                  
-                  return (
-                    <div
-                      key={`schedule-${idx}`}
-                      className={`text-[8px] sm:text-xs px-1 py-0.5 rounded-sm truncate font-normal shadow-sm transition-all ${
-                        isPastDate 
-                          ? 'bg-gray-300 text-gray-600 opacity-75' 
-                          : 'bg-orange-500 text-white cursor-pointer hover:bg-orange-600'
-                      }`}
-                      title={`${dayName} Classes - Click to view schedule`}
-                      onClick={(e) => !isPastDate && handleEventClick({ ...event, clickedDate: dateStr }, e)}
-                    >
-                      {dayName} Classes
                     </div>
                   );
                 } else {
@@ -517,6 +505,8 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
                   );
                 }
               })}
+
+
 
               {/* "View All" button - only show when total events > 1 and not past */}
               {!isPastDate && allEvents.length > displayLimit && (
@@ -593,19 +583,19 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
         <div className="mt-1 sm:mt-2 pt-1.5 sm:pt-2 flex-shrink-0 overflow-x-auto">
           <div className="flex flex-wrap gap-2 sm:gap-3 text-[9px] sm:text-xs pb-1 max-w-full">
             <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded flex-shrink-0" style={{ backgroundColor: 'rgba(22,163,74,0.1)', border: '1px solid #4ade80' }}></div>
+              <span className="text-gray-600 font-medium">Class Day</span>
+            </div>
+            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-blue-500 flex-shrink-0"></div>
               <span className="text-gray-600 font-medium">Academic Event</span>
             </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-orange-500 flex-shrink-0"></div>
-              <span className="text-gray-600 font-medium">Class Schedule</span>
-            </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-red-500 flex-shrink-0"></div>
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-red-500"></div>
               <span className="text-gray-600 font-medium">Hosting Event</span>
             </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-              <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-green-500 flex-shrink-0"></div>
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-green-500"></div>
               <span className="text-gray-600 font-medium">Invited Event</span>
             </div>
             <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
@@ -657,7 +647,7 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
             <div className="flex-1 overflow-y-auto">
               <div className="divide-y divide-gray-100">
                 {moreModalEvents.map((event, idx) => {
-                  const isAcademic = event.is_default_event || (!event.time && !event.is_schedule);
+                  const isAcademic = event.is_default_event === true;
                   const isSchedule = event.is_schedule || event.type === 'schedule';
                   const isHosted = currentUser && event.host && event.host.id === currentUser.id;
                   const isPersonal = event.is_personal;

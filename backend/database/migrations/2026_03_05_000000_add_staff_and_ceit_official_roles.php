@@ -13,7 +13,7 @@ return new class extends Migration
     public function up(): void
     {
         // Add new roles to the role enum
-        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member', 'Staff', 'CEIT Official') DEFAULT 'Faculty Member'");
+        DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member', 'CEIT Official') DEFAULT 'Faculty Member'");
     }
 
     /**

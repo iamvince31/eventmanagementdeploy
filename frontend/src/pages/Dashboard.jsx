@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { getCache, setCache } from '../services/cache';
 import Calendar from '../components/Calendar';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
@@ -18,7 +19,6 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
-  const [userSchedule, setUserSchedule] = useState({});
   const [highlightedDate, setHighlightedDate] = useState(null);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
 
@@ -30,17 +30,6 @@ export default function Dashboard() {
   const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
   const [hasSchedule, setHasSchedule] = useState(true);
 
-  // Reschedule States
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [rescheduleDate, setRescheduleDate] = useState('');
-  const [rescheduleTime, setRescheduleTime] = useState('');
-  const [rescheduleReason, setRescheduleReason] = useState('');
-  const [rescheduleRequests, setRescheduleRequests] = useState([]);
-
-  // Decline Reason State
-  const [isDeclineModalOpen, setIsDeclineModalOpen] = useState(false);
-  const [declineReason, setDeclineReason] = useState('');
-  const [decliningEventId, setDecliningEventId] = useState(null);
 
   useEffect(() => {
     // Check if user is validated
@@ -78,95 +67,54 @@ export default function Dashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isAccountDropdownOpen]);
 
-  const fetchData = async () => {
-    try {
-      // Use the new optimized dashboard endpoint
-      const response = await api.get('/dashboard');
-      const { events: fetchedEvents, defaultEvents: fetchedDefaultEvents, userSchedules: fetchedUserSchedules, members: fetchedMembers } = response.data;
-      
-      // Filter out default events from the regular events list to avoid duplicates
-      const regularEventsOnly = fetchedEvents.filter(event => !event.is_default_event);
-      
-      setEvents(regularEventsOnly);
-      setMembers(fetchedMembers);
-      setDefaultEvents(fetchedDefaultEvents);
-      setUserSchedules(fetchedUserSchedules || []);
+  const applyDashboardData = (data, isBackground = false) => {
+    const { events: fetchedEvents, defaultEvents: fetchedDefaultEvents, members: fetchedMembers, userSchedules: fetchedSchedules } = data;
+    const regularEventsOnly = fetchedEvents.filter(event => !event.is_default_event);
 
-      // Auto-select today's events (including default events and schedule events)
-      const today = new Date();
-      const todayStr = today.toISOString().split('T')[0];
+    setEvents(regularEventsOnly);
+    setMembers(fetchedMembers);
+    setDefaultEvents(fetchedDefaultEvents);
+    if (fetchedSchedules) setUserSchedules(fetchedSchedules);
+
+    // Only auto-select today on initial load (not background refresh)
+    if (!isBackground) {
+      const todayStr = new Date().toISOString().split('T')[0];
       const todayRegularEvents = regularEventsOnly.filter(event => event.date === todayStr);
-      
-      // Get default events for today
       const todayDefaultEvents = fetchedDefaultEvents.filter(defEvent => {
         if (!defEvent.date) return false;
-        
         const eventStartDate = new Date(defEvent.date);
         const checkDate = new Date(todayStr);
-        
-        if (!defEvent.end_date) {
-          return eventStartDate.toDateString() === checkDate.toDateString();
-        }
-        
-        const eventEndDate = new Date(defEvent.end_date);
-        return checkDate >= eventStartDate && checkDate <= eventEndDate;
+        if (!defEvent.end_date) return eventStartDate.toDateString() === checkDate.toDateString();
+        return checkDate >= new Date(defEvent.date) && checkDate <= new Date(defEvent.end_date);
       }).map(defEvent => ({
-        ...defEvent,
-        is_default_event: true,
-        title: defEvent.name,
-        time: 'All Day',
-        host: { id: 0, username: 'Academic Calendar', email: '' },
-        members: [],
-        images: []
+        ...defEvent, is_default_event: true, title: defEvent.name, time: 'All Day',
+        host: { id: 0, username: 'Academic Calendar', email: '' }, members: [], images: []
       }));
+      setSelectedDateEvents([...todayRegularEvents, ...todayDefaultEvents]);
+    }
+  };
 
-      // Get schedule events for today
-      const todayDate = new Date(todayStr);
-      const dayOfWeek = todayDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const dayName = dayNames[dayOfWeek];
+  const fetchData = async () => {
+    const cacheKey = `dashboard:${user?.id}`;
+    const cached = getCache(cacheKey);
 
-      // Get current semester (based on today's date)
-      const currentDate = new Date();
-      const currentMonth = currentDate.getMonth() + 1;
-      let currentSemester;
-      
-      if (currentMonth >= 9 || currentMonth <= 1) {
-        currentSemester = 'first';
-      } else if (currentMonth >= 2 && currentMonth <= 6) {
-        currentSemester = 'second';
-      } else if (currentMonth >= 7 && currentMonth <= 8) {
-        currentSemester = 'midyear';
-      }
+    if (cached) {
+      // Render cached data instantly — no spinner
+      applyDashboardData(cached, false);
+      setLoading(false);
+      // Silently refresh in background
+      try {
+        const response = await api.get('/dashboard');
+        setCache(cacheKey, response.data);
+        applyDashboardData(response.data, true);
+      } catch { /* silently fail */ }
+      return;
+    }
 
-      // Check if today falls within the current semester (it should, but let's be explicit)
-      const todayMonth = todayDate.getMonth() + 1;
-      let todayInCurrentSemester = false;
-      
-      if (currentSemester === 'first' && (todayMonth >= 9 || todayMonth <= 1)) {
-        todayInCurrentSemester = true;
-      } else if (currentSemester === 'second' && (todayMonth >= 2 && todayMonth <= 6)) {
-        todayInCurrentSemester = true;
-      } else if (currentSemester === 'midyear' && (todayMonth >= 7 && todayMonth <= 8)) {
-        todayInCurrentSemester = true;
-      }
-
-      const todayScheduleEvents = (fetchedUserSchedules || []).filter(schedule => {
-        if (schedule.day !== dayName) {
-          return false;
-        }
-        
-        // Only show schedules when today falls within the current semester
-        return todayInCurrentSemester;
-      }).map(schedule => ({
-        ...schedule,
-        is_schedule: true,
-        host: { id: user?.id || 0, username: user?.name || 'You', email: user?.email || '' },
-        members: [],
-        images: []
-      }));
-      
-      setSelectedDateEvents([...todayRegularEvents, ...todayDefaultEvents, ...todayScheduleEvents]);
+    try {
+      const response = await api.get('/dashboard');
+      setCache(cacheKey, response.data);
+      applyDashboardData(response.data, false);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -174,8 +122,7 @@ export default function Dashboard() {
     }
   };
 
-  const handleEdit = (event) => {
-    if (event.is_personal) {
+  const handleEdit = (event) => {    if (event.is_personal) {
       navigate('/personal-event', { state: { event } });
     } else {
       navigate('/add-event', { state: { event } });
@@ -193,19 +140,6 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error deleting event:', error);
       alert('Failed to delete event: ' + (error.response?.data?.error || error.message));
-    }
-  };
-
-  const handleViewEvent = async (event) => {
-    setSelectedEvent(event);
-    setIsModalOpen(true);
-
-    await fetchUserSchedule();
-
-    if (user && event.host.id === user.id) {
-      fetchRescheduleRequests(event.id);
-    } else {
-      setRescheduleRequests([]);
     }
   };
 
@@ -296,133 +230,12 @@ export default function Dashboard() {
     setSelectedDateEvents(allEvents);
   };
 
-  const fetchRescheduleRequests = async (eventId) => {
-    try {
-      const response = await api.get(`/events/${eventId}/reschedule-requests`);
-      setRescheduleRequests(response.data.requests);
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-    }
-  };
-
-  const handleRescheduleClick = () => {
-    setRescheduleDate(selectedEvent.date);
-    setRescheduleTime(selectedEvent.time);
-    setRescheduleReason('');
-    setIsRescheduleModalOpen(true);
-  };
-
-  const submitRescheduleRequest = async (e) => {
-    e.preventDefault();
-    try {
-      await api.post(`/events/${selectedEvent.id}/reschedule`, {
-        suggested_date: rescheduleDate,
-        suggested_time: rescheduleTime,
-        reason: rescheduleReason,
-      });
-      alert('Reschedule request sent!');
-      setIsRescheduleModalOpen(false);
-    } catch (error) {
-      console.error('Error sending request:', error);
-      alert('Failed to send request: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleRespondToReschedule = async (requestId, status) => {
-    try {
-      await api.post(`/reschedule-requests/${requestId}/respond`, { status });
-      await fetchRescheduleRequests(selectedEvent.id);
-      await fetchData();
-
-      if (status === 'accepted') {
-        setIsModalOpen(false);
-      }
-    } catch (error) {
-      console.error('Error responding:', error);
-      alert('Failed to respond: ' + (error.response?.data?.message || error.message));
-    }
-  };
-
-  const handleDeclineWithReason = async () => {
-    if (!declineReason.trim()) {
-      alert('Please provide a reason for declining');
-      return;
-    }
-
-    try {
-      // Decline the event
-      await api.post(`/events/${decliningEventId}/respond`, { status: 'declined' });
-      
-      // Send decline reason message to host
-      const event = events.find(e => e.id === decliningEventId);
-      if (event && event.host) {
-        await api.post('/messages', {
-          recipient_id: event.host.id,
-          event_id: decliningEventId,
-          type: 'decline_reason',
-          message: declineReason
-        });
-      }
-
-      // Refresh data
-      await fetchData();
-      const updatedRes = await api.get('/events');
-      const updatedEvent = updatedRes.data.events.find(e => e.id === decliningEventId);
-      if (updatedEvent) setSelectedEvent(updatedEvent);
-
-      // Close modals and reset state
-      setIsDeclineModalOpen(false);
-      setDeclineReason('');
-      setDecliningEventId(null);
-    } catch (error) {
-      console.error('Error declining invitation:', error);
-      alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
-    }
-  };
-
-  // Helper function to fetch user schedule
-  const fetchUserSchedule = async () => {
-    try {
-      const response = await api.get('/schedule');
-      setUserSchedule(response.data.schedule || {});
-      setHasSchedule(true);
-    } catch (error) {
-      console.error('Error fetching schedule:', error);
-      setHasSchedule(false);
-    }
-  };
-
-  // Helper function to check schedule conflicts
-  const checkScheduleConflict = (event) => {
-    if (!event || !userSchedule) return null;
-    
-    const eventDate = new Date(event.date);
-    const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][eventDate.getDay()];
-    const daySchedule = userSchedule[dayOfWeek];
-    
-    if (!daySchedule || daySchedule.length === 0) return null;
-    
-    const eventTime = event.time;
-    const conflicts = daySchedule.filter(slot => {
-      // Simple time overlap check
-      return slot.startTime <= eventTime && slot.endTime >= eventTime;
-    });
-    
-    return conflicts.length > 0 ? conflicts : null;
-  };
-
-  // Helper function to fix image URLs
   const getFixedImageUrl = (url) => {
     if (!url) return '';
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
     return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url.startsWith('/') ? url : '/' + url}`;
   };
   const getImageUrl = (image) => getFixedImageUrl(typeof image === 'string' ? image : image?.url);
-
-  // Helper function for add event click
-  const handleAddEventClick = () => {
-    navigate('/add-event', { state: { selectedDate } });
-  };
 
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col overflow-hidden">
@@ -451,19 +264,9 @@ export default function Dashboard() {
             )}
             
             {/* Role-based Event Creation Buttons */}
-            {user?.role === 'Faculty Member' || user?.role === 'Staff' ? (
-              // Faculty Members and Staff can now use Add Event (with restrictions)
+            {user?.role === 'Faculty Member' ? (
+              // Faculty Members can use Add Event
               <>
-                <button
-                  onClick={() => navigate('/event-requests')}
-                  className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
-                >
-                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <span className="hidden sm:inline">Event Requests</span>
-                  <span className="sm:hidden">Requests</span>
-                </button>
                 <button
                   onClick={() => navigate('/personal-event', { state: { selectedDate } })}
                   className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
@@ -487,18 +290,6 @@ export default function Dashboard() {
             ) : user?.role === 'Coordinator' || user?.role === 'Chairperson' || user?.role === 'Dean' || user?.role === 'Admin' || user?.role === 'CEIT Official' ? (
               // Coordinators, Chairpersons, Deans, CEIT Officials, and Admins can create events directly
               <>
-                {(user?.role === 'Dean' || user?.role === 'Chairperson') && (
-                  <button
-                    onClick={() => navigate('/event-requests')}
-                    className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
-                  >
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    <span className="hidden sm:inline">Event Requests</span>
-                    <span className="sm:hidden">Requests</span>
-                  </button>
-                )}
                 <button
                   onClick={() => navigate('/personal-event', { state: { selectedDate } })}
                   className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
@@ -568,33 +359,6 @@ export default function Dashboard() {
           <div className="flex flex-col lg:grid lg:grid-cols-[1.05fr,1fr] lg:gap-6 space-y-4 sm:space-y-6 lg:space-y-0">
             {/* Left Column: details, participants, actions */}
             <div className="space-y-4 sm:space-y-6">
-            {/* User's Own Schedule Conflict Warning */}
-            {checkScheduleConflict(selectedEvent) && (
-              <div className="bg-orange-50 border-l-4 border-orange-400 p-3 sm:p-4 rounded-xl">
-                <div className="flex items-start">
-                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-orange-400 mr-2 sm:mr-3 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-bold text-orange-800 mb-1">Your Schedule Conflict</h4>
-                    <p className="text-sm text-orange-700 mb-2">
-                      This event conflicts with your class schedule:
-                    </p>
-                    <ul className="space-y-1">
-                      {checkScheduleConflict(selectedEvent).map((conflict, index) => (
-                        <li key={index} className="text-sm text-orange-700 flex items-start">
-                          <svg className="w-4 h-4 mr-1.5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                          </svg>
-                          <span className="break-words">{conflict.startTime} - {conflict.endTime}: {conflict.description}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Event Details */}
             <div className="text-center">
               <div className="flex items-start justify-center gap-2 mb-2 flex-wrap">
@@ -806,9 +570,17 @@ export default function Dashboard() {
                         ✓ Accept
                       </button>
                       <button
-                        onClick={() => {
-                          setDecliningEventId(selectedEvent.id);
-                          setIsDeclineModalOpen(true);
+                        onClick={async () => {
+                          try {
+                            await api.post(`/events/${selectedEvent.id}/respond`, { status: 'declined' });
+                            await fetchData();
+                            const updatedRes = await api.get('/events');
+                            const updatedEvent = updatedRes.data.events.find(e => e.id === selectedEvent.id);
+                            if (updatedEvent) setSelectedEvent(updatedEvent);
+                          } catch (error) {
+                            console.error('Error declining invitation:', error);
+                            alert('Failed to decline invitation: ' + (error.response?.data?.error || error.message));
+                          }
                         }}
                         className="flex-1 sm:flex-none px-4 py-2.5 sm:py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors touch-manipulation"
                       >
@@ -1042,49 +814,6 @@ export default function Dashboard() {
         </div>
       </Modal>
 
-      {/* Decline Reason Modal */}
-      <Modal
-        isOpen={isDeclineModalOpen}
-        onClose={() => {
-          setIsDeclineModalOpen(false);
-          setDeclineReason('');
-          setDecliningEventId(null);
-        }}
-        title="Decline Event"
-        maxWidth="max-w-md"
-      >
-        <div className="space-y-4">
-          <p className="text-gray-600 text-sm sm:text-base">Please provide a reason for declining this event invitation:</p>
-          <textarea
-            value={declineReason}
-            onChange={(e) => setDeclineReason(e.target.value)}
-            placeholder="Enter your reason here..."
-            className="w-full px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none text-sm sm:text-base"
-            rows="4"
-            maxLength="1000"
-          />
-          <p className="text-xs text-gray-500 text-right">{declineReason.length}/1000</p>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-end pt-2 sm:pt-4">
-            <button
-              onClick={() => {
-                setIsDeclineModalOpen(false);
-                setDeclineReason('');
-                setDecliningEventId(null);
-              }}
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors touch-manipulation"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDeclineWithReason}
-              disabled={!declineReason.trim()}
-              className="w-full sm:w-auto px-4 py-2.5 sm:py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
-            >
-              Send & Decline
-            </button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 }

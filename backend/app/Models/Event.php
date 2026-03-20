@@ -14,7 +14,6 @@ class Event extends Model
         'time',
         'school_year',
         'host_id',
-        'approved_request_id',
         'is_personal',
         'personal_color',
         'event_type',
@@ -37,10 +36,5 @@ class Event extends Model
     public function images()
     {
         return $this->hasMany(EventImage::class);
-    }
-
-    public function rescheduleRequests()
-    {
-        return $this->hasMany(EventRescheduleRequest::class);
     }
 }

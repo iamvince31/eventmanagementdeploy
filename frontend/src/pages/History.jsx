@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
+import { getCache, setCache } from '../services/cache';
 import Navbar from '../components/Navbar';
 
 export default function History() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [activities, setActivities] = useState([]);
-  const [events, setEvents] = useState([]); // For NotificationBell
   const [loading, setLoading] = useState(true);
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [filterType, setFilterType] = useState('all');
@@ -20,52 +20,37 @@ export default function History() {
     total: 0,
     last_page: 1,
   });
-  const [eventRequests, setEventRequests] = useState([]);
 
   useEffect(() => {
-    // Check if user is validated
     if (user && !user.is_validated) {
       navigate('/account');
       return;
     }
-    
     fetchActivities();
-    fetchEvents(); // For NotificationBell
-    
-    // Fetch event requests for Faculty/Staff/Dean/Chairperson
-    if (user?.role === 'Faculty Member' || user?.role === 'Staff' || user?.role === 'Dean' || user?.role === 'Chairperson') {
-      fetchEventRequests();
-    }
   }, [filterType]);
 
-  const fetchEvents = async () => {
-    try {
-      const response = await api.get('/events');
-      setEvents(response.data.events);
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  };
-
-  const fetchEventRequests = async () => {
-    try {
-      const response = await api.get('/event-requests/my-requests');
-      setEventRequests(response.data.requests || []);
-    } catch (error) {
-      console.error('Error fetching event requests:', error);
-    }
-  };
-
   const fetchActivities = async (page = 1) => {
+    const cacheKey = `activities:${user?.id}:${filterType}:${page}`;
+    const cached = getCache(cacheKey);
+
+    if (cached) {
+      setActivities(cached.activities);
+      setPagination(cached.pagination);
+      setLoading(false);
+      // Background refresh
+      try {
+        const response = await api.get('/activities', { params: { type: filterType, page, per_page: 20 } });
+        setCache(cacheKey, response.data);
+        setActivities(response.data.activities);
+        setPagination(response.data.pagination);
+      } catch { /* silently fail */ }
+      return;
+    }
+
     try {
       setLoading(true);
-      const response = await api.get('/activities', {
-        params: {
-          type: filterType,
-          page: page,
-          per_page: 20
-        }
-      });
+      const response = await api.get('/activities', { params: { type: filterType, page, per_page: 20 } });
+      setCache(cacheKey, response.data);
       setActivities(response.data.activities);
       setPagination(response.data.pagination);
     } catch (error) {
@@ -127,38 +112,6 @@ export default function History() {
             </svg>
           </div>
         );
-      case 'event_request_submitted':
-        return (
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-            <svg className={`${iconClasses} text-green-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-            </svg>
-          </div>
-        );
-      case 'event_request_approved':
-        return (
-          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-            <svg className={`${iconClasses} text-emerald-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        );
-      case 'event_request_rejected':
-        return (
-          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-            <svg className={`${iconClasses} text-red-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        );
-      case 'event_request_reviewed':
-        return (
-          <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-            <svg className={`${iconClasses} text-indigo-600`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        );
       case 'hierarchy_approval_requested':
         return (
           <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
@@ -208,14 +161,6 @@ export default function History() {
         return `Hosted: ${activity.title}`;
       case 'event_invited':
         return `Invited to: ${activity.title}`;
-      case 'event_request_submitted':
-        return `Requested: ${activity.title}`;
-      case 'event_request_approved':
-        return `Approved Request: ${activity.title}`;
-      case 'event_request_rejected':
-        return `Rejected Request: ${activity.title}`;
-      case 'event_request_reviewed':
-        return `Reviewed: ${activity.title}`;
       case 'hierarchy_approval_requested':
         return `Approval Requested: ${activity.title}`;
       case 'hierarchy_approval_decision':
@@ -334,215 +279,13 @@ export default function History() {
                 >
                   Invitations
                 </button>
-                
-                {/* Show Request History filter for Faculty Members, Staff, Dean, and Chairperson */}
-                {(user?.role === 'Faculty Member' || user?.role === 'Staff' || user?.role === 'Dean' || user?.role === 'Chairperson') && (
-                  <button
-                    onClick={() => setFilterType('request_history')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filterType === 'request_history'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Request History
-                  </button>
-                )}
-                
-                {/* Show Approvals filter for Dean, Chairperson, Coordinator, and CEIT Official */}
-                {(user?.role === 'Dean' || user?.role === 'Chairperson' || user?.role === 'Coordinator' || user?.role === 'CEIT Official') && (
-                  <button
-                    onClick={() => setFilterType('hierarchy_approval_requested')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filterType === 'hierarchy_approval_requested'
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    Approvals
-                  </button>
-                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Activities List or Request History */}
-        {filterType === 'request_history' && (user?.role === 'Faculty Member' || user?.role === 'Staff' || user?.role === 'Dean' || user?.role === 'Chairperson') ? (
-          // Show Request History for Faculty/Staff/Dean/Chairperson
-          loading ? (
-            <div className="space-y-4 animate-pulse">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-                  <div className="flex items-start space-x-4">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex-shrink-0"></div>
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="h-6 w-3/4 bg-gray-300 rounded"></div>
-                        <div className="h-5 w-20 bg-gray-200 rounded-full"></div>
-                      </div>
-                      <div className="h-4 w-full bg-gray-200 rounded"></div>
-                      <div className="h-4 w-2/3 bg-gray-200 rounded"></div>
-                      <div className="flex items-center space-x-4 pt-2">
-                        <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                        <div className="h-4 w-24 bg-gray-200 rounded"></div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : eventRequests.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No meeting requests</h3>
-              <p className="text-gray-600">
-                {(user?.role === 'Faculty Member' || user?.role === 'Staff') 
-                  ? "You haven't submitted any meeting requests yet. Note: Faculty and Staff can only request meetings (not events) and require approval from BOTH Dean AND Chairperson."
-                  : "No meeting requests have been approved or declined yet"}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="divide-y divide-gray-200">
-                {eventRequests.map((request, index) => (
-                  <div
-                    key={`request-${request.id}-${index}`}
-                    onClick={() => handleViewActivity({
-                      id: request.id,
-                      type: 'event_request_submitted',
-                      title: request.title,
-                      description: request.description,
-                      date: request.date,
-                      time: request.time,
-                      location: request.location,
-                      status: request.status,
-                      created_at: request.created_at,
-                      details: {
-                        justification: request.justification,
-                        dean_approver: request.deanApprover,
-                        dean_approved_at: request.dean_approved_at,
-                        chair_approver: request.chairApprover,
-                        chair_approved_at: request.chair_approved_at,
-                        rejection_reason: request.rejection_reason,
-                        all_approvals_received: request.all_approvals_received,
-                        requester: request.requester
-                      }
-                    })}
-                    className="p-6 hover:bg-green-50 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-start space-x-4">
-                      {/* Request Icon */}
-                      <div className="flex-shrink-0">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                      </div>
-
-                      {/* Request Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <h3 className="text-sm font-semibold text-gray-900 mb-1">
-                              Meeting Request: {request.title}
-                            </h3>
-                            
-                            {/* Show requester info for Dean/Chairperson */}
-                            {(user?.role === 'Dean' || user?.role === 'Chairperson') && request.requester && (
-                              <p className="text-xs text-gray-500 mb-1">
-                                Requested by {request.requester.name} ({request.requester.role})
-                              </p>
-                            )}
-                            
-                            <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                              {request.description}
-                            </p>
-                            
-                            {/* Compact Approval Status */}
-                            <div className="flex items-center space-x-3 mb-2">
-                              <div className="flex items-center space-x-1">
-                                <span className="text-xs text-gray-500">Dean:</span>
-                                {request.dean_approved_by ? (
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
-                                    ✓
-                                  </span>
-                                ) : request.status === 'rejected' ? (
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700">
-                                    ✗
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-700">
-                                    ⏳
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <span className="text-xs text-gray-500">Chair:</span>
-                                {request.chair_approved_by ? (
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-green-100 text-green-700">
-                                    ✓
-                                  </span>
-                                ) : request.status === 'rejected' ? (
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-red-100 text-red-700">
-                                    ✗
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-700">
-                                    ⏳
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            
-                            <div className="flex items-center space-x-4 text-xs text-gray-500">
-                              <span className="flex items-center">
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                {request.date} at {request.time}
-                              </span>
-                              <span className="flex items-center">
-                                <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                {request.location}
-                              </span>
-                              <span>{formatDate(request.created_at)}</span>
-                            </div>
-                          </div>
-                          <div className="flex-shrink-0 ml-4">
-                            {request.status === 'pending' && (
-                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-700">
-                                Pending
-                              </span>
-                            )}
-                            {request.status === 'approved' && (
-                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                                Approved
-                              </span>
-                            )}
-                            {request.status === 'rejected' && (
-                              <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                                Rejected
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        ) : (
-          // Show Regular Activities List
-          loading ? (
+        {/* Activities List */}
+        {loading ? (
             <div className="space-y-4 animate-pulse">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
@@ -652,7 +395,7 @@ export default function History() {
             )}
           </div>
         )
-        )}
+        }
       </div>
 
       {/* Activity Details Modal */}
@@ -752,99 +495,6 @@ export default function History() {
                           </span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedActivity.type === 'event_request_submitted' && selectedActivity.details && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Meeting Request Details</h3>
-                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800 mb-1">Approval Requirement:</p>
-                      <p className="text-sm text-blue-700">This meeting request requires approval from BOTH Dean AND Chairperson before you can create the meeting.</p>
-                    </div>
-                    <div className="space-y-3">
-                      <div>
-                        <h4 className="text-xs font-medium text-gray-600 mb-1">Justification</h4>
-                        <p className="text-sm text-gray-700">{selectedActivity.details.justification}</p>
-                      </div>
-                      {selectedActivity.details.dean_approver && (
-                        <div>
-                          <h4 className="text-xs font-medium text-gray-600 mb-1">Dean Approval</h4>
-                          <p className="text-sm text-green-700">✓ Approved by {selectedActivity.details.dean_approver.name}</p>
-                          <p className="text-xs text-gray-500">on {formatDate(selectedActivity.details.dean_approved_at)}</p>
-                        </div>
-                      )}
-                      {selectedActivity.details.chair_approver && (
-                        <div>
-                          <h4 className="text-xs font-medium text-gray-600 mb-1">Chairperson Approval</h4>
-                          <p className="text-sm text-green-700">✓ Approved by {selectedActivity.details.chair_approver.name}</p>
-                          <p className="text-xs text-gray-500">on {formatDate(selectedActivity.details.chair_approved_at)}</p>
-                        </div>
-                      )}
-                      {selectedActivity.details.rejection_reason && (
-                        <div>
-                          <h4 className="text-xs font-medium text-gray-600 mb-1">Rejection Reason</h4>
-                          <p className="text-sm text-red-700">{selectedActivity.details.rejection_reason}</p>
-                        </div>
-                      )}
-                      {selectedActivity.details.all_approvals_received && (
-                        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-sm font-medium text-green-800">✓ Both Dean and Chairperson have approved - You can now create this meeting!</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {selectedActivity.type === 'event_request_approved' && selectedActivity.details && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Approval Details</h3>
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="text-sm text-gray-600">Requested by</p>
-                          <p className="font-medium text-gray-900">{selectedActivity.details.requester?.name}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">Your Role</p>
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-700">
-                            {selectedActivity.details.approval_role}
-                          </span>
-                        </div>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        Approved on {formatDate(selectedActivity.details.approved_at)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {selectedActivity.type === 'event_request_rejected' && selectedActivity.details && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Rejection Details</h3>
-                    <div className="bg-red-50 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p className="text-sm text-gray-600">Requested by</p>
-                          <p className="font-medium text-gray-900">{selectedActivity.details.requester?.name}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-600">Status</p>
-                          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-700">
-                            Rejected
-                          </span>
-                        </div>
-                      </div>
-                      {selectedActivity.details.rejection_reason && (
-                        <div className="mt-3">
-                          <p className="text-xs text-gray-600 mb-1">Reason</p>
-                          <p className="text-sm text-red-700">{selectedActivity.details.rejection_reason}</p>
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-2">
-                        Rejected on {formatDate(selectedActivity.details.reviewed_at)}
-                      </p>
                     </div>
                   </div>
                 )}

@@ -68,9 +68,16 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'department' => 'required|string|max:255',
-            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Faculty Member,Staff,CEIT Official',
+            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Faculty Member,CEIT Official',
             'name' => 'required|string|max:255',
         ]);
+
+        // Enforce single Dean rule
+        if ($validated['role'] === 'Dean' && User::where('role', 'Dean')->exists()) {
+            return response()->json([
+                'error' => 'A Dean already exists. Only one Dean is allowed.'
+            ], 422);
+        }
 
         // Create the user
         $user = User::create([
@@ -179,7 +186,7 @@ class UserController extends Controller
     public function updateRole(Request $request, $id)
     {
         $validated = $request->validate([
-            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Faculty Member,Staff,CEIT Official',
+            'role' => 'required|in:Admin,Dean,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Faculty Member,CEIT Official',
             'department' => 'sometimes|string|max:255',
         ]);
 
@@ -190,6 +197,13 @@ class UserController extends Controller
             return response()->json([
                 'error' => 'You cannot change your own role.'
             ], 403);
+        }
+
+        // Enforce single Dean rule (allow if this user is already the Dean)
+        if ($validated['role'] === 'Dean' && $user->role !== 'Dean' && User::where('role', 'Dean')->exists()) {
+            return response()->json([
+                'error' => 'A Dean already exists. Only one Dean is allowed.'
+            ], 422);
         }
 
         $updateData = ['role' => $validated['role']];
