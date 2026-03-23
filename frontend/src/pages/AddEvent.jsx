@@ -5,7 +5,7 @@ import api from '../services/api';
 import { invalidateCache } from '../services/cache';
 import EventForm from '../components/EventForm';
 import Navbar from '../components/Navbar';
-import logo from '../assets/CVSU LOGO.png';
+import logo from '../assets/CvSU Logo.png';
 
 export default function AddEvent() {
   const navigate = useNavigate();
@@ -25,16 +25,16 @@ export default function AddEvent() {
       navigate('/account');
       return;
     }
-    
+
     // Faculty Members CAN access /add-event
     // They can create meetings or events directly
-    
+
     // Redirect personal events to personal event page
     if (editingEvent && editingEvent.is_personal) {
       navigate('/personal-event', { state: { event: editingEvent } });
       return;
     }
-    
+
     const loadData = async () => {
       await Promise.all([fetchMembers(), fetchUserSchedule()]);
     };
@@ -89,7 +89,7 @@ export default function AddEvent() {
       const elapsed = Date.now() - startTime;
       const minDelay = 300 + Math.random() * 300; // 300-600ms
       const remainingDelay = Math.max(0, minDelay - elapsed);
-      
+
       setTimeout(() => {
         setLoading(false);
       }, remainingDelay);
@@ -114,7 +114,7 @@ export default function AddEvent() {
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-3">
-                <button 
+                <button
                   onClick={() => navigate('/dashboard')}
                   className="focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all hover:opacity-80"
                   aria-label="Go to dashboard"
