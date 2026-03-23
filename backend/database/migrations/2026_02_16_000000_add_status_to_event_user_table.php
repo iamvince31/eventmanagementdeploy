@@ -4,13 +4,13 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
+return new class extends Migration 
 {
     public function up(): void
     {
         if (!Schema::hasColumn('event_user', 'status')) {
             Schema::table('event_user', function (Blueprint $table) {
-                $table->enum('status', ['pending', 'accepted', 'declined'])->default('pending')->after('user_id');
+                $table->string('status')->default('pending')->after('user_id');
             });
         }
     }

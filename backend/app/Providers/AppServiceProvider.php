@@ -26,12 +26,5 @@ class AppServiceProvider extends ServiceProvider
 
         // Register User observer for bootstrap admin cleanup
         User::observe(UserObserver::class);
-
-        // PlanetScale does not support foreign key constraints at the DB level.
-        // Disable FK checks during migrations so `->foreign()` / `->constrained()`
-        // calls do not throw errors. Safe: Laravel still enforces FK integrity in PHP.
-        if (app()->environment('production') && config('database.default') === 'mysql') {
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        }
     }
 }
