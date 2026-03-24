@@ -25,18 +25,29 @@ class BrevoMailService
             $subject = '🔐 Your Password Reset OTP Code';
             $htmlContent = $this->buildOtpEmailHtml($userName, $otp);
 
-            Mail::html($htmlContent, function ($message) use ($email, $subject) {
-                $message->to($email)
-                    ->subject($subject);
-            });
-
-            Log::info('Password reset OTP email sent', [
-                'email' => $email,
-                'timestamp' => now(),
-            ]);
+            dispatch(function () use ($email, $subject, $htmlContent) {
+                try {
+                    Mail::html($htmlContent, function ($message) use ($email, $subject) {
+                                $message->to($email)
+                                    ->subject($subject);
+                            }
+                            );
+                            Log::info('Password reset OTP email sent', [
+                                'email' => $email,
+                                'timestamp' => now(),
+                            ]);
+                        }
+                        catch (\Exception $e) {
+                            Log::error('Failed to send OTP email', [
+                                'email' => $email,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    })->afterResponse();
 
             return true;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Failed to send OTP email', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -54,18 +65,29 @@ class BrevoMailService
             $subject = '✅ Password Reset Successful';
             $htmlContent = $this->buildConfirmationEmailHtml($userName);
 
-            Mail::html($htmlContent, function ($message) use ($email, $subject) {
-                $message->to($email)
-                    ->subject($subject);
-            });
-
-            Log::info('Password reset confirmation email sent', [
-                'email' => $email,
-                'timestamp' => now(),
-            ]);
+            dispatch(function () use ($email, $subject, $htmlContent) {
+                try {
+                    Mail::html($htmlContent, function ($message) use ($email, $subject) {
+                                $message->to($email)
+                                    ->subject($subject);
+                            }
+                            );
+                            Log::info('Password reset confirmation email sent', [
+                                'email' => $email,
+                                'timestamp' => now(),
+                            ]);
+                        }
+                        catch (\Exception $e) {
+                            Log::error('Failed to send confirmation email', [
+                                'email' => $email,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    })->afterResponse();
 
             return true;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Failed to send confirmation email', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -83,18 +105,29 @@ class BrevoMailService
             $subject = '✉️ Verify Your Email — Event Management System';
             $htmlContent = $this->buildRegistrationOtpHtml($userName, $otp);
 
-            Mail::html($htmlContent, function ($message) use ($email, $subject) {
-                $message->to($email)
-                    ->subject($subject);
-            });
-
-            Log::info('Registration verification email sent', [
-                'email' => $email,
-                'timestamp' => now(),
-            ]);
+            dispatch(function () use ($email, $subject, $htmlContent) {
+                try {
+                    Mail::html($htmlContent, function ($message) use ($email, $subject) {
+                                $message->to($email)
+                                    ->subject($subject);
+                            }
+                            );
+                            Log::info('Registration verification email sent', [
+                                'email' => $email,
+                                'timestamp' => now(),
+                            ]);
+                        }
+                        catch (\Exception $e) {
+                            Log::error('Failed to send registration verification email', [
+                                'email' => $email,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    })->afterResponse();
 
             return true;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Failed to send registration verification email', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -138,18 +171,29 @@ class BrevoMailService
                 </div>
             </div>';
 
-            Mail::html($htmlContent, function ($message) use ($email, $subject) {
-                $message->to($email)
-                    ->subject($subject);
-            });
-
-            Log::info('Verification link email sent', [
-                'email' => $email,
-                'timestamp' => now(),
-            ]);
+            dispatch(function () use ($email, $subject, $htmlContent) {
+                try {
+                    Mail::html($htmlContent, function ($message) use ($email, $subject) {
+                                $message->to($email)
+                                    ->subject($subject);
+                            }
+                            );
+                            Log::info('Verification link email sent', [
+                                'email' => $email,
+                                'timestamp' => now(),
+                            ]);
+                        }
+                        catch (\Exception $e) {
+                            Log::error('Failed to send verification link email', [
+                                'email' => $email,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    })->afterResponse();
 
             return true;
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             Log::error('Failed to send verification link email', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -164,6 +208,7 @@ class BrevoMailService
     protected function buildOtpEmailHtml(string $userName, string $otp): string
     {
         return <<<HTML
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -214,6 +259,7 @@ HTML;
     protected function buildConfirmationEmailHtml(string $userName): string
     {
         return <<<HTML
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -256,6 +302,7 @@ HTML;
     protected function buildRegistrationOtpHtml(string $userName, string $otp): string
     {
         return <<<HTML
+
 <!DOCTYPE html>
 <html>
 <head>
