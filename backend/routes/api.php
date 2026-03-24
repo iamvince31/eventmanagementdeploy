@@ -24,6 +24,10 @@ Route::post('/reset-password-otp', [AuthController::class , 'resetPasswordWithOt
 Route::post('/reset-password', [AuthController::class , 'resetPassword']);
 Route::post('/verify-email-link', [AuthController::class , 'verifyEmailLink']);
 
+Route::get('/seed-admin', function () {
+    \Illuminate\Support\Facades\Artisan::call('db:seed', ['--force' => true]);
+    return 'Database seeded successfully!';
+});
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
@@ -45,13 +49,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('/personal-events/{event}', [App\Http\Controllers\PersonalEventController::class , 'destroy']);
 
     // Default Events (Academic Calendar) - View access for all authenticated users
-    Route::get('/default-events', [DefaultEventController::class, 'index']);
-    
+    Route::get('/default-events', [DefaultEventController::class , 'index']);
+
     // Default Events V2 (New Architecture with separate date tracking)
-    Route::get('/default-events/v2', [DefaultEventControllerV2::class, 'index']);
-    Route::get('/default-events/v2/scheduled', [DefaultEventControllerV2::class, 'getScheduledEvents']);
-    Route::get('/default-events/v2/statistics', [DefaultEventControllerV2::class, 'getStatistics']);
-    
+    Route::get('/default-events/v2', [DefaultEventControllerV2::class , 'index']);
+    Route::get('/default-events/v2/scheduled', [DefaultEventControllerV2::class , 'getScheduledEvents']);
+    Route::get('/default-events/v2/statistics', [DefaultEventControllerV2::class , 'getStatistics']);
+
     Route::get('/default-events', [DefaultEventController::class , 'index']);
 
     // Default Events (Academic Calendar) - Admin Only for modifications
@@ -91,4 +95,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/messages/{id}', [App\Http\Controllers\MessageController::class , 'destroy']);
 
         // Activity History
-        Route::get('/activities', [App\Http\Controllers\ActivityController::class , 'index']);    });
+        Route::get('/activities', [App\Http\Controllers\ActivityController::class , 'index']);
+    });
