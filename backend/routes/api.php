@@ -27,9 +27,16 @@ Route::post('/verify-email-link', [AuthController::class , 'verifyEmailLink']);
 Route::get('/seed-admin', function () {
     $admin = \App\Models\User::where('email', 'admin@cvsu.edu.ph')->first();
     if ($admin) {
-        $admin->password = \Illuminate\Support\Facades\Hash::make('11111111');
+        $newHash = \Illuminate\Support\Facades\Hash::make('11111111');
+        $admin->password = $newHash;
         $admin->save();
-        return 'Admin password reset successfully!';
+        $checkResult = \Illuminate\Support\Facades\Hash::check('11111111', $admin->fresh()->password);
+        return response()->json([
+        'status' => 'Admin password reset',
+        'hash_check_passes' => $checkResult,
+        'is_validated' => $admin->is_validated,
+        'email_verified' => $admin->email_verified_at !== null,
+        ]);
     }
     \App\Models\User::create([
         'name' => 'Setup Admin',
