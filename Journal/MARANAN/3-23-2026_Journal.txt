@@ -1,4 +1,4 @@
-7:00 - Time in
+7:00 - Time in WFH
 
 7:00 - 8:00 : Improving the pop up feature on events in /dashboard with pagination for a better ui
 8:00 - 9:00 : Improving the Schedule conflict for more visual appeal
@@ -6,4 +6,4 @@
 10:00 - 11:00 : Improving Seeder Accounts to also have schedules for faculty, and other roles
 11:00 - 12:00 : Lunch break
 12:00 - 1:00 : Improving /add-event where the members are paginated as well, and Dean dropdown removed if the dean is using the feature
-1:00 - 2:00 : Merged Gab and I Changes. fixing merge conflicts and scheduling issues
+1:00 - 5:00 : Merged Gab and I Changes. fixing merge conflicts and scheduling issues
