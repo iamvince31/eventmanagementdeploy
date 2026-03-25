@@ -25,7 +25,7 @@ class BrevoMailService
         try {
             dispatch(function () use ($email, $subject, $htmlContent, $logMessage) {
                 // If BREVO_API_KEY is provided, use the HTTPS API (Bypasses Render SMTP Block)
-                $apiKey = env('BREVO_API_KEY');
+                $apiKey = config('services.brevo.key');
 
                 if (!empty($apiKey)) {
                     try {
@@ -169,6 +169,7 @@ class BrevoMailService
     {
         return <<<HTML
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -220,6 +221,7 @@ HTML;
     {
         return <<<HTML
 
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -262,6 +264,7 @@ HTML;
     protected function buildRegistrationOtpHtml(string $userName, string $otp): string
     {
         return <<<HTML
+
 
 <!DOCTYPE html>
 <html>
