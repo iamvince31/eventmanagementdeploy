@@ -95,12 +95,33 @@ class ScheduleController extends Controller
         $request->validate([
             'schedule' => 'required|array',
             'schedule.*' => 'array',
-            'semester' => 'required|in:first,second,midyear',
-            'school_year' => 'required|string|regex:/^\d{4}-\d{4}$/'
+            'semester' => 'nullable|in:first,second,midyear',
+            'school_year' => 'nullable|string|regex:/^\d{4}-\d{4}$/'
         ]);
 
         $semester = $request->semester;
         $schoolYear = $request->school_year;
+
+        // If not provided, calculate current semester and school year
+        if (!$semester || !$schoolYear) {
+            $now = new \DateTime();
+            $currentMonth = (int)$now->format('m');
+            $currentYear = (int)$now->format('Y');
+
+            if ($currentMonth >= 9 || $currentMonth <= 1) {
+                $semester = 'first';
+            }
+            elseif ($currentMonth >= 2 && $currentMonth <= 6) {
+                $semester = 'second';
+            }
+            else {
+                $semester = 'midyear';
+            }
+
+            $schoolYear = $currentMonth >= 9
+                ? "{$currentYear}-" . ($currentYear + 1)
+                : ($currentYear - 1) . "-{$currentYear}";
+        }
 
         // Use transaction for data consistency
         \DB::beginTransaction();

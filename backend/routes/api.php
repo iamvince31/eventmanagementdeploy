@@ -27,11 +27,11 @@ Route::post('/verify-email-link', [AuthController::class , 'verifyEmailLink']);
 // DEBUG ROUTE TO VERIFY API KEY STATE ON RENDER
 Route::get('/test-brevo', function () {
     return response()->json([
-        'has_api_key_in_config' => !empty(config('services.brevo.key')),
-        'has_api_key_in_env' => !empty(env('BREVO_API_KEY')),
-        'key_preview' => substr(config('services.brevo.key') ?? '', 0, 10) . '...',
-        'queue_connection' => config('queue.default'),
-        'mail_mailer' => config('mail.default'),
+    'has_api_key_in_config' => !empty(config('services.brevo.key')),
+    'has_api_key_in_env' => !empty(env('BREVO_API_KEY')),
+    'key_preview' => substr(config('services.brevo.key') ?? '', 0, 10) . '...',
+    'queue_connection' => config('queue.default'),
+    'mail_mailer' => config('mail.default'),
     ]);
 });
 
@@ -104,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Schedules
         Route::get('/init-schedule', [AppController::class , 'initSchedule']);
+        Route::get('/schedules', [ScheduleController::class , 'index']);
         Route::post('/schedules', [ScheduleController::class , 'store']);
         Route::delete('/schedules/{id}', [ScheduleController::class , 'destroy']);
         Route::post('/schedules/check-conflicts', [ScheduleController::class , 'checkConflicts']);
