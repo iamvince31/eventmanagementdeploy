@@ -36,8 +36,9 @@ class EventController extends Controller
             }
             );
         })
-            ->orderBy('date')
-            ->orderBy('time')
+            ->orderBy('date', 'desc')
+            ->orderBy('time', 'desc')
+            ->limit(100)
             ->get();
 
         // Transform regular events

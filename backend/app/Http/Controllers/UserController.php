@@ -13,23 +13,23 @@ class UserController extends Controller
         // Cache for 10 minutes - this is the key optimization
         $members = Cache::remember('users_list_non_admin', 600, function () {
             return User::where('role', '!=', 'Admin')
-                ->where('is_validated', true)
-                ->select('id', 'name', 'email', 'department', 'role', 'is_validated')
-                ->orderBy('role')
-                ->orderBy('name', 'asc')
-                ->limit(500) // Add limit to prevent huge result sets
-                ->get();
+            ->where('is_validated', true)
+            ->select('id', 'name', 'email', 'department', 'role', 'is_validated')
+            ->orderBy('role')
+            ->orderBy('name', 'asc')
+            ->limit(500) // Add limit to prevent huge result sets
+            ->get();
         });
 
         return response()->json([
             'members' => $members->map(fn($user) => [
-                'id' => $user->id,
-                'username' => $user->name,
-                'email' => $user->email,
-                'department' => $user->department,
-                'role' => $user->role,
-                'is_validated' => $user->is_validated,
-            ]),
+        'id' => $user->id,
+        'username' => $user->name,
+        'email' => $user->email,
+        'department' => $user->department,
+        'role' => $user->role,
+        'is_validated' => $user->is_validated,
+        ]),
         ]);
     }
 
@@ -38,17 +38,18 @@ class UserController extends Controller
         // Get all users including admins (for admin panel)
         $users = User::orderBy('role')
             ->orderBy('name', 'asc')
+            ->limit(500)
             ->get();
 
         return response()->json([
             'members' => $users->map(fn($user) => [
-                'id' => $user->id,
-                'username' => $user->name,
-                'email' => $user->email,
-                'department' => $user->department,
-                'role' => $user->role,
-                'is_validated' => $user->is_validated,
-            ]),
+        'id' => $user->id,
+        'username' => $user->name,
+        'email' => $user->email,
+        'department' => $user->department,
+        'role' => $user->role,
+        'is_validated' => $user->is_validated,
+        ]),
         ]);
     }
 
@@ -113,13 +114,13 @@ class UserController extends Controller
 
         return response()->json([
             'pending_users' => $pendingUsers->map(fn($user) => [
-                'id' => $user->id,
-                'username' => $user->name,
-                'email' => $user->email,
-                'department' => $user->department,
-                'role' => $user->role,
-                'created_at' => $user->created_at,
-            ]),
+        'id' => $user->id,
+        'username' => $user->name,
+        'email' => $user->email,
+        'department' => $user->department,
+        'role' => $user->role,
+        'created_at' => $user->created_at,
+        ]),
             'count' => $pendingUsers->count(),
         ]);
     }
@@ -127,7 +128,7 @@ class UserController extends Controller
     public function validateUser(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         // Only admins can validate users
         if (!$request->user()->isAdmin()) {
             return response()->json([
@@ -153,7 +154,7 @@ class UserController extends Controller
     public function revokeValidation(Request $request, $id)
     {
         $user = User::findOrFail($id);
-        
+
         // Only admins can revoke validation
         if (!$request->user()->isAdmin()) {
             return response()->json([
@@ -184,7 +185,7 @@ class UserController extends Controller
         ]);
 
         $user = User::findOrFail($id);
-        
+
         // Prevent changing own role
         if ($user->id === $request->user()->id) {
             return response()->json([
@@ -225,31 +226,31 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'first_name' => 'required|string|max:255',
-            'last_name'  => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
             'middle_name' => 'nullable|string|max:255',
-            'email'      => 'required|email|unique:users,email',
-            'password'   => 'required|string|min:8',
-            'name'       => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8',
+            'name' => 'required|string|max:255',
         ]);
 
         $user = User::create([
-            'name'             => $validated['name'],
-            'email'            => $validated['email'],
-            'password'         => bcrypt($validated['password']),
-            'department'       => 'College of Engineering and Information Technology',
-            'role'             => 'Dean',
-            'is_validated'     => true,
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+            'department' => 'College of Engineering and Information Technology',
+            'role' => 'Dean',
+            'is_validated' => true,
             'email_verified_at' => now(),
         ]);
 
         return response()->json([
             'message' => 'Dean created successfully',
             'user' => [
-                'id'           => $user->id,
-                'username'     => $user->name,
-                'email'        => $user->email,
-                'department'   => $user->department,
-                'role'         => $user->role,
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'role' => $user->role,
                 'is_validated' => $user->is_validated,
             ],
         ], 201);
@@ -258,7 +259,7 @@ class UserController extends Controller
     public function update()
     {
         $user = auth()->user();
-        
+
         $validated = request()->validate([
             'username' => 'sometimes|string|max:255',
             'profile_picture' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -305,7 +306,8 @@ class UserController extends Controller
                 $validated['password'] = \Hash::make($validated['new_password']);
                 $validated['has_changed_credentials'] = true;
             }
-        } else {
+        }
+        else {
             // Not allowed to change email/password after first time
             unset($validated['email']);
         }
@@ -342,10 +344,10 @@ class UserController extends Controller
     {
         // Split by spaces and capitalize each word
         $words = explode(' ', $text);
-        $capitalizedWords = array_map(function($word) {
+        $capitalizedWords = array_map(function ($word) {
             return ucfirst(strtolower(trim($word)));
         }, $words);
-        
+
         return implode(' ', array_filter($capitalizedWords));
     }
 }

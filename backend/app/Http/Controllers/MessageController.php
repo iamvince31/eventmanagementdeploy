@@ -14,10 +14,11 @@ class MessageController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         $messages = Message::where('recipient_id', $user->id)
             ->with(['sender', 'event'])
             ->orderBy('created_at', 'desc')
+            ->limit(50)
             ->get();
 
         return response()->json($messages);
@@ -57,7 +58,7 @@ class MessageController extends Controller
     public function markAsRead($id)
     {
         $message = Message::findOrFail($id);
-        
+
         // Only recipient can mark as read
         if ($message->recipient_id !== Auth::id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
@@ -86,7 +87,7 @@ class MessageController extends Controller
     public function destroy($id)
     {
         $message = Message::findOrFail($id);
-        
+
         // Only recipient can delete
         if ($message->recipient_id !== Auth::id()) {
             return response()->json(['error' => 'Unauthorized'], 403);
