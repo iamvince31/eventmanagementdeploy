@@ -1,0 +1,6 @@
+6:50 - Time in WFH
+
+7:00 - 11:00 : Testing + Reviewing all implementations on login/register
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : Testing + Reviewing all implementations on others
+1:00 - 5:00 : Determining security issues and Possible bugs
