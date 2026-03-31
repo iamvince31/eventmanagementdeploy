@@ -38,6 +38,27 @@ const initAuthState = () => {
   } catch {
     return { user: null };
   }
+
+  // Check sessionStorage (no remember me — 1hr session)
+  const sessionToken = sessionStorage.getItem('token');
+  const sessionUser = sessionStorage.getItem('user');
+  const sessionExpiry = sessionStorage.getItem('sessionExpiry');
+
+  if (sessionToken && sessionUser && sessionExpiry) {
+    if (Date.now() < parseInt(sessionExpiry, 10)) {
+      try {
+        return { user: JSON.parse(sessionUser), storage: 'session' };
+      } catch {
+        // fall through to null
+      }
+    }
+    // Expired — clear it
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('sessionExpiry');
+  }
+
+  return { user: null };
 };
 
 export const AuthProvider = ({ children }) => {
@@ -65,6 +86,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem(LAST_ACTIVITY_KEY);
       sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
+      sessionStorage.removeItem('sessionExpiry');
       setUser(null);
     }
   }, []);

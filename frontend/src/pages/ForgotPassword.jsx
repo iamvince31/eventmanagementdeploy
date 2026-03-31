@@ -20,7 +20,7 @@ export default function ForgotPassword() {
       await api.post('/request-otp', { email });
       setSuccess('OTP code has been sent to your Gmail inbox. Redirecting...');
       setTimeout(() => {
-        navigate('/verify-otp', { state: { email } });
+        navigate('/verify-email', { state: { email, mode: 'forgot-password' } });
       }, 2000);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send OTP. Please try again.');

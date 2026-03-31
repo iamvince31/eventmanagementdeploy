@@ -1,0 +1,6 @@
+7:00 - Time in
+
+7:00 - 11:00 : Redeploying again and testing deployment
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : Prepared SRS as Checklist
+1:00 - 5:00 : Testing newly hosted website by my teammate

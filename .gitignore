@@ -1,8 +1,25 @@
 <<<<<<< HEAD
 mdFiles/
 *.md
+<<<<<<< HEAD
 =======
 backend/test-brevo-api.php
 Journal/Plan.txt
 ENV_CHANGES_SUMMARY.md
 >>>>>>> 1369ecc084243a8b0b992cae321ce869b016898d
+=======
+
+# Environment files — never commit credentials
+backend/.env
+frontend/.env
+
+# Dependencies
+backend/vendor/
+frontend/node_modules/
+
+# Build output
+frontend/dist/
+
+# Logs
+*.log
+>>>>>>> 36b283a1ba1fc64e88f8dce6f6d5b1136bd0d813

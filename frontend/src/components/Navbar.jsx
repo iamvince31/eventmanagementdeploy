@@ -15,26 +15,15 @@ export default function Navbar({
   const { user, logout } = useAuth();
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [events, setEvents] = useState([]);
-  const [isMembersModalOpen, setIsMembersModalOpen] = useState(false);
-  const [members, setMembers] = useState([]);
-  const [isFetchingMembers, setIsFetchingMembers] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     fetchEvents();
-    fetchMembers();
   }, []);
 
   useEffect(() => {
     if (refreshTrigger > 0) fetchEvents();
   }, [refreshTrigger]);
-
-  // Fetch members when modal opens
-  useEffect(() => {
-    if (isMembersModalOpen && members.length === 0) {
-      fetchMembers();
-    }
-  }, [isMembersModalOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -55,18 +44,6 @@ export default function Navbar({
       setEvents(response.data.events);
     } catch (error) {
       console.error('Error fetching events:', error);
-    }
-  };
-
-  const fetchMembers = async () => {
-    try {
-      setIsFetchingMembers(true);
-      const response = await api.get('/users');
-      setMembers(response.data.members || []);
-    } catch (error) {
-      console.error('Error fetching members:', error);
-    } finally {
-      setIsFetchingMembers(false);
     }
   };
 
@@ -109,21 +86,16 @@ export default function Navbar({
                 </svg>
               </button>
 
-              {/* Members Icon */}
+              {/* Organizational Chart Icon */}
               <button
-                onClick={() => setIsMembersModalOpen(true)}
-                disabled={isLoading || isFetchingMembers}
-                className={`relative p-2 rounded-lg transition-colors duration-200 ${isLoading || isFetchingMembers ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10 cursor-pointer'}`}
-                aria-label="View members"
+                onClick={() => navigate('/organizational-chart')}
+                disabled={isLoading}
+                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                aria-label="View organizational chart"
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
-                {members.length > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                    {members.length}
-                  </span>
-                )}
               </button>
 
               {/* History Icon - Desktop */}
@@ -147,6 +119,20 @@ export default function Navbar({
                   isDisabled={isLoading}
                 />
               </div>
+
+              {/* Admin Panel Icon - Only for Admin users */}
+              {user?.role === 'Admin' && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  disabled={isLoading}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                  aria-label="Admin panel"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </button>
+              )}
 
               {/* Account Dropdown - Desktop */}
               <div className="relative account-dropdown-container">
@@ -187,15 +173,6 @@ export default function Navbar({
                         <>
                           <div className="border-t border-gray-100"></div>
                           <button
-                            onClick={() => { setIsAccountDropdownOpen(false); navigate('/admin'); }}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
-                          >
-                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <span className="font-medium">Admin Panel</span>
-                          </button>
-                          <button
                             onClick={() => { setIsAccountDropdownOpen(false); navigate('/archive'); }}
                             className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 transition-colors flex items-center space-x-3"
                           >
@@ -235,6 +212,20 @@ export default function Navbar({
                 />
               </div>
 
+              {/* Admin Panel Icon - Mobile - Only for Admin users */}
+              {user?.role === 'Admin' && (
+                <button
+                  onClick={() => navigate('/admin')}
+                  disabled={isLoading}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                  aria-label="Admin panel"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </button>
+              )}
+
               {/* Hamburger Menu */}
               <div className="relative mobile-menu-container">
                 <button
@@ -270,24 +261,18 @@ export default function Navbar({
                         <span className="font-medium">Home</span>
                       </button>
 
-                      {/* Members */}
+                      {/* Organizational Chart */}
                       <button
                         onClick={() => {
                           setIsMobileMenuOpen(false);
-                          setIsMembersModalOpen(true);
+                          navigate('/organizational-chart');
                         }}
-                        disabled={isFetchingMembers}
-                        className={`w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors flex items-center space-x-3 ${isFetchingMembers ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-green-50 transition-colors flex items-center space-x-3"
                       >
                         <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                         </svg>
-                        <span className="font-medium">Members</span>
-                        {members.length > 0 && (
-                          <span className="ml-auto bg-blue-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
-                            {members.length}
-                          </span>
-                        )}
+                        <span className="font-medium">Organizational Chart</span>
                       </button>
 
                       {/* History */}
@@ -321,34 +306,20 @@ export default function Navbar({
                         <span className="font-medium">Settings</span>
                       </button>
 
-                      {/* Admin Panel Link - Only for admin users */}
+                      {/* Archive - Only for admin users */}
                       {user?.role === 'Admin' && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              navigate('/admin');
-                            }}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 transition-colors flex items-center space-x-3"
-                          >
-                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            <span className="font-medium">Admin Panel</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setIsMobileMenuOpen(false);
-                              navigate('/archive');
-                            }}
-                            className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 transition-colors flex items-center space-x-3"
-                          >
-                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                            </svg>
-                            <span className="font-medium">Archive</span>
-                          </button>
-                        </>
+                        <button
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            navigate('/archive');
+                          }}
+                          className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-purple-50 transition-colors flex items-center space-x-3"
+                        >
+                          <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                          </svg>
+                          <span className="font-medium">Archive</span>
+                        </button>
                       )}
 
                       <div className="border-t border-gray-100"></div>
@@ -375,71 +346,7 @@ export default function Navbar({
         </div>
       </nav>
 
-      {/* Members Modal */}
-      {isMembersModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
-            <div className="bg-gradient-to-r from-green-700 to-green-600 px-6 py-4 flex justify-between items-center">
-              <h2 className="text-xl font-bold text-white">All Members</h2>
-              <button onClick={() => setIsMembersModalOpen(false)} className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            <div className="p-6 overflow-y-auto max-h-[calc(80vh-80px)]">
-              {isFetchingMembers ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-center">
-                    <svg className="w-12 h-12 text-green-600 mx-auto mb-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <p className="text-gray-500">Loading members...</p>
-                  </div>
-                </div>
-              ) : members.length === 0 ? (
-                <div className="text-center py-12">
-                  <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <p className="text-gray-500 text-lg">No members found</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <p className="text-gray-600 mb-4">Total members: {members.length}</p>
-                  {members.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between bg-gray-50 hover:bg-green-50 rounded-xl p-4 transition-colors border border-gray-200 hover:border-green-300">
-                      <div className="flex items-center space-x-3">
-                        {member.profile_picture ? (
-                          <img src={member.profile_picture} alt={member.username} className="w-12 h-12 rounded-full object-cover border-2 border-green-200" />
-                        ) : (
-                          <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-lg">
-                            {member.username.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <div>
-                          <p className="font-semibold text-gray-900">{member.username}</p>
-                          <p className="text-sm text-gray-500">{member.email}</p>
-                          {member.department && <p className="text-xs text-gray-400">{member.department}</p>}
-                          {member.role && (
-                            <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded">
-                              {member.role}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      {member.id === user?.id && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">You</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+
     </>
   );
 }

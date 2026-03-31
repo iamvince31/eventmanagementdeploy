@@ -231,57 +231,69 @@ export default function History() {
 
         {/* Filters */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col gap-4">
-            {/* Activity Type Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
-              <div className="flex gap-2 flex-wrap">
-                {[
-                  { value: 'all', label: 'All' },
-                  { value: 'event_hosted', label: 'Hosted' },
-                  { value: 'event_invited', label: 'Invited' },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => { setFilterType(value); setFilterStatus('all'); }}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filterType === value
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Status Filter — only relevant for invited events */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Invitation Status</label>
-              <div className="flex gap-2 flex-wrap">
-                {[
-                  { value: 'all', label: 'All' },
-                  { value: 'accepted', label: 'Accepted' },
-                  { value: 'declined', label: 'Declined' },
-                  { value: 'pending', label: 'Pending' },
-                ].map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => { setFilterStatus(value); if (value !== 'all') setFilterType('event_invited'); }}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      filterStatus === value
-                        ? value === 'accepted' ? 'bg-green-600 text-white'
-                          : value === 'declined' ? 'bg-red-500 text-white'
-                          : value === 'pending' ? 'bg-yellow-500 text-white'
-                          : 'bg-green-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Activity Type</label>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() => { setFilterType('all'); setFilterStatus('all'); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filterType === 'all' && filterStatus === 'all'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => { setFilterType('event_hosted'); setFilterStatus('all'); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filterType === 'event_hosted'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Hosted
+              </button>
+              <button
+                onClick={() => { setFilterType('event_invited'); setFilterStatus('all'); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filterType === 'event_invited' && filterStatus === 'all'
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Invited
+              </button>
+              <button
+                onClick={() => { setFilterType('event_invited'); setFilterStatus('accepted'); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filterStatus === 'accepted'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Accepted
+              </button>
+              <button
+                onClick={() => { setFilterType('event_invited'); setFilterStatus('declined'); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filterStatus === 'declined'
+                    ? 'bg-red-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Declined
+              </button>
+              <button
+                onClick={() => { setFilterType('event_invited'); setFilterStatus('pending'); }}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                  filterStatus === 'pending'
+                    ? 'bg-yellow-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                Pending
+              </button>
             </div>
           </div>
         </div>

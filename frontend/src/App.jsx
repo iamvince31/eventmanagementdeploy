@@ -14,6 +14,7 @@ import Admin from './pages/Admin';
 import DefaultEvents from './pages/DefaultEvents';
 import History from './pages/History';
 import Archive from './pages/Archive';
+import OrganizationalChart from './pages/OrganizationalChart';
 
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -191,6 +192,11 @@ function App() {
             <RoleProtectedRoute allowedRoles={['Admin']}>
               <Archive />
             </RoleProtectedRoute>
+          } />
+          <Route path="/organizational-chart" element={
+            <ProtectedRoute>
+              <OrganizationalChart />
+            </ProtectedRoute>
           } />
           <Route path="/" element={<Navigate to="/account" />} />
         </Routes>

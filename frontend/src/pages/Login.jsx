@@ -1,5 +1,5 @@
-﻿import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthBackground from '../components/AuthBackground';
 
@@ -10,9 +10,18 @@ export default function Login() {
   const [error, setError] = useState('');
   const [lockoutInfo, setLockoutInfo] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [verifiedBanner, setVerifiedBanner] = useState(false);
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state?.verified) {
+      setVerifiedBanner(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, []);
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
@@ -39,14 +48,6 @@ export default function Login() {
         return;
       }
 
-      // Check if 2FA is required (though we removed 2FA, keeping for compatibility)
-      if (response?.requires_otp) {
-        navigate('/verify-login-otp', {
-          state: { email: response.email || email }
-        });
-        return;
-      }
-
       // Successful login
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
@@ -61,6 +62,14 @@ export default function Login() {
       // Check if it's a 2FA requirement
       if (response?.requires_otp) {
         navigate('/verify-login-otp', {
+          state: { email: response.email || email }
+        });
+        return;
+      }
+
+      // Unverified email — redirect to OTP screen so they can complete registration
+      if (response?.requires_verification) {
+        navigate('/verify-email', {
           state: { email: response.email || email }
         });
         return;
@@ -133,6 +142,21 @@ export default function Login() {
                         Time remaining: {Math.floor(lockoutInfo.remainingSeconds / 60)}:{String(lockoutInfo.remainingSeconds % 60).padStart(2, '0')}
                       </p>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {verifiedBanner && (
+              <div className="rounded-md bg-green-50 p-4">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-green-800">Email verified successfully! You can now log in.</p>
                   </div>
                 </div>
               </div>

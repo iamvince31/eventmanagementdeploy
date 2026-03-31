@@ -345,20 +345,15 @@ class AuthController extends Controller
                 'updated_at' => now(),
             ]);
 
-            // Log OTP generation (in production, you would send this via email)
-            Log::info('OTP generated for password reset', [
-                'email' => $email,
-                'otp' => $otp, // Remove this in production for security
-                'timestamp' => now(),
-            ]);
-
-            $emailSent = true; // Assume email sending is successful for now
+            // Send OTP email via Brevo
+            $brevoService = new BrevoMailService();
+            $emailSent = $brevoService->sendPasswordResetOtp($email, $otp, $user->name);
 
             if (!$emailSent) {
                 throw new \Exception('Failed to send OTP email');
             }
 
-            \Log::info('OTP sent successfully', [
+            Log::info('OTP sent successfully', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -368,7 +363,7 @@ class AuthController extends Controller
             ]);
         }
         catch (\Exception $e) {
-            \Log::error('Failed to send OTP', [
+            Log::error('Failed to send OTP', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
@@ -404,7 +399,7 @@ class AuthController extends Controller
             ->first();
 
         if (!$otpRecord) {
-            \Log::warning('Invalid OTP attempt', [
+            Log::warning('Invalid OTP attempt', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -429,7 +424,7 @@ class AuthController extends Controller
                 'reset_token_expires_at' => now()->addMinutes(30),
             ]);
 
-            \Log::info('OTP verified successfully', [
+            Log::info('OTP verified successfully', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -440,7 +435,7 @@ class AuthController extends Controller
             ]);
         }
         catch (\Exception $e) {
-            \Log::error('Failed to verify OTP', [
+            Log::error('Failed to verify OTP', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);
@@ -476,7 +471,7 @@ class AuthController extends Controller
             ->first();
 
         if (!$otpRecord) {
-            \Log::warning('Invalid reset token attempt', [
+            Log::warning('Invalid reset token attempt', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -488,7 +483,7 @@ class AuthController extends Controller
 
         // Check if reset token has expired (30 minutes)
         if ($otpRecord->reset_token_expires_at && now()->isAfter($otpRecord->reset_token_expires_at)) {
-            \Log::warning('Reset token expired', [
+            Log::warning('Reset token expired', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -501,7 +496,7 @@ class AuthController extends Controller
         $user = User::where('email', $email)->first();
 
         if (!$user) {
-            \Log::error('User not found during password reset', [
+            Log::error('User not found during password reset', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -528,7 +523,7 @@ class AuthController extends Controller
                 ->where('email', $email)
                 ->delete();
 
-            \Log::info('Password reset successfully', [
+            Log::info('Password reset successfully', [
                 'email' => $email,
                 'timestamp' => now(),
             ]);
@@ -538,7 +533,7 @@ class AuthController extends Controller
             ]);
         }
         catch (\Exception $e) {
-            \Log::error('Failed to reset password', [
+            Log::error('Failed to reset password', [
                 'email' => $email,
                 'error' => $e->getMessage(),
             ]);

@@ -1,0 +1,9 @@
+7:00 - Time in
+
+7:00 - 8:00 : Testing all implementations list
+8:00 - 9:00 : Implementing the remember me functions where if toggled it will remember the account even when browser is closed, but when untoggled it will only have 1hr before logging out entirely
+9:00 - 10:00 : Fixing OTP Issue where expired or invalid even though the OTP is sent new / Improved the password on /reset-password
+10:00 - 11:00 : Testing other implementations on Login/Change Password/Register/OTP and fixing
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : Determining where to deploy due to Railway seems to fail
+1:00 - 5:00 : Deploying on Laravel Cloud-Render-Aiven-UptimeRobot Fixing Deployment Issues

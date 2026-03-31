@@ -10,15 +10,17 @@ export default function EmailVerification() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [email, setEmail] = useState('');
+  const [mode, setMode] = useState('register'); // 'register' | 'forgot-password'
 
   const navigate = useNavigate();
   const location = useLocation();
 
   useEffect(() => {
-    // Get email from location state or redirect to register
     const emailFromState = location.state?.email;
+    const modeFromState = location.state?.mode || 'register';
     if (emailFromState) {
       setEmail(emailFromState);
+      setMode(modeFromState);
     } else {
       navigate('/register');
     }
@@ -31,22 +33,29 @@ export default function EmailVerification() {
     setLoading(true);
 
     try {
-      const response = await api.post('/verify-email', {
-        email: email.trim(),
-        otp: otp.trim()
-      });
-
-      setSuccess('Email verified successfully! Redirecting to dashboard...');
-
-      // Store token and user data
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-
-      // Redirect to dashboard after 2 seconds
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
-
+      if (mode === 'forgot-password') {
+        // Forgot password flow — verify OTP then go to reset-password
+        const response = await api.post('/verify-otp', {
+          email: email.trim(),
+          otp: otp.trim()
+        });
+        setSuccess('OTP verified! Redirecting...');
+        setTimeout(() => {
+          navigate('/reset-password', {
+            state: { email, reset_token: response.data.reset_token }
+          });
+        }, 1000);
+      } else {
+        // Registration flow — verify email OTP then go to login
+        await api.post('/verify-email', {
+          email: email.trim(),
+          otp: otp.trim()
+        });
+        setSuccess('Email verified successfully! Redirecting to login...');
+        setTimeout(() => {
+          navigate('/login', { state: { verified: true } });
+        }, 1500);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Verification failed. Please try again.');
     } finally {
@@ -60,7 +69,11 @@ export default function EmailVerification() {
     setResending(true);
 
     try {
-      await api.post('/resend-verification', { email: email.trim() });
+      if (mode === 'forgot-password') {
+        await api.post('/request-otp', { email: email.trim() });
+      } else {
+        await api.post('/resend-verification', { email: email.trim() });
+      }
       setSuccess('Verification code sent! Please check your email.');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to resend code. Please try again.');
@@ -83,10 +96,10 @@ export default function EmailVerification() {
               </svg>
             </div>
             <h2 className="text-3xl font-extrabold text-gray-900">
-              Verify Your Email
+              {mode === 'forgot-password' ? 'Verify OTP' : 'Verify Your Email'}
             </h2>
             <p className="mt-2 text-sm text-gray-600">
-              We sent a verification code to
+              {mode === 'forgot-password' ? 'We sent a reset code to' : 'We sent a verification code to'}
             </p>
             <p className="text-sm font-semibold text-green-600">
               {email}
@@ -176,16 +189,35 @@ export default function EmailVerification() {
                   {resending ? 'Sending...' : 'Resend Code'}
                 </button>
               </p>
-            </div>
-
-            <div className="text-center">
-              <button
-                type="button"
-                onClick={() => navigate('/register')}
-                className="font-medium text-gray-600 hover:text-gray-500"
-              >
-                Back to Registration
-              </button>
+              <div className="flex justify-center gap-4 text-sm">
+                {mode === 'forgot-password' ? (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="font-medium text-gray-500 hover:text-gray-700"
+                  >
+                    Back to Forgot Password
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/register')}
+                      className="font-medium text-gray-500 hover:text-gray-700"
+                    >
+                      Back to Register
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/login')}
+                      className="font-medium text-gray-500 hover:text-gray-700"
+                    >
+                      Back to Login
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </form>
         </div>

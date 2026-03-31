@@ -95,13 +95,10 @@ class DefaultEventControllerV2 extends Controller
 
         // Parse the date from request
         $date = \Carbon\Carbon::parse($request->date);
-<<<<<<< HEAD
         $month = $date->month;
         
         // Determine semester from month
         $semester = DefaultEventDate::getSemesterFromMonth($month);
-=======
->>>>>>> 1369ecc084243a8b0b992cae321ce869b016898d
 
         // Validate that the date is within the school year
         list($startYear, $endYear) = explode('-', $request->school_year);
