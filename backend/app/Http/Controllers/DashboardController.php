@@ -52,7 +52,7 @@ class DashboardController extends Controller
                 'images:id,event_id,image_path,original_filename,order',
             ])
             ->where('host_id', $user->id)
-            ->where('date', '>=', now()->subMonths(3)->format('Y-m-d'))
+            ->where('date', '>=', now()->subMonths(3)->format('Y-m-d')) // Only last 3 months
             ->orderBy('date', 'desc')
             ->orderBy('time', 'desc')
             ->limit(100)

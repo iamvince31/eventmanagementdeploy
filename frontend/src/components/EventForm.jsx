@@ -23,10 +23,13 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [fileError, setFileError] = useState('');
   const [membersPage, setMembersPage] = useState(1);
   const MEMBERS_PER_PAGE = 6;
+<<<<<<< Updated upstream
   const [showInvitedModal, setShowInvitedModal] = useState(false);
   const [invitedSearch, setInvitedSearch] = useState('');
   const [invitedPage, setInvitedPage] = useState(1);
   const INVITED_PER_PAGE = 8;
+=======
+>>>>>>> Stashed changes
 
   // Calculate school year based on date
   const getSchoolYearFromDate = (dateString) => {
@@ -365,6 +368,17 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     if (filterRole !== 'all' && !availableRoles.includes(filterRole)) {
       setFilterRole('all');
     }
+  }, [searchMember, filterDepartment, filterRole]);
+
+  const totalMembersPages = Math.ceil(searchFilteredMembers.length / MEMBERS_PER_PAGE);
+  const pagedMembers = searchFilteredMembers.slice(
+    (membersPage - 1) * MEMBERS_PER_PAGE,
+    membersPage * MEMBERS_PER_PAGE
+  );
+
+  // Reset to page 1 whenever filters or search change
+  useEffect(() => {
+    setMembersPage(1);
   }, [searchMember, filterDepartment, filterRole]);
 
   const totalMembersPages = Math.ceil(searchFilteredMembers.length / MEMBERS_PER_PAGE);
@@ -715,9 +729,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                 >
                   <option value="all">All Roles</option>
-                  {availableRoles.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
+                  {availableRoles
+                    .filter(role => !(currentUser?.role === 'Dean' && role === 'Dean'))
+                    .map(role => (
+                      <option key={role} value={role}>{role}</option>
+                    ))}
                 </select>
                 <button
                   type="button"
@@ -743,11 +759,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 </button>
               </div>
               <div className="border border-gray-200 rounded-lg bg-gray-50/50 overflow-hidden">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide px-3 pt-3 pb-1">
-                  Browse Members
-                </p>
                 {searchFilteredMembers.length === 0 ? (
-                  <div className="h-28 flex items-center justify-center">
+                  <div className="h-32 flex items-center justify-center">
                     <p className="text-sm text-gray-400">
                       {searchMember ? 'No members found' : 'No members available'}
                     </p>
@@ -758,11 +771,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                       {pagedMembers.map(member => (
                         <label
                           key={member.id}
-                          className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors ${
-                            selectedMembers.includes(member.id)
-                              ? 'bg-green-100 border border-green-300'
-                              : 'hover:bg-white border border-transparent'
-                          }`}
+                          className={`flex items-center p-2.5 rounded-lg cursor-pointer transition-colors ${selectedMembers.includes(member.id)
+                            ? 'bg-green-100 border border-green-300'
+                            : 'hover:bg-white border border-transparent'
+                            }`}
                         >
                           <input
                             type="checkbox"
