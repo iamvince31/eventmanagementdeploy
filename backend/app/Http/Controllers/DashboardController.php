@@ -146,13 +146,51 @@ class DashboardController extends Controller
         });
 
         // ── Transform default events ───────────────────────────────────────
-        $transformedDefaultEvents = $defaultEvents->map(fn($event) => [
-        'id' => 'default-' . $event->id,
-        'name' => $event->name,
-        'date' => $event->date ? $event->date->format('Y-m-d') : null,
-        'end_date' => $event->end_date ? $event->end_date->format('Y-m-d') : null,
-        'school_year' => $event->school_year,
-        ]);
+        $transformedDefaultEventDates = $defaultEventDates->map(function ($eventDate) {
+            $date = $eventDate->date;
+            if ($date instanceof \DateTime) {
+                $date = $date->format('Y-m-d');
+            } elseif (is_string($date) && strlen($date) > 10) {
+                $date = substr($date, 0, 10);
+            }
+            $endDate = $eventDate->end_date;
+            if ($endDate instanceof \DateTime) {
+                $endDate = $endDate->format('Y-m-d');
+            } elseif (is_string($endDate) && strlen($endDate) > 10) {
+                $endDate = substr($endDate, 0, 10);
+            }
+
+            return [
+                'id' => 'default-date-' . $eventDate->id,
+                'name' => $eventDate->defaultEvent->name ?? 'Academic Event',
+                'date' => $date,
+                'end_date' => $endDate,
+                'school_year' => $eventDate->school_year,
+            ];
+        });
+
+        $transformedLegacyEvents = $legacyDefaultEvents->map(function ($event) {
+            $date = $event->date;
+            if ($date instanceof \DateTime) {
+                $date = $date->format('Y-m-d');
+            } elseif (is_string($date) && strlen($date) > 10) {
+                $date = substr($date, 0, 10);
+            }
+            $endDate = $event->end_date;
+            if ($endDate instanceof \DateTime) {
+                $endDate = $endDate->format('Y-m-d');
+            } elseif (is_string($endDate) && strlen($endDate) > 10) {
+                $endDate = substr($endDate, 0, 10);
+            }
+
+            return [
+                'id' => 'default-' . $event->id,
+                'name' => $event->name,
+                'date' => $date,
+                'end_date' => $endDate,
+                'school_year' => $event->school_year,
+            ];
+        });
         
         // Merge both collections
         $transformedDefaultEvents = $transformedDefaultEventDates->merge($transformedLegacyEvents);

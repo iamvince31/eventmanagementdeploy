@@ -761,6 +761,20 @@ export default function Dashboard() {
         )}
       </Modal>
 
+      {/* Personal Event Modal */}
+      <PersonalEventModal
+        isOpen={isPersonalEventModalOpen}
+        onClose={() => {
+          setIsPersonalEventModalOpen(false);
+          setEditingPersonalEvent(null);
+        }}
+        onSuccess={() => {
+          fetchData();
+        }}
+        editingEvent={editingPersonalEvent}
+        selectedDate={personalEventSelectedDate}
+      />
+
       {/* Schedule Required Modal */}
       <Modal
         isOpen={isScheduleRequiredModalOpen}

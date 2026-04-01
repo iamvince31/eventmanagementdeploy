@@ -12,3 +12,5 @@
 -fixed notification bell
 -Tested All implementations on local
 -TEsting all implementations on Hosting
+-Remerging via branching 2 different repositories to the main repository
+-fixing personal events issue on press
