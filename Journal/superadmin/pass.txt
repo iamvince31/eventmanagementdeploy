@@ -2,3 +2,9 @@ Login as bootstrap admin:
 
 Email: admin@cvsu.edu.ph
 Password: SetupAdmin2024!
+
+git add .
+git commit -m ""
+git push origin Integration
+git push deployed Integration:merge-ready
+git push deployed Integration:master
