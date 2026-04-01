@@ -14,3 +14,9 @@
 -TEsting all implementations on Hosting
 -Remerging via branching 2 different repositories to the main repository
 -fixing personal events issue on press
+-reimplementing back to accept/decline feature
+-merged processes to the other deployed repository
+-Fixing CORS Policy blocking requests of Add-event and Personal events in Hosted website
+-Fixing ui on the event/meeting modal on calendar 
+-Improving the visibility of the images and the pdfs in events modal
+-Improving the notification bell inconsistent with the accept decline features

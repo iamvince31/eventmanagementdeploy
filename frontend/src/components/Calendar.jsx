@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect } from 'react';
 import ConfirmDeleteModal from './ConfirmDeleteModal';
 
-export default function Calendar({ events, defaultEvents = [], userSchedules = [], onDateSelect, highlightedDate, currentUser, onEditEvent, onDeleteEvent }) {
+export default function Calendar({ events, defaultEvents = [], userSchedules = [], onDateSelect, highlightedDate, currentUser, onEditEvent, onDeleteEvent, onEventClick }) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
   const [showMoreModal, setShowMoreModal] = useState(false);
@@ -255,28 +255,30 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
   const handleEventClick = (event, e) => {
     e.stopPropagation();
     
-    // If it's a schedule event, gather all schedules for that day
+    // Schedule events use the internal modal (grouped view, no accept/decline needed)
     if (event.is_schedule || event.type === 'schedule') {
-      // Use the clicked date, or fall back to moreModalDate or selectedDate
       const dateStr = event.clickedDate || moreModalDate || selectedDate;
       const allSchedulesForDay = getScheduleEventsForDate(dateStr);
-      
-      // Create a combined schedule event with all schedules for the day
       const combinedScheduleEvent = {
         ...event,
         allSchedules: allSchedulesForDay,
         isScheduleGroup: true,
         date: dateStr
       };
-      
       setSelectedEvent(combinedScheduleEvent);
+      setShowEventDetailModal(true);
+      setShowMoreModal(false);
+      setCurrentFileIndex(0);
+    } else if (onEventClick) {
+      // Regular/personal/default events — delegate to parent (EventDetailModal)
+      setShowMoreModal(false);
+      onEventClick(event);
     } else {
       setSelectedEvent(event);
+      setShowEventDetailModal(true);
+      setShowMoreModal(false);
+      setCurrentFileIndex(0);
     }
-    
-    setShowEventDetailModal(true);
-    setShowMoreModal(false);
-    setCurrentFileIndex(0); // Reset file index when opening new event
   };
   // File navigation functions
   const nextFile = () => {
@@ -883,12 +885,12 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
                           <div key={member.id || index} className="flex items-center gap-3 p-2.5 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                             <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                               <span className="text-white text-xs font-semibold">
-                                {member.name ? member.name.charAt(0).toUpperCase() : 'M'}
+                                {(member.username || member.name || '?').charAt(0).toUpperCase()}
                               </span>
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-medium text-gray-900 truncate">
-                                {member.name || 'Member'}
+                                {member.username || member.name || 'Member'}
                                 {currentUser && member.id === currentUser.id && (
                                   <span className="ml-2 text-xs text-green-600 font-normal">(You)</span>
                                 )}
