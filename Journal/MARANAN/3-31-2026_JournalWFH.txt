@@ -9,3 +9,6 @@
 -redeploying to another repository that is deployed
 -fixing coordinator inconsistencies on the seeder members
 -adding a password helper on login
+-fixed notification bell
+-Tested All implementations on local
+-TEsting all implementations on Hosting
