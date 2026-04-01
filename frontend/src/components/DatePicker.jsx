@@ -10,7 +10,9 @@ export default function DatePicker({
   size = 'medium', // 'small', 'medium', 'large'
   showQuickActions = true,
   highlightedDates = [], // Array of {date: string, color: string, label: string}
-  initialMonth = null // Optional: Date object or date string to set initial month
+  initialMonth = null, // Optional: Date object or date string to set initial month
+  onOpenChange = null, // Optional: Callback when dropdown opens/closes
+  dropdownDirection = 'down' // 'up' or 'down' - controls where the calendar appears
 }) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -28,6 +30,13 @@ export default function DatePicker({
   const [currentMonth, setCurrentMonth] = useState(getInitialMonth());
   const datePickerRef = useRef(null);
   const [focusedDate, setFocusedDate] = useState(null);
+
+  // Notify parent when dropdown opens/closes
+  useEffect(() => {
+    if (onOpenChange) {
+      onOpenChange(isOpen);
+    }
+  }, [isOpen, onOpenChange]);
 
   // Update currentMonth when initialMonth changes
   useEffect(() => {
@@ -249,7 +258,7 @@ export default function DatePicker({
       {/* Calendar Dropdown */}
       {isOpen && (
         <div 
-          className={`absolute z-50 mt-1 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-80 animate-fade-in`}
+          className={`absolute z-50 ${dropdownDirection === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} bg-white rounded-xl shadow-2xl border border-gray-200 p-4 w-80 animate-fade-in`}
           role="dialog"
           aria-label="Date picker calendar"
         >

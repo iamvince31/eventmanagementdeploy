@@ -6,6 +6,7 @@ import { getCache, setCache } from '../services/cache';
 import Calendar from '../components/Calendar';
 import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
+import PersonalEventModal from '../components/PersonalEventModal';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -23,8 +24,11 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
-  const [hasSchedule, setHasSchedule] = useState(true);
+  
+  // Personal Event Modal States
+  const [isPersonalEventModalOpen, setIsPersonalEventModalOpen] = useState(false);
+  const [editingPersonalEvent, setEditingPersonalEvent] = useState(null);
+  const [personalEventSelectedDate, setPersonalEventSelectedDate] = useState('');
 
   // Event to open directly in Calendar popup (from notification click)
   const [calendarEventToOpen, setCalendarEventToOpen] = useState(null);
@@ -162,7 +166,9 @@ export default function Dashboard() {
       return;
     }
     if (event.is_personal) {
-      navigate('/personal-event', { state: { event } });
+      setEditingPersonalEvent(event);
+      setPersonalEventSelectedDate(event.date || '');
+      setIsPersonalEventModalOpen(true);
     } else {
       navigate('/add-event', { state: { event } });
     }
@@ -348,7 +354,11 @@ export default function Dashboard() {
               // Faculty Members can use Add Event
               <>
                 <button
-                  onClick={() => navigate('/personal-event', { state: { selectedDate } })}
+                  onClick={() => {
+                    setEditingPersonalEvent(null);
+                    setPersonalEventSelectedDate(selectedDate);
+                    setIsPersonalEventModalOpen(true);
+                  }}
                   className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
                 >
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -371,7 +381,11 @@ export default function Dashboard() {
               // Coordinators, Chairpersons, Deans, CEIT Officials, and Admins can create events directly
               <>
                 <button
-                  onClick={() => navigate('/personal-event', { state: { selectedDate } })}
+                  onClick={() => {
+                    setEditingPersonalEvent(null);
+                    setPersonalEventSelectedDate(selectedDate);
+                    setIsPersonalEventModalOpen(true);
+                  }}
                   className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
                 >
                   <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -750,7 +764,20 @@ export default function Dashboard() {
         )}
       </Modal>
 
-
+      {/* Personal Event Modal */}
+      <PersonalEventModal
+        isOpen={isPersonalEventModalOpen}
+        onClose={() => {
+          setIsPersonalEventModalOpen(false);
+          setEditingPersonalEvent(null);
+          setPersonalEventSelectedDate('');
+        }}
+        onSuccess={() => {
+          fetchData();
+        }}
+        editingEvent={editingPersonalEvent}
+        selectedDate={personalEventSelectedDate}
+      />
 
     </div>
   );

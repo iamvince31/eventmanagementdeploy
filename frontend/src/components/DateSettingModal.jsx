@@ -239,19 +239,6 @@ export default function DateSettingModal({
                 showQuickActions={false}
                 initialMonth={eventMonth}
               />
-              {startDate && (
-                <p className="mt-1.5 text-xs text-gray-600 flex items-center gap-1">
-                  <svg className="w-3 h-3 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="truncate">{new Date(startDate).toLocaleDateString('en-US', { 
-                    weekday: 'short',
-                    month: 'short', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                  })}</span>
-                </p>
-              )}
             </div>
 
             {/* End Date */}
@@ -269,19 +256,6 @@ export default function DateSettingModal({
                 showQuickActions={false}
                 initialMonth={startDate || eventMonth}
               />
-              {endDate && (
-                <p className="mt-1.5 text-xs text-gray-600 flex items-center gap-1">
-                  <svg className="w-3 h-3 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span className="truncate">{new Date(endDate).toLocaleDateString('en-US', { 
-                    weekday: 'short',
-                    month: 'short', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                  })}</span>
-                </p>
-              )}
             </div>
           </div>
         </div>

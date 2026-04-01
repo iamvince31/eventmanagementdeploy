@@ -84,7 +84,16 @@ class DashboardController extends Controller
         });
 
         // ── Default / academic events ──────────────────────────────────────
-        $defaultEvents = DefaultEvent::whereNotNull('date')
+        // Query from DefaultEventDate table which stores dates per school year
+        $defaultEventDates = \App\Models\DefaultEventDate::with('defaultEvent')
+            ->whereIn('school_year', [$schoolYear, $nextSchoolYear])
+            ->whereNotNull('date')
+            ->orderBy('date')
+            ->limit(100)
+            ->get();
+        
+        // Also get legacy events from DefaultEvent table (for backward compatibility)
+        $legacyDefaultEvents = DefaultEvent::whereNotNull('date')
             ->where(function ($q) use ($schoolYear, $nextSchoolYear) {
                 $q->whereIn('school_year', [$schoolYear, $nextSchoolYear])
                   ->orWhereNull('school_year');
@@ -133,13 +142,27 @@ class DashboardController extends Controller
         });
 
         // ── Transform default events ───────────────────────────────────────
-        $transformedDefaultEvents = $defaultEvents->map(fn($event) => [
+        // Transform events from DefaultEventDate table
+        $transformedDefaultEventDates = $defaultEventDates->map(fn($eventDate) => [
+            'id'          => 'default-date-' . $eventDate->id,
+            'name'        => $eventDate->defaultEvent->name,
+            'date'        => $eventDate->date ? $eventDate->date->format('Y-m-d') : null,
+            'end_date'    => $eventDate->end_date ? $eventDate->end_date->format('Y-m-d') : null,
+            'school_year' => $eventDate->school_year,
+            'semester'    => $eventDate->semester,
+        ]);
+        
+        // Transform legacy events from DefaultEvent table
+        $transformedLegacyEvents = $legacyDefaultEvents->map(fn($event) => [
             'id'          => 'default-' . $event->id,
             'name'        => $event->name,
             'date'        => $event->date ? $event->date->format('Y-m-d') : null,
             'end_date'    => $event->end_date ? $event->end_date->format('Y-m-d') : null,
             'school_year' => $event->school_year,
         ]);
+        
+        // Merge both collections
+        $transformedDefaultEvents = $transformedDefaultEventDates->merge($transformedLegacyEvents);
 
         // ── User schedules (current + next school year) ────────────────────
         $currentSemester = $this->getCurrentSemester($now);

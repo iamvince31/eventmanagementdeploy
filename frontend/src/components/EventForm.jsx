@@ -23,13 +23,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [fileError, setFileError] = useState('');
   const [membersPage, setMembersPage] = useState(1);
   const MEMBERS_PER_PAGE = 6;
-<<<<<<< Updated upstream
   const [showInvitedModal, setShowInvitedModal] = useState(false);
   const [invitedSearch, setInvitedSearch] = useState('');
   const [invitedPage, setInvitedPage] = useState(1);
   const INVITED_PER_PAGE = 8;
-=======
->>>>>>> Stashed changes
 
   // Calculate school year based on date
   const getSchoolYearFromDate = (dateString) => {
@@ -368,17 +365,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     if (filterRole !== 'all' && !availableRoles.includes(filterRole)) {
       setFilterRole('all');
     }
-  }, [searchMember, filterDepartment, filterRole]);
-
-  const totalMembersPages = Math.ceil(searchFilteredMembers.length / MEMBERS_PER_PAGE);
-  const pagedMembers = searchFilteredMembers.slice(
-    (membersPage - 1) * MEMBERS_PER_PAGE,
-    membersPage * MEMBERS_PER_PAGE
-  );
-
-  // Reset to page 1 whenever filters or search change
-  useEffect(() => {
-    setMembersPage(1);
   }, [searchMember, filterDepartment, filterRole]);
 
   const totalMembersPages = Math.ceil(searchFilteredMembers.length / MEMBERS_PER_PAGE);
