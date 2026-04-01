@@ -29,11 +29,15 @@ return [
         'http://127.0.0.1:5174',
         'http://127.0.0.1:3000',
     ],
-    // Production origin from env (e.g. https://your-app.vercel.app)
-    env('FRONTEND_URL') ? [env('FRONTEND_URL')] : []
+    // Production origins from env — supports multiple comma-separated URLs
+    // e.g. FRONTEND_URL=https://myapp.vercel.app,https://myapp.netlify.app
+    array_filter(array_map('trim', explode(',', env('FRONTEND_URL', ''))))
 ))),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        // Fallback: allow any Vercel/Netlify/Render preview URL
+        '#^https://.*\.(vercel\.app|netlify\.app|onrender\.com|railway\.app)$#',
+    ],
 
     'allowed_headers' => ['*'],
 

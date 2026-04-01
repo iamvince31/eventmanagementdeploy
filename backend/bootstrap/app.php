@@ -12,6 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Ensure CORS runs first — before auth, throttle, etc.
+        $middleware->prepend(\Illuminate\Http\Middleware\HandleCors::class);
+
         // Register custom middleware aliases
         $middleware->alias([
             'throttle.login' => \App\Http\Middleware\ThrottleLoginAttempts::class,
