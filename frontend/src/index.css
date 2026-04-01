@@ -66,6 +66,20 @@ body {
 }
 
 
+/* ===== Hide browser-native password reveal button ===== */
+/* Edge / IE */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
+}
+/* Chrome / Safari */
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+  display: none !important;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* ===== Time Picker Green Theme Styling ===== */
 
 /* Time picker icon - green tint */
