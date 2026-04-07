@@ -6,3 +6,4 @@
 -schedule conflicts fix not showing on the modal itself
 -improving the pillboxes events ui presentation on the dashboard
 -Removing the redundant class schedule showing up on the modal on the dashboard
+-fixing merge conflicts on the repull between 2 repositories

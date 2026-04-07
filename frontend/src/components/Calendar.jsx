@@ -421,11 +421,6 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
         clickedDate: dateStr
       }] : [];
 
-      // allEvents includes schedules for "View All" modal, but eventsToDisplay excludes them
-      // so regular/academic events are never displaced by the schedule indicator
-      const allEvents = [...academicEvents, ...groupedSchedules, ...regularEvents];
-      const nonScheduleEvents = [...academicEvents, ...regularEvents];
-
       // allEvents for "View All" only includes non-schedule events
       // Schedules are shown via the green tint/border only — not as clickable pills
       const allEvents = [...academicEvents, ...regularEvents];
