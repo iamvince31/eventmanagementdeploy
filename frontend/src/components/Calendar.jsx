@@ -115,83 +115,6 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
     });
   };
 
-  // Check if there are time conflicts on a specific date
-  const hasConflicts = (dateStr) => {
-    const regularEvents = getEventsForDate(dateStr);
-    const scheduleEvents = getScheduleEventsForDate(dateStr);
-
-    // Collect all timed events (regular events + schedules)
-    const timedEvents = [];
-
-    // Add regular events with time
-    regularEvents.forEach(event => {
-      if (event.time && event.time !== 'All Day') {
-        timedEvents.push({
-          time: event.time,
-          type: 'event',
-          id: event.id
-        });
-      }
-    });
-
-    // Add schedule events
-    scheduleEvents.forEach(schedule => {
-      if (schedule.start_time && schedule.end_time) {
-        timedEvents.push({
-          start_time: schedule.start_time,
-          end_time: schedule.end_time,
-          type: 'schedule',
-          id: schedule.id
-        });
-      }
-    });
-
-    // Check for overlaps
-    for (let i = 0; i < timedEvents.length; i++) {
-      for (let j = i + 1; j < timedEvents.length; j++) {
-        const event1 = timedEvents[i];
-        const event2 = timedEvents[j];
-
-        // Helper function to parse time to minutes
-        const parseTimeToMinutes = (timeStr) => {
-          if (!timeStr) return null;
-          const parts = timeStr.split(':');
-          return parseInt(parts[0]) * 60 + parseInt(parts[1] || 0);
-        };
-
-        // Get time ranges for both events
-        let time1Start, time1End, time2Start, time2End;
-
-        if (event1.type === 'schedule') {
-          time1Start = parseTimeToMinutes(event1.start_time);
-          time1End = parseTimeToMinutes(event1.end_time);
-        } else {
-          // For point-in-time events, assume 1-hour duration
-          time1Start = parseTimeToMinutes(event1.time);
-          time1End = time1Start + 60; // 1 hour duration
-        }
-
-        if (event2.type === 'schedule') {
-          time2Start = parseTimeToMinutes(event2.start_time);
-          time2End = parseTimeToMinutes(event2.end_time);
-        } else {
-          // For point-in-time events, assume 1-hour duration
-          time2Start = parseTimeToMinutes(event2.time);
-          time2End = time2Start + 60; // 1 hour duration
-        }
-
-        // Check for overlap: two ranges overlap if one starts before the other ends
-        if (time1Start !== null && time2Start !== null && time1End !== null && time2End !== null) {
-          if (time1Start < time2End && time2Start < time1End) {
-            return true; // Overlap detected
-          }
-        }
-      }
-    }
-
-    return false;
-  };
-
   const handleDateClick = (dateStr) => {
     setSelectedDate(dateStr);
     const regularEvents = getEventsForDate(dateStr);
@@ -411,16 +334,6 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
       const academicEvents = isCurrentMonth ? getDefaultEventsForDate(dateStr) : [];
       const regularEvents = isCurrentMonth ? getEventsForDate(dateStr) : [];
 
-      // Group all schedules into a single entry for display
-      const groupedSchedules = scheduleEvents.length > 0 ? [{
-        is_schedule: true,
-        type: 'schedule',
-        day: scheduleEvents[0].day,
-        allSchedules: scheduleEvents,
-        isScheduleGroup: true,
-        clickedDate: dateStr
-      }] : [];
-
       // allEvents for "View All" only includes non-schedule events
       // Schedules are shown via the green tint/border only — not as clickable pills
       const allEvents = [...academicEvents, ...regularEvents];
@@ -439,10 +352,7 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
       // Check if this cell will show "View More" button
       const hasViewMore = allEvents.length > displayLimit;
 
-      // Check for conflicts on this date
-      const dateHasConflicts = isCurrentMonth && !isPastDate && hasConflicts(dateStr);
-
-      // Check if this day has a weekly schedule (regardless of semester ΓÇö for the full year tint)
+      // Check if this day has a weekly schedule (regardless of semester — for the full year tint)
       const dayOfWeek = cellDate.getDay();
       const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       const cellDayName = dayNames[dayOfWeek];
@@ -457,13 +367,13 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
             }
           }}
           className={`h-full p-0.5 border -ml-[1px] -mt-[1px] transition-all duration-200 relative group flex flex-col
-            border-gray-200
+            ${hasWeeklySchedule && isCurrentMonth ? 'border-green-400' : 'border-gray-200'}
             ${isCurrentMonth ? (isPastDate ? 'cursor-default bg-gray-50' : 'cursor-default bg-white') : 'bg-gray-50/50'}
             ${selected && !isPastDate ? 'ring-2 ring-green-500 ring-inset z-10' : ''}
             ${highlighted && !isPastDate ? 'ring-2 ring-green-400 animate-pulse z-10' : ''}
             ${isPastDate ? 'opacity-60' : ''}
           `}
-          style={undefined}
+          style={hasWeeklySchedule && isCurrentMonth ? { backgroundColor: isPastDate ? 'rgba(20,83,45,0.07)' : 'rgba(22,163,74,0.1)' } : undefined}
         >
           {/* Date Number */}
           <div className="flex justify-between items-start mb-0.5 flex-shrink-0">
@@ -475,29 +385,6 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
               `}>
                 {cellDay}
               </span>
-              {dateHasConflicts && (
-                <>
-                  <div className="relative group/conflict flex-shrink-0">
-                    <svg
-                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-600 cursor-help drop-shadow-sm"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {/* Tooltip */}
-                    <div className="absolute left-0 top-full mt-1.5 hidden group-hover/conflict:block z-50">
-                      <div className="bg-gray-900 text-white text-xs px-2.5 py-1.5 rounded-md shadow-lg whitespace-nowrap">
-                        <span className="font-medium">Schedule Conflict</span>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
@@ -659,12 +546,6 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
             <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
               <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded bg-purple-500 flex-shrink-0"></div>
               <span className="text-gray-600 font-medium">Personal Event</span>
-            </div>
-            <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-              <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-red-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-600 font-medium">Schedule Conflict</span>
             </div>
           </div>
         </div>
