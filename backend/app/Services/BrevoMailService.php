@@ -22,8 +22,12 @@ class BrevoMailService
      */
     private function dispatchEmail(string $email, string $subject, string $htmlContent, string $logMessage): bool
     {
+        // Capture primitive values so the closure is fully serializable by dispatch()
+        $fromName = $this->fromName;
+        $fromEmail = $this->fromEmail;
+
         try {
-            dispatch(function () use ($email, $subject, $htmlContent, $logMessage) {
+            dispatch(function () use ($email, $subject, $htmlContent, $logMessage, $fromName, $fromEmail) {
                 // If BREVO_API_KEY is provided, use the HTTPS API (Bypasses Render SMTP Block)
                 $apiKey = config('services.brevo.key');
 
@@ -34,7 +38,7 @@ class BrevoMailService
                             'Content-Type' => 'application/json',
                             'accept' => 'application/json'
                         ])->timeout(10)->post('https://api.brevo.com/v3/smtp/email', [
-                            'sender' => ['name' => $this->fromName, 'email' => $this->fromEmail],
+                            'sender' => ['name' => $fromName, 'email' => $fromEmail],
                             'to' => [['email' => $email]],
                             'subject' => $subject,
                             'htmlContent' => $htmlContent
@@ -170,6 +174,8 @@ class BrevoMailService
         return <<<HTML
 
 
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -191,11 +197,11 @@ class BrevoMailService
             <h1>🔐 Password Reset Request</h1>
         </div>
         <div class="content">
-            <p>Hello <strong>{\$userName}</strong>,</p>
+            <p>Hello <strong>{$userName}</strong>,</p>
             <p>You requested to reset your password for your Event Management System account.</p>
             <p>Use the OTP code below to proceed with your password reset:</p>
             
-            <div class="otp-code">{\$otp}</div>
+            <div class="otp-code">{$otp}</div>
             
             <div class="warning">
                 <p style="margin: 0;"><strong>⏱️ This code will expire in 10 minutes.</strong></p>
@@ -222,6 +228,8 @@ HTML;
         return <<<HTML
 
 
+
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -243,7 +251,7 @@ HTML;
         </div>
         <div class="content">
             <div class="success-icon">🎉</div>
-            <p>Hello <strong>{\$userName}</strong>,</p>
+            <p>Hello <strong>{$userName}</strong>,</p>
             <p>Your password has been successfully reset.</p>
             <p>You can now log in to your Event Management System account using your new password.</p>
             <p>If you did not make this change, please contact support immediately.</p>
@@ -264,6 +272,8 @@ HTML;
     protected function buildRegistrationOtpHtml(string $userName, string $otp): string
     {
         return <<<HTML
+
+
 
 
 <!DOCTYPE html>
@@ -287,10 +297,10 @@ HTML;
             <h1>✉️ Verify Your Email</h1>
         </div>
         <div class="content">
-            <p>Hello <strong>{\$userName}</strong>,</p>
+            <p>Hello <strong>{$userName}</strong>,</p>
             <p>Welcome to the Event Management System! Please verify your email address by entering the code below:</p>
             
-            <div class="otp-code">{\$otp}</div>
+            <div class="otp-code">{$otp}</div>
             
             <div class="warning">
                 <p style="margin: 0;"><strong>⏱️ This code will expire in 10 minutes.</strong></p>

@@ -120,10 +120,9 @@ export default function Register() {
         email: formData.email.trim()
       });
 
-      setSuccess('Registration successful! You can now sign in with your account.');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
+      navigate('/verify-email', {
+        state: { email: formData.email.trim(), mode: 'register' }
+      });
 
     } catch (err) {
       if (err.response?.data?.errors) {

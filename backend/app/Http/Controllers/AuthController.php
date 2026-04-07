@@ -69,7 +69,7 @@ class AuthController extends Controller
         }
         $fullName = trim($firstName . $middleInitialFormatted . ' ' . $lastName);
 
-        // Create user and immediately auto-verify their email
+        // Create user without verifying email yet
         $user = User::create([
             'name' => $fullName,
             'first_name' => $firstName,
@@ -80,28 +80,36 @@ class AuthController extends Controller
             'department' => null,
             'role' => 'Faculty Member',
             'is_validated' => false,
-            'email_verified_at' => now(), // Auto-verify immediately
+            'email_verified_at' => null,
         ]);
 
-        Log::info('User registered and auto-verified', [
+        // Generate 6-digit OTP and store it
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        DB::table('email_verification_otps')->where('email', $email)->delete();
+
+        DB::table('email_verification_otps')->insert([
+            'email' => $email,
+            'otp' => $otp,
+            'expires_at' => now()->addMinutes(10),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        // Send OTP email (dispatched after response so it's non-blocking)
+        $brevoService = new BrevoMailService();
+        $brevoService->sendRegistrationOtp($email, $otp, $user->name);
+
+        Log::info('User registered, OTP sent', [
             'email' => $email,
             'user_id' => $user->id,
         ]);
 
         return response()->json([
-            'message' => 'Registration successful! You can now sign in with your account.',
-            'user' => [
-                'id' => $user->id,
-                'username' => $user->name,
-                'email' => $user->email,
-                'department' => $user->department,
-                'role' => $user->role,
-                'is_validated' => $user->is_validated,
-                'schedule_initialized' => false,
-                'email_verified' => true,
-            ],
-            'requires_verification' => false,
-            'message_note' => 'Your department and role will be assigned by an administrator after account validation.',
+            'message' => 'Registration successful! Please check your email for a verification code.',
+            'email' => $email,
+            'requires_verification' => true,
+            'message_note' => 'Enter the 6-digit code sent to your email to activate your account.',
         ], 201);
     }
 
@@ -542,6 +550,95 @@ class AuthController extends Controller
                 'message' => 'An error occurred while resetting your password. Please try again.',
             ], 500);
         }
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'otp' => 'required|string|size:6|regex:/^\d{6}$/',
+        ], [
+            'otp.regex' => 'OTP must be a 6-digit number.',
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $otp = trim($request->otp);
+
+        $record = DB::table('email_verification_otps')
+            ->where('email', $email)
+            ->where('otp', $otp)
+            ->where('expires_at', '>', now())
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'message' => 'Invalid or expired verification code. Please request a new one.',
+            ], 400);
+        }
+
+        $user = User::where('email', $email)->first();
+
+        if (!$user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
+
+        // Mark email as verified
+        $user->email_verified_at = now();
+        $user->save();
+
+        // Delete the used OTP record
+        DB::table('email_verification_otps')->where('email', $email)->delete();
+
+        Log::info('Email verified via OTP', ['email' => $email, 'timestamp' => now()]);
+
+        return response()->json([
+            'message' => 'Email verified successfully! You can now log in.',
+        ]);
+    }
+
+    public function resendVerificationOtp(Request $request)
+    {
+        $request->validate([
+            'email' => [
+                'required',
+                'email',
+                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
+            ],
+        ], [
+            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
+        ]);
+
+        $email = strtolower(trim($request->email));
+        $user = User::where('email', $email)->whereNull('email_verified_at')->first();
+
+        if (!$user) {
+            // Be vague for security
+            return response()->json([
+                'message' => 'If an unverified account exists for this email, a new code will be sent.',
+            ]);
+        }
+
+        // Generate and store new OTP
+        $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        DB::table('email_verification_otps')->where('email', $email)->delete();
+
+        DB::table('email_verification_otps')->insert([
+            'email' => $email,
+            'otp' => $otp,
+            'expires_at' => now()->addMinutes(10),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $brevoService = new BrevoMailService();
+        $brevoService->sendRegistrationOtp($email, $otp, $user->name);
+
+        Log::info('Resent verification OTP', ['email' => $email, 'timestamp' => now()]);
+
+        return response()->json([
+            'message' => 'A new verification code has been sent to your email.',
+        ]);
     }
 
     public function verifyEmailLink(Request $request)
