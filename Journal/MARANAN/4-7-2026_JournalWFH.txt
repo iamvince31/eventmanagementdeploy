@@ -16,3 +16,4 @@
 -adding schedule conflicts again for a more ease of use 
 -fixing inconsistencies on the notificationbell due to 1 event still shows up even after accepting 
 -Tested forget password features on the hosted website
+-fixing cors policy again tampering with hosted system

@@ -199,7 +199,10 @@ class DashboardController extends Controller
         $currentSemester = $this->getCurrentSemester($now);
 
         $userSchedules = UserSchedule::where('user_id', $user->id)
-            ->whereIn('school_year', [$schoolYear, $nextSchoolYear])
+            ->where(function ($q) use ($schoolYear, $nextSchoolYear) {
+                $q->whereIn('school_year', [$schoolYear, $nextSchoolYear])
+                  ->orWhereNull('school_year');
+            })
             ->select('id', 'day', 'start_time', 'end_time', 'description', 'color', 'semester', 'school_year')
             ->orderBy('semester')
             ->orderBy('day')
