@@ -20,6 +20,14 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
 
   // ── Derived notification lists ──────────────────────────────────────────────
 
+  const todayStr = now.toISOString().split('T')[0];
+
+  const parseMin = (t) => {
+    if (!t) return null;
+    const [h, m] = t.split(':');
+    return parseInt(h) * 60 + parseInt(m || 0);
+  };
+
   // Helper: get event type label
   const getTypeLabel = (event) => {
     if (event.is_personal) return 'Personal Event';
@@ -27,47 +35,24 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
     return 'Event';
   };
 
-  // Helper: get role label for current user
-  const getRoleLabel = (event) => {
-    if (event.host?.id === user?.id) return 'Hosted';
-    const membership = event.members?.find(m => m.id === user?.id);
-    if (!membership) return null;
-    if (membership.status === 'pending') return 'Invited · Pending';
-    if (membership.status === 'accepted') return 'Invited · Accepted';
-    return null; // declined — exclude
-  };
-
-  // All relevant events for notifications:
-  // - Events hosted by the user (not personal, not declined by all)
-  // - Events where user is invited and NOT declined
-  const allNotificationEvents = events.filter(event => {
-    const isHost = event.host?.id === user?.id;
-    if (isHost) return !event.is_personal; // hosted non-personal events always show
-    const membership = event.members?.find(m => m.id === user?.id);
-    if (!membership) return false;
-    return membership.status !== 'declined'; // hide declined invitations
-  });
-
-  // Pending invitations (subset — for the pending section)
-  const pendingInvitations = allNotificationEvents.filter(event =>
+  // Pending invitations — show regardless of date
+  const pendingInvitations = events.filter(event =>
     event.members?.some(m => m.id === user?.id && m.status === 'pending')
   );
 
-  // Hosted events — only shown via upcomingReminders (within 60 mins today)
-  // Not shown as a standalone section
-
-  // Accepted invitations
-  const acceptedInvitations = allNotificationEvents.filter(event => {
-    if (event.host?.id === user?.id) return false;
-    return event.members?.some(m => m.id === user?.id && m.status === 'accepted');
+  // Accepted invitations — only show on the day of the event
+  const acceptedInvitations = events.filter(event => {
+    if (event.host?.id === user?.id) return false; // not an invitation
+    const membership = event.members?.find(m => m.id === user?.id);
+    if (!membership || membership.status !== 'accepted') return false;
+    return event.date === todayStr; // only today
   });
 
-  // Upcoming reminders (accepted + hosted events today within 60 mins)
+  // Upcoming reminders — accepted + hosted events today within 60 mins
   const upcomingReminders = (() => {
-    const todayStr = now.toISOString().split('T')[0];
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
-    return allNotificationEvents.filter(event => {
+    return events.filter(event => {
       if (!event.date || !event.time) return false;
       if (event.date !== todayStr) return false;
 
@@ -233,7 +218,7 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
               <p className="text-xs text-gray-500 mt-1">
                 {upcomingReminders.length > 0 && `${upcomingReminders.length} upcoming · `}
                 {pendingInvitations.length > 0 && `${pendingInvitations.length} pending · `}
-                {(acceptedInvitations.length) > 0 && `${acceptedInvitations.length} accepted · `}
+                {acceptedInvitations.length > 0 && `${acceptedInvitations.length} accepted today · `}
                 {unreadMessages.length > 0 && `${unreadMessages.length} message${unreadMessages.length !== 1 ? 's' : ''} · `}
                 {user?.role === 'Admin' && pendingUsers.length > 0 && `${pendingUsers.length} validation${pendingUsers.length !== 1 ? 's' : ''} · `}
                 {totalNotifications === 0 && 'All caught up'}
@@ -267,7 +252,7 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
                           <p className="text-xs text-gray-500 mt-0.5">
-                            {getTypeLabel(event)} · {getRoleLabel(event)} · {fmtTime(event.time)}
+                            {getTypeLabel(event)} · {event.host?.id === user?.id ? 'Hosting' : 'Accepted'} · {fmtTime(event.time)}
                           </p>
                           {event.location && <p className="text-xs text-gray-400 mt-0.5 truncate">{event.location}</p>}
                         </div>

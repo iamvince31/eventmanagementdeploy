@@ -382,6 +382,7 @@ export default function Dashboard() {
         event={selectedEvent}
         currentUser={user}
         userSchedules={userSchedules}
+        allEvents={events}
         onEdit={handleEdit}
         onDelete={handleDelete}
         onRespond={() => {

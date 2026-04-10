@@ -8,8 +8,8 @@ composer install --no-dev --optimize-autoloader
 echo "==> Running database migrations..."
 php artisan migrate --force
 
-echo "==> Caching config, routes, and views..."
-php artisan config:cache
+echo "==> Clearing and caching routes and views (NOT config — CORS patterns need runtime evaluation)..."
+php artisan config:clear
 php artisan route:cache
 php artisan view:cache
 

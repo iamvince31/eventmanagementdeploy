@@ -92,9 +92,9 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
   // Compute schedule conflicts for the selected date + time
   const conflictingSchedules = (() => {
     if (!formData.date || !formData.time) return [];
-    const eventDate = new Date(formData.date);
+    const [year, month, day] = formData.date.split('-').map(Number);
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayName = dayNames[eventDate.getDay()];
+    const dayName = dayNames[new Date(year, month - 1, day).getDay()];
     const parseMin = (t) => { if (!t) return null; const [h, m] = t.split(':'); return parseInt(h) * 60 + parseInt(m || 0); };
     const evStart = parseMin(formData.time);
     if (evStart === null) return [];

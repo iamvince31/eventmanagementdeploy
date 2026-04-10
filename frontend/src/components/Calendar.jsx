@@ -73,8 +73,9 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
   };
 
   const getScheduleEventsForDate = (dateStr) => {
-    const checkDate = new Date(dateStr);
-    const dayOfWeek = checkDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const checkDate = new Date(y, m - 1, d);
+    const dayOfWeek = checkDate.getDay();
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayName = dayNames[dayOfWeek];
 
@@ -444,18 +445,25 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
                 }
               })}
 
-
-
-              {/* "View All" button - only show when total events > 1 and not past */}
-              {!isPastDate && allEvents.length > displayLimit && (
-                <button
-                  onClick={(e) => handleMoreClick(e, dateStr)}
-                  className="text-[8px] sm:text-xs text-green-600 hover:text-green-800 font-semibold px-0.5 hover:underline transition-colors mt-auto"
-                >
-                  <span className="hidden sm:inline">View All ({allEvents.length})</span>
-                  <span className="sm:hidden">+{allEvents.length - displayLimit}</span>
-                </button>
-              )}
+              {/* "View All" button - only show when total events > displayLimit and not past */}
+              {!isPastDate && allEvents.length > displayLimit && (() => {
+                const hiddenEvents = nonScheduleEvents.slice(displayLimit);
+                const hiddenHasConflict = hiddenEvents.some(e => eventConflictsWithSchedule(e, dateStr));
+                return (
+                  <button
+                    onClick={(e) => handleMoreClick(e, dateStr)}
+                    className="text-[8px] sm:text-xs text-green-600 hover:text-green-800 font-semibold px-0.5 hover:underline transition-colors mt-auto flex items-center gap-0.5"
+                  >
+                    {hiddenHasConflict && (
+                      <svg className="w-2.5 h-2.5 text-yellow-400 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    <span className="hidden sm:inline">View All ({allEvents.length})</span>
+                    <span className="sm:hidden">+{allEvents.length - displayLimit}</span>
+                  </button>
+                );
+              })()}
             </div>
           )}
         </div>

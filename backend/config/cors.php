@@ -31,12 +31,17 @@ return [
     ],
     // Production origins from env — supports multiple comma-separated URLs
     // e.g. FRONTEND_URL=https://myapp.vercel.app,https://myapp.netlify.app
-    array_filter(array_map('trim', explode(',', env('FRONTEND_URL', ''))))
+    array_filter(array_map('trim', explode(',', env('FRONTEND_URL', '')))),
+    // Explicit Vercel deployment URL (set VERCEL_URL on Render if FRONTEND_URL isn't set)
+    env('VERCEL_URL') ? [env('VERCEL_URL')] : []
 ))),
 
+    // Regex patterns as fallback — works in non-cached environments
     'allowed_origins_patterns' => [
-        // Fallback: allow any Vercel/Netlify/Render preview URL
-        '#^https://.*\.(vercel\.app|netlify\.app|onrender\.com|railway\.app)$#',
+        '#^https://[a-zA-Z0-9\-]+\.vercel\.app$#',
+        '#^https://[a-zA-Z0-9\-]+\.netlify\.app$#',
+        '#^https://[a-zA-Z0-9\-]+\.onrender\.com$#',
+        '#^https://[a-zA-Z0-9\-]+\.railway\.app$#',
     ],
 
     'allowed_headers' => ['*'],

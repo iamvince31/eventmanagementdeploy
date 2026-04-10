@@ -13,3 +13,6 @@
 -fix issue on deployment where the schedule conflict indicator isnt showing up
 -improving the notification bell to be more dynamic and more concise to ussers when an event is oncoming
 -fixing notifications to only show events that are going to happen on the particular day and pending events
+-adding schedule conflicts again for a more ease of use 
+-fixing inconsistencies on the notificationbell due to 1 event still shows up even after accepting 
+-Tested forget password features on the hosted website

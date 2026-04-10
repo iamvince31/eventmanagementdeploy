@@ -34,7 +34,8 @@ export default function PersonalEvent() {
   const conflictingSchedules = (() => {
     if (!formData.date || !formData.time) return [];
     const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const dayName = dayNames[new Date(formData.date).getDay()];
+    const [year, month, day] = formData.date.split('-').map(Number);
+    const dayName = dayNames[new Date(year, month - 1, day).getDay()];
     const evStart = parseMin(formData.time);
     if (evStart === null) return [];
     const evEnd = evStart + 60;
