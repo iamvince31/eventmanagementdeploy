@@ -10,3 +10,6 @@
 -redeployed new implementations to the hosted interface
 -fixed personal events issue inconsistent like the events pillbox
 -fixed issue again on the dashboard calendar overloading on a day with more than 5 events in a single day 
+-fix issue on deployment where the schedule conflict indicator isnt showing up
+-improving the notification bell to be more dynamic and more concise to ussers when an event is oncoming
+-fixing notifications to only show events that are going to happen on the particular day and pending events

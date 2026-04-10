@@ -9,41 +9,106 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [pendingUsers, setPendingUsers] = useState([]);
+  const [now, setNow] = useState(new Date());
   const navigate = useNavigate();
 
-  // Get pending invitations count
-  const pendingInvitations = events.filter(event => 
-    event.members && 
-    event.members.some(member => member.id === user?.id && member.status === 'pending')
+  // Tick every minute so upcoming reminders update live
+  useEffect(() => {
+    const tick = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(tick);
+  }, []);
+
+  // ── Derived notification lists ──────────────────────────────────────────────
+
+  // Helper: get event type label
+  const getTypeLabel = (event) => {
+    if (event.is_personal) return 'Personal Event';
+    if (event.event_type === 'meeting') return 'Meeting';
+    return 'Event';
+  };
+
+  // Helper: get role label for current user
+  const getRoleLabel = (event) => {
+    if (event.host?.id === user?.id) return 'Hosted';
+    const membership = event.members?.find(m => m.id === user?.id);
+    if (!membership) return null;
+    if (membership.status === 'pending') return 'Invited · Pending';
+    if (membership.status === 'accepted') return 'Invited · Accepted';
+    return null; // declined — exclude
+  };
+
+  // All relevant events for notifications:
+  // - Events hosted by the user (not personal, not declined by all)
+  // - Events where user is invited and NOT declined
+  const allNotificationEvents = events.filter(event => {
+    const isHost = event.host?.id === user?.id;
+    if (isHost) return !event.is_personal; // hosted non-personal events always show
+    const membership = event.members?.find(m => m.id === user?.id);
+    if (!membership) return false;
+    return membership.status !== 'declined'; // hide declined invitations
+  });
+
+  // Pending invitations (subset — for the pending section)
+  const pendingInvitations = allNotificationEvents.filter(event =>
+    event.members?.some(m => m.id === user?.id && m.status === 'pending')
   );
 
-  // Fetch all notifications reliably
+  // Hosted events — only shown via upcomingReminders (within 60 mins today)
+  // Not shown as a standalone section
+
+  // Accepted invitations
+  const acceptedInvitations = allNotificationEvents.filter(event => {
+    if (event.host?.id === user?.id) return false;
+    return event.members?.some(m => m.id === user?.id && m.status === 'accepted');
+  });
+
+  // Upcoming reminders (accepted + hosted events today within 60 mins)
+  const upcomingReminders = (() => {
+    const todayStr = now.toISOString().split('T')[0];
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    return allNotificationEvents.filter(event => {
+      if (!event.date || !event.time) return false;
+      if (event.date !== todayStr) return false;
+
+      const isHost = event.host?.id === user?.id;
+      const membership = event.members?.find(m => m.id === user?.id);
+      const isAccepted = isHost || membership?.status === 'accepted';
+      if (!isAccepted) return false;
+
+      const [h, m] = event.time.split(':');
+      const eventMin = parseInt(h) * 60 + parseInt(m || 0);
+      const diff = eventMin - nowMin;
+      return diff >= 0 && diff <= 60;
+    }).map(event => {
+      const [h, m] = event.time.split(':');
+      const eventMin = parseInt(h) * 60 + parseInt(m || 0);
+      const diff = eventMin - (now.getHours() * 60 + now.getMinutes());
+      return { ...event, _minsUntil: diff };
+    });
+  })();
+
+  const unreadMessages = messages.filter(msg => !msg.is_read);
+  const totalNotifications = pendingInvitations.length + acceptedInvitations.length + upcomingReminders.length + unreadMessages.length + pendingUsers.length;
+
+  // ── Data fetching ────────────────────────────────────────────────────────────
+
   const fetchAllNotifications = () => {
     if (!user?.id) return;
     fetchMessages();
-    if (user.role === 'Admin') {
-      fetchPendingValidations();
-    }
+    if (user.role === 'Admin') fetchPendingValidations();
   };
 
-  // Initial load and 60-second background polling
   useEffect(() => {
     if (user?.id) {
       fetchAllNotifications();
-      
-      const interval = setInterval(() => {
-        fetchAllNotifications();
-      }, 60000);
-      
+      const interval = setInterval(fetchAllNotifications, 60000);
       return () => clearInterval(interval);
     }
   }, [user?.id, user?.role]);
 
-  // Ensure fresh data immediately upon opening the notification bell
   useEffect(() => {
-    if (isOpen && user?.id) {
-      fetchAllNotifications();
-    }
+    if (isOpen && user?.id) fetchAllNotifications();
   }, [isOpen, user?.id, user?.role]);
 
   const fetchMessages = async () => {
@@ -51,8 +116,6 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
       const response = await api.get('/messages');
       setMessages(response.data || []);
     } catch (error) {
-      // Silently handle error - messages endpoint may not exist (405 Method Not Allowed)
-      // Only log non-auth and non-405 errors
       if (error.response?.status !== 401 && error.response?.status !== 405) {
         console.error('Error fetching messages:', error);
       }
@@ -71,94 +134,79 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
     }
   };
 
-  // Get unread messages count
-  const unreadMessages = messages.filter(msg => !msg.is_read);
-  const totalNotifications = pendingInvitations.length + unreadMessages.length + pendingUsers.length;
+  // ── Handlers ─────────────────────────────────────────────────────────────────
 
-  // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isOpen && !event.target.closest('.notifications-container')) {
-        setIsOpen(false);
-      }
+    const handleClickOutside = (e) => {
+      if (isOpen && !e.target.closest('.notifications-container')) setIsOpen(false);
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
   const handleNotificationClick = (event) => {
     setIsOpen(false);
-    if (onNotificationClick) {
-      onNotificationClick(event);
-    } else {
-      navigate('/dashboard');
-    }
+    if (onNotificationClick) onNotificationClick(event);
+    else navigate('/dashboard');
   };
 
   const handleMessageClick = async (message) => {
     setSelectedMessage(message);
     setIsMessageModalOpen(true);
     setIsOpen(false);
-
-    // Mark as read (but don't refetch immediately to avoid UI flicker)
     if (!message.is_read) {
       try {
         await api.post(`/messages/${message.id}/read`);
-        // Update local state instead of refetching
-        setMessages(prevMessages => 
-          prevMessages.map(msg => 
-            msg.id === message.id ? { ...msg, is_read: true } : msg
-          )
-        );
+        setMessages(prev => prev.map(msg => msg.id === message.id ? { ...msg, is_read: true } : msg));
       } catch (error) {
-        if (error.response?.status !== 401) {
-          console.error('Error marking message as read:', error);
-        }
+        if (error.response?.status !== 401) console.error('Error marking message as read:', error);
       }
     }
   };
 
   const handleDeleteMessage = async (messageId) => {
     if (!confirm('Are you sure you want to delete this message?')) return;
-
     try {
       await api.delete(`/messages/${messageId}`);
-      // Remove from local state
-      setMessages(prevMessages => prevMessages.filter(msg => msg.id !== messageId));
+      setMessages(prev => prev.filter(msg => msg.id !== messageId));
       setIsMessageModalOpen(false);
       setSelectedMessage(null);
     } catch (error) {
       console.error('Error deleting message:', error);
-      if (error.response?.status === 401) {
-        alert('Session expired. Please log in again.');
-      } else {
-        alert('Failed to delete message. Please try again.');
-      }
+      alert(error.response?.status === 401 ? 'Session expired.' : 'Failed to delete message.');
     }
-  };
-
-  const handleCloseMessageModal = () => {
-    // Only close the modal, do NOT delete the message
-    setIsMessageModalOpen(false);
-    setSelectedMessage(null);
   };
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    const now = new Date();
-    const diffInHours = (now - date) / (1000 * 60 * 60);
-
-    if (diffInHours < 1) {
-      return 'Just now';
-    } else if (diffInHours < 24) {
-      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffInHours < 48) {
-      return 'Yesterday';
-    } else {
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }
+    const diffH = (now - date) / (1000 * 60 * 60);
+    if (diffH < 1) return 'Just now';
+    if (diffH < 24) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (diffH < 48) return 'Yesterday';
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
+
+  const formatCountdown = (mins) => {
+    if (mins <= 0) return 'Starting now';
+    if (mins <= 10) return `In ${mins} min`;
+    if (mins <= 30) return `In ${mins} min`;
+    return `In ~1 hr`;
+  };
+
+  const countdownColor = (mins) => {
+    if (mins <= 10) return 'bg-red-100 text-red-800';
+    if (mins <= 30) return 'bg-orange-100 text-orange-800';
+    return 'bg-blue-100 text-blue-800';
+  };
+
+  const fmtTime = (t) => {
+    if (!t) return '';
+    const [h, m] = t.split(':');
+    const hour = parseInt(h);
+    return `${hour % 12 || 12}:${m || '00'} ${hour >= 12 ? 'PM' : 'AM'}`;
+  };
+
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -178,15 +226,20 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
           )}
         </button>
 
-        {/* Notifications Dropdown */}
         {isOpen && (
           <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-[60] max-w-[calc(100vw-2rem)] sm:max-w-none">
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-bold text-gray-900">Notifications</h3>
               <p className="text-xs text-gray-500 mt-1">
-                {pendingInvitations.length} invitation{pendingInvitations.length !== 1 ? 's' : ''}, {unreadMessages.length} message{unreadMessages.length !== 1 ? 's' : ''}{user?.role === 'Admin' ? `, ${pendingUsers.length} pending validation${pendingUsers.length !== 1 ? 's' : ''}` : ''}
+                {upcomingReminders.length > 0 && `${upcomingReminders.length} upcoming · `}
+                {pendingInvitations.length > 0 && `${pendingInvitations.length} pending · `}
+                {(acceptedInvitations.length) > 0 && `${acceptedInvitations.length} accepted · `}
+                {unreadMessages.length > 0 && `${unreadMessages.length} message${unreadMessages.length !== 1 ? 's' : ''} · `}
+                {user?.role === 'Admin' && pendingUsers.length > 0 && `${pendingUsers.length} validation${pendingUsers.length !== 1 ? 's' : ''} · `}
+                {totalNotifications === 0 && 'All caught up'}
               </p>
             </div>
+
             <div className="max-h-96 overflow-y-auto">
               {totalNotifications === 0 ? (
                 <div className="p-8 text-center">
@@ -197,38 +250,54 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                 </div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {/* Pending Invitations */}
-                  {pendingInvitations.map(event => (
+
+                  {/* ── Upcoming reminders (accepted + hosted events today) ── */}
+                  {upcomingReminders.map(event => (
                     <button
-                      key={`event-${event.id}`}
+                      key={`upcoming-${event.id}`}
                       onClick={() => handleNotificationClick(event)}
-                      className="w-full p-4 hover:bg-gray-50 transition-colors text-left"
+                      className="w-full p-4 hover:bg-blue-50/40 transition-colors text-left"
                     >
                       <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {getTypeLabel(event)} · {getRoleLabel(event)} · {fmtTime(event.time)}
+                          </p>
+                          {event.location && <p className="text-xs text-gray-400 mt-0.5 truncate">{event.location}</p>}
+                        </div>
+                        <span className={`flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${countdownColor(event._minsUntil)}`}>
+                          {formatCountdown(event._minsUntil)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+
+                  {/* ── Pending invitations ── */}
+                  {pendingInvitations.map(event => (
+                    <button
+                      key={`pending-${event.id}`}
+                      onClick={() => handleNotificationClick(event)}
+                      className="w-full p-4 hover:bg-yellow-50/40 transition-colors text-left"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                          <svg className="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
-                          <p className="text-xs text-gray-600 mt-1">
-                            Invited by {event.host.username}
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {getTypeLabel(event)} · Invited by {event.host?.username}
                           </p>
-                          <div className="flex items-center text-xs text-gray-500 mt-1 space-x-2">
-                            <span className="flex items-center">
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                              </svg>
-                              {event.date}
-                            </span>
-                            <span>•</span>
-                            <span className="flex items-center">
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                              {event.time}
-                            </span>
+                          <div className="flex items-center text-xs text-gray-400 mt-0.5 gap-1.5">
+                            <span>{event.date}</span><span>·</span><span>{fmtTime(event.time)}</span>
                           </div>
                         </div>
                         <span className="flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
@@ -238,14 +307,41 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                     </button>
                   ))}
 
-                  {/* Messages */}
+                  {/* ── Accepted invitations ── */}
+                  {acceptedInvitations.map(event => (
+                    <button
+                      key={`accepted-${event.id}`}
+                      onClick={() => handleNotificationClick(event)}
+                      className="w-full p-4 hover:bg-green-50/40 transition-colors text-left"
+                    >
+                      <div className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                          <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {getTypeLabel(event)} · Invited by {event.host?.username}
+                          </p>
+                          <div className="flex items-center text-xs text-gray-400 mt-0.5 gap-1.5">
+                            <span>{event.date}</span><span>·</span><span>{fmtTime(event.time)}</span>
+                          </div>
+                        </div>
+                        <span className="flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                          Accepted
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+
+                  {/* ── Decline messages ── */}
                   {messages.map(message => (
                     <button
                       key={`message-${message.id}`}
                       onClick={() => handleMessageClick(message)}
-                      className={`w-full p-4 hover:bg-gray-50 transition-colors text-left ${
-                        !message.is_read ? 'bg-red-50/30' : ''
-                      }`}
+                      className={`w-full p-4 hover:bg-gray-50 transition-colors text-left ${!message.is_read ? 'bg-red-50/30' : ''}`}
                     >
                       <div className="flex items-start space-x-3">
                         <div className="flex-shrink-0 w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
@@ -255,20 +351,12 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-gray-900 truncate">
-                              {message.sender.name}
-                            </p>
-                            {!message.is_read && (
-                              <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0"></span>
-                            )}
+                            <p className="text-sm font-semibold text-gray-900 truncate">{message.sender.name}</p>
+                            {!message.is_read && <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />}
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">
-                            Declined: {message.event?.title || 'Event'}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1 line-clamp-1">
-                            {message.message}
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">{formatDate(message.created_at)}</p>
+                          <p className="text-xs text-gray-600 mt-0.5">Declined: {message.event?.title || 'Event'}</p>
+                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{message.message}</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{formatDate(message.created_at)}</p>
                         </div>
                         <span className="flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-800">
                           Declined
@@ -277,14 +365,11 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                     </button>
                   ))}
 
-                  {/* Pending User Validations (Admin Only) */}
+                  {/* ── Pending user validations (Admin only) ── */}
                   {user?.role === 'Admin' && pendingUsers.map(pendingUser => (
                     <button
                       key={`user-${pendingUser.id}`}
-                      onClick={() => {
-                        setIsOpen(false);
-                        navigate('/admin', { state: { highlightPending: true } });
-                      }}
+                      onClick={() => { setIsOpen(false); navigate('/admin', { state: { highlightPending: true } }); }}
                       className="w-full p-4 hover:bg-gray-50 transition-colors text-left bg-blue-50/30"
                     >
                       <div className="flex items-start space-x-3">
@@ -295,18 +380,12 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <p className="text-sm font-semibold text-gray-900 truncate">
-                              {pendingUser.username}
-                            </p>
-                            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                            <p className="text-sm font-semibold text-gray-900 truncate">{pendingUser.username}</p>
+                            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0" />
                           </div>
-                          <p className="text-xs text-gray-600 mt-1">
-                            {pendingUser.email}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-1">
-                            Needs validation
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">{formatDate(pendingUser.created_at)}</p>
+                          <p className="text-xs text-gray-600 mt-0.5">{pendingUser.email}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">Needs validation</p>
+                          <p className="text-xs text-gray-400 mt-0.5">{formatDate(pendingUser.created_at)}</p>
                         </div>
                         <span className="flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
                           New User
@@ -314,15 +393,14 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                       </div>
                     </button>
                   ))}
+
                 </div>
               )}
             </div>
+
             {totalNotifications > 0 && (
               <div className="p-3 border-t border-gray-200 bg-gray-50">
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="w-full text-center text-xs font-medium text-green-700 hover:text-green-800"
-                >
+                <button onClick={() => setIsOpen(false)} className="w-full text-center text-xs font-medium text-green-700 hover:text-green-800">
                   Close
                 </button>
               </div>
@@ -331,16 +409,10 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
         )}
       </div>
 
-      {/* Message Detail Modal */}
-      <Modal
-        isOpen={isMessageModalOpen}
-        onClose={handleCloseMessageModal}
-        title="Decline Reason"
-        maxWidth="max-w-lg"
-      >
+      {/* Decline message detail modal */}
+      <Modal isOpen={isMessageModalOpen} onClose={() => { setIsMessageModalOpen(false); setSelectedMessage(null); }} title="Decline Reason" maxWidth="max-w-lg">
         {selectedMessage && (
           <div className="space-y-4">
-            {/* Sender Info */}
             <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-semibold text-lg">
                 {selectedMessage.sender.name.charAt(0).toUpperCase()}
@@ -350,42 +422,24 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                 <p className="text-sm text-gray-500">{selectedMessage.sender.email}</p>
               </div>
             </div>
-
-            {/* Event Info */}
             {selectedMessage.event && (
               <div className="p-4 bg-red-50 rounded-lg border border-red-100">
                 <p className="text-sm font-medium text-gray-700 mb-2">Event Details</p>
                 <p className="text-base font-semibold text-gray-900">{selectedMessage.event.title}</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  {new Date(selectedMessage.event.date).toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
+                  {new Date(selectedMessage.event.date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
                 </p>
               </div>
             )}
-
-            {/* Decline Reason */}
             <div>
               <p className="text-sm font-medium text-gray-700 mb-2">Reason for declining:</p>
               <div className="p-4 bg-white border border-gray-200 rounded-lg">
                 <p className="text-gray-800 whitespace-pre-wrap">{selectedMessage.message}</p>
               </div>
             </div>
-
-            {/* Timestamp */}
-            <p className="text-xs text-gray-500 text-center">
-              Received {formatDate(selectedMessage.created_at)}
-            </p>
-
-            {/* Actions */}
+            <p className="text-xs text-gray-500 text-center">Received {formatDate(selectedMessage.created_at)}</p>
             <div className="pt-4 border-t border-gray-200">
-              <button
-                onClick={() => handleDeleteMessage(selectedMessage.id)}
-                className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors"
-              >
+              <button onClick={() => handleDeleteMessage(selectedMessage.id)} className="w-full px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 transition-colors">
                 Delete Message
               </button>
             </div>
