@@ -268,6 +268,7 @@ export default function Dashboard() {
       <Navbar
         isLoading={loading}
         refreshTrigger={navRefreshTrigger}
+        events={events}
         onNotificationClick={(event) => {
           setSelectedEvent(event);
           setIsEventDetailOpen(true);

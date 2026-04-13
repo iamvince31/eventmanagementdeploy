@@ -10,12 +10,16 @@ export default function Navbar({
   pageTitle = "Dashboard",
   onNotificationClick = null,
   refreshTrigger = 0,
+  events: eventsProp = null,  // optional — Dashboard passes its already-loaded events
 }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
-  const [events, setEvents] = useState([]);
+  const [fetchedEvents, setFetchedEvents] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Use prop events if provided, otherwise use internally fetched events
+  const events = eventsProp !== null ? eventsProp : fetchedEvents;
 
   useEffect(() => {
     fetchEvents();
@@ -39,9 +43,11 @@ export default function Navbar({
   }, [isAccountDropdownOpen, isMobileMenuOpen]);
 
   const fetchEvents = async () => {
+    // Only fetch if no events were passed as prop
+    if (eventsProp !== null) return;
     try {
       const response = await api.get('/events');
-      setEvents(response.data.events);
+      setFetchedEvents(response.data.events);
     } catch (error) {
       console.error('Error fetching events:', error);
     }
