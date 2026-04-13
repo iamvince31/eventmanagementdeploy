@@ -3,3 +3,4 @@
 -redeployed system to fix cors update
 -added and expiry on the events no accepted/declined(pending) to the dashboard when the day has passed
 -fixed notification dynamically showing up on the dashboard
+-fixed notifications schedule conflict on the personal event blcoked

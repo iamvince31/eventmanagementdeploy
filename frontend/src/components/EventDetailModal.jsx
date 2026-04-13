@@ -103,7 +103,7 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
 
   // Compute schedule conflicts for this event
   const conflictingSchedules = (() => {
-    if (!event.date || !event.time || event.time === 'All Day' || event.is_personal || event.is_default_event) return [];
+    if (!event.date || !event.time || event.time === 'All Day' || event.is_default_event) return [];
     if (!userSchedules.length) return [];
 
     // Parse date as local time (avoid UTC offset shifting the day)
@@ -143,7 +143,7 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
 
   // Compute event-vs-event conflicts (other events on the same day that overlap)
   const conflictingEvents = (() => {
-    if (!event.date || !event.time || event.time === 'All Day') return [];
+    if (!event.date || !event.time || event.time === 'All Day' || event.is_default_event) return [];
     if (!allEvents.length) return [];
 
     const parseMin = (t) => {
@@ -233,7 +233,7 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
                 </svg>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-red-800 mb-1">
-                    Schedule Conflict — {isHost ? 'You are hosting this' : 'You are invited to this'} {event.event_type === 'meeting' ? 'meeting' : 'event'} during your class
+                    Schedule Conflict — {event.is_personal ? 'This personal event' : isHost ? 'You are hosting this' : 'You are invited to this'} {event.is_personal ? '' : event.event_type === 'meeting' ? 'meeting' : 'event'} overlaps with your class
                   </p>
                   <div className="space-y-1">
                     {conflictingSchedules.map((s, i) => (
