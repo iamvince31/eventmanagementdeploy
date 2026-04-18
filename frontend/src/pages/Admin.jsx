@@ -597,7 +597,7 @@ export default function Admin() {
                           </td>
                         </tr>
 
-                        {/* Mobile expand panel — Email / Department / Role */}
+                        {/* Mobile expand panel1 — Email / Department / Role */}
                         {expandedRows.has(u.id) && (
                           <tr key={`${u.id}-expand`} className="sm:hidden bg-gray-50">
                             <td colSpan="3" className="px-4 py-3">
