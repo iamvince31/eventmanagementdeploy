@@ -106,6 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/user/profile', [UserController::class , 'update']);
         Route::post('/users/{id}/validate', [UserController::class , 'validateUser']);
         Route::post('/users/{id}/revoke-validation', [UserController::class , 'revokeValidation']);
+        Route::delete('/users/{id}', [UserController::class , 'destroy'])->middleware('admin');
 
         // Schedules
         Route::get('/init-schedule', [AppController::class , 'initSchedule']);
