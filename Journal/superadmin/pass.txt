@@ -9,4 +9,5 @@ git push origin Integration
 git push deployed Integration:merge-ready
 git push deployed Integration:master
 
-Setup pagpull ng Integration
+Setup pagpull sa other repo
+git fetch deployed

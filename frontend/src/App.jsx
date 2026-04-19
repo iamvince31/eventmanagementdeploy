@@ -11,6 +11,7 @@ import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
 import PersonalEvent from './pages/PersonalEvent';
 import Admin from './pages/Admin';
+import AdminEvents from './pages/AdminEvents';
 import DefaultEvents from './pages/DefaultEvents';
 import History from './pages/History';
 import Archive from './pages/Archive';
@@ -182,6 +183,11 @@ function App() {
             <ProtectedRoute>
               <Admin />
             </ProtectedRoute>
+          } />
+          <Route path="/admin/events" element={
+            <RoleProtectedRoute allowedRoles={['Admin']}>
+              <AdminEvents />
+            </RoleProtectedRoute>
           } />
           <Route path="/default-events" element={
             <RoleProtectedRoute allowedRoles={['Admin']}>

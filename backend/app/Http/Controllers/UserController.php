@@ -340,6 +340,32 @@ class UserController extends Controller
      * @param string $text
      * @return string
      */
+    public function destroy(Request $request, $id)
+    {
+        if (!$request->user()->isAdmin()) {
+            return response()->json(['error' => 'Only admins can delete users.'], 403);
+        }
+
+        $userToDelete = User::findOrFail($id);
+
+        // Prevent self-deletion
+        if ($userToDelete->id === $request->user()->id) {
+            return response()->json(['error' => 'You cannot delete your own account.'], 403);
+        }
+
+        // Prevent deleting other admins
+        if ($userToDelete->role === 'Admin') {
+            return response()->json(['error' => 'Admin accounts cannot be deleted.'], 403);
+        }
+
+        $userToDelete->delete();
+
+        // Bust cache so the user list refreshes correctly
+        Cache::forget('users_list_non_admin');
+
+        return response()->json(['message' => 'User deleted successfully.']);
+    }
+
     private function capitalizeWords($text)
     {
         // Split by spaces and capitalize each word

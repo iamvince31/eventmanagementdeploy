@@ -83,6 +83,56 @@ class EventController extends Controller
      * OR get approval requests for Dean/Chairperson to review
      */
 
+    public function getAllEvents()
+    {
+        // Admin-only comprehensive query — exclude archived events
+        $events = Event::with([
+            'host:id,name,email',
+            'members:id,name,email',
+            'images:id,event_id,image_path,original_filename,order'
+        ])
+            ->where('is_archived', false)
+            ->orderBy('date', 'desc')
+            ->orderBy('time', 'desc')
+            ->get();
+
+        // Transform regular events
+        $transformedEvents = $events->map(function ($event) {
+            return [
+            'id' => $event->id,
+            'title' => $event->title,
+            'description' => $event->description,
+            'location' => $event->location,
+            'event_type' => $event->event_type ?? 'event',
+            'images' => $event->images->map(fn($img) => [
+            'url' => asset('storage/' . $img->image_path),
+            'original_filename' => $img->original_filename,
+            ]),
+            'date' => $event->date,
+            'time' => $event->time,
+            'school_year' => $event->school_year,
+            'host' => [
+            'id' => $event->host->id ?? null,
+            'username' => $event->host->name ?? 'Unknown',
+            'email' => $event->host->email ?? 'Unknown',
+            ],
+            'members' => $event->members->map(fn($m) => [
+            'id' => $m->id,
+            'username' => $m->name,
+            'email' => $m->email,
+            'status' => $m->pivot->status,
+            ]),
+            'is_default_event' => false,
+            'is_personal' => $event->is_personal ?? false,
+            'personal_color' => $event->personal_color,
+            ];
+        });
+
+        return response()->json([
+            'events' => $transformedEvents,
+        ]);
+    }
+
     public function store(Request $request)
     {
         $user = $request->user();

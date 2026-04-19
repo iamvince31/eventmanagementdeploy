@@ -44,6 +44,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Events
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class , 'index']);
+
+    // Admin-only comprehensive event fetching
+    Route::get('/events/all', [EventController::class , 'getAllEvents'])->middleware('admin');
+
     Route::get('/events', [EventController::class , 'index']);
     Route::post('/events', [EventController::class , 'store']);
 
@@ -102,6 +106,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/user/profile', [UserController::class , 'update']);
         Route::post('/users/{id}/validate', [UserController::class , 'validateUser']);
         Route::post('/users/{id}/revoke-validation', [UserController::class , 'revokeValidation']);
+        Route::delete('/users/{id}', [UserController::class , 'destroy'])->middleware('admin');
 
         // Schedules
         Route::get('/init-schedule', [AppController::class , 'initSchedule']);
