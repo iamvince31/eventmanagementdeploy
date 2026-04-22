@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Validator;
 class PersonalEventController extends Controller
 {
     /**
-     * Store a new personal event
+     * Store da new personal event
      */
     public function store(Request $request)
     {
