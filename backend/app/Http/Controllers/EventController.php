@@ -235,7 +235,7 @@ class EventController extends Controller
                 // Upload to Supabase Storage
                 $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
                 Storage::disk('supabase')->put($filename, file_get_contents($image->getRealPath()), 'public');
-                $publicUrl = rtrim(env('SUPABASE_S3_ENDPOINT'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
+                $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
 
                 $event->images()->create([
                     'image_path' => $filename,
@@ -345,7 +345,7 @@ class EventController extends Controller
             foreach ($request->file('images') as $index => $image) {
                 $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
                 Storage::disk('supabase')->put($filename, file_get_contents($image->getRealPath()), 'public');
-                $publicUrl = rtrim(env('SUPABASE_S3_ENDPOINT'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
+                $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
 
                 $event->images()->create([
                     'image_path' => $filename,

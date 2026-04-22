@@ -9,3 +9,4 @@ Updated SRS
 Redeploying system due to expired trial
 DIT-OJT-2026
 adding supabase as the overseer for the pdf-png-jpeg handler of /add-event
+fixing issues on the event-files on hosted environment not showing up

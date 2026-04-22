@@ -285,7 +285,7 @@ class UserController extends Controller
             $file = request()->file('profile_picture');
             $filename = 'profiles/profile_' . $user->id . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
             \Illuminate\Support\Facades\Storage::disk('supabase')->put($filename, file_get_contents($file->getRealPath()), 'public');
-            $publicUrl = rtrim(env('SUPABASE_S3_ENDPOINT'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
+            $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
 
             $validated['profile_picture'] = $publicUrl;
             $validated['profile_picture_public_id'] = $filename;
