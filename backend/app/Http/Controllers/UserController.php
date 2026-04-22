@@ -275,23 +275,20 @@ class UserController extends Controller
             unset($validated['username']);
         }
 
-        // Handle profile picture upload via Cloudinary
+        // Handle profile picture upload via Supabase Storage
         if (request()->hasFile('profile_picture')) {
-            // Delete old Cloudinary asset if it exists
+            // Delete old Supabase asset if it exists
             if ($user->profile_picture_public_id) {
-                cloudinary()->uploadApi()->destroy($user->profile_picture_public_id);
+                \Illuminate\Support\Facades\Storage::disk('supabase')->delete($user->profile_picture_public_id);
             }
 
             $file = request()->file('profile_picture');
-            $uploaded = cloudinary()->uploadApi()->upload($file->getRealPath(), [
-                'folder' => 'profiles',
-                'public_id' => 'profile_' . $user->id,
-                'overwrite' => true,
-                'resource_type' => 'image',
-            ]);
+            $filename = 'profiles/profile_' . $user->id . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            \Illuminate\Support\Facades\Storage::disk('supabase')->put($filename, file_get_contents($file->getRealPath()), 'public');
+            $publicUrl = rtrim(env('SUPABASE_S3_ENDPOINT'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
 
-            $validated['profile_picture'] = $uploaded['secure_url'];
-            $validated['profile_picture_public_id'] = $uploaded['public_id'];
+            $validated['profile_picture'] = $publicUrl;
+            $validated['profile_picture_public_id'] = $filename;
         }
 
         // One-time credential change for Admin (email + password)

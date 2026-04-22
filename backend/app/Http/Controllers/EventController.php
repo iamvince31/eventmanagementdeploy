@@ -232,15 +232,14 @@ class EventController extends Controller
                     ], 400);
                 }
 
-                // Upload to Cloudinary for persistent storage on live deploy
-                $uploaded = cloudinary()->uploadApi()->upload($image->getRealPath(), [
-                    'folder' => 'events',
-                    'resource_type' => 'auto',
-                ]);
+                // Upload to Supabase Storage
+                $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
+                Storage::disk('supabase')->put($filename, file_get_contents($image->getRealPath()), 'public');
+                $publicUrl = rtrim(env('SUPABASE_S3_ENDPOINT'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
 
                 $event->images()->create([
-                    'image_path' => $uploaded['public_id'],
-                    'cloudinary_url' => $uploaded['secure_url'],
+                    'image_path' => $filename,
+                    'cloudinary_url' => $publicUrl,
                     'original_filename' => $image->getClientOriginalName(),
                     'order' => $index,
                 ]);
@@ -330,11 +329,10 @@ class EventController extends Controller
                 }
             }
 
-            // Delete old images from Cloudinary (or local fallback)
+            // Delete old images from Supabase (or local fallback)
             foreach ($event->images as $oldImage) {
-                if ($oldImage->cloudinary_url) {
-                    // Stored in Cloudinary — destroy by public_id
-                    cloudinary()->uploadApi()->destroy($oldImage->image_path);
+                if ($oldImage->cloudinary_url && $oldImage->image_path) {
+                    Storage::disk('supabase')->delete($oldImage->image_path);
                 }
                 else {
                     // Legacy local storage fallback
@@ -343,16 +341,15 @@ class EventController extends Controller
                 $oldImage->delete();
             }
 
-            // Add new images via Cloudinary
+            // Add new images via Supabase Storage
             foreach ($request->file('images') as $index => $image) {
-                $uploaded = cloudinary()->uploadApi()->upload($image->getRealPath(), [
-                    'folder' => 'events',
-                    'resource_type' => 'auto',
-                ]);
+                $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
+                Storage::disk('supabase')->put($filename, file_get_contents($image->getRealPath()), 'public');
+                $publicUrl = rtrim(env('SUPABASE_S3_ENDPOINT'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
 
                 $event->images()->create([
-                    'image_path' => $uploaded['public_id'],
-                    'cloudinary_url' => $uploaded['secure_url'],
+                    'image_path' => $filename,
+                    'cloudinary_url' => $publicUrl,
                     'original_filename' => $image->getClientOriginalName(),
                     'order' => $index,
                 ]);
