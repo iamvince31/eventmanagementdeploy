@@ -12,3 +12,4 @@ adding supabase as the overseer for the pdf-png-jpeg handler of /add-event
 fixed issues on the event-files on hosted environment not showing up or working
 Fixed profile picture not being able to add on hosted environment
 fixed issues on pdf, png, jpeg on implementing in the hosted environment
+testing implementation on added new database for fetching pdf,

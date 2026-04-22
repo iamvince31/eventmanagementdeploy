@@ -42,9 +42,11 @@ Route::get('/cleanup-broken-images', function () {
         'status' => 'done',
     ]);
 });
+
+// Temporary debug route — remove after fixing
+Route::get('/debug-storage', function () {
     $output = [];
 
-    // 1. Check env vars
     $output['env'] = [
         'SUPABASE_S3_ENDPOINT'      => env('SUPABASE_S3_ENDPOINT') ?: '❌ NOT SET',
         'SUPABASE_S3_REGION'        => env('SUPABASE_S3_REGION') ?: '❌ NOT SET',
@@ -54,7 +56,6 @@ Route::get('/cleanup-broken-images', function () {
         'SUPABASE_PUBLIC_URL'       => env('SUPABASE_PUBLIC_URL') ?: '❌ NOT SET',
     ];
 
-    // 2. Try uploading a test file to Supabase
     try {
         $disk = \Illuminate\Support\Facades\Storage::disk('supabase');
         $testPath = 'test/debug-' . time() . '.txt';
@@ -66,7 +67,6 @@ Route::get('/cleanup-broken-images', function () {
         $output['upload_test'] = '❌ EXCEPTION: ' . $e->getMessage();
     }
 
-    // 3. Last 3 event_images from DB
     $output['last_images'] = \Illuminate\Support\Facades\DB::table('event_images')
         ->latest()
         ->take(3)
