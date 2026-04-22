@@ -122,7 +122,8 @@ class DashboardController extends Controller
             'location' => $event->location,
             'event_type' => $event->event_type ?? 'event',
             'images' => $event->images->map(fn($img) => [
-            'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+            'url' => $img->cloudinary_url
+                ?? (rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $img->image_path),
             'original_filename' => $img->original_filename,
             ]),
             'date' => $date,
