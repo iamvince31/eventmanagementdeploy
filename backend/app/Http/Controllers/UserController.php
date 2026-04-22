@@ -295,7 +295,7 @@ class UserController extends Controller
                     'message' => 'Profile picture upload failed: ' . $e->getMessage()
                 ], 500);
             }
-            $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
+            $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $filename;
 
             $validated['profile_picture'] = $publicUrl;
             $validated['profile_picture_public_id'] = $filename;

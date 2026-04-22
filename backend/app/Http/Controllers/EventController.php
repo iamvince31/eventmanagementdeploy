@@ -245,7 +245,7 @@ class EventController extends Controller
                         'error' => 'File upload failed: ' . $e->getMessage()
                     ], 500);
                 }
-                $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
+                $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $filename;
 
                 $event->images()->create([
                     'image_path' => $filename,
@@ -365,7 +365,7 @@ class EventController extends Controller
                         'error' => 'File upload failed: ' . $e->getMessage()
                     ], 500);
                 }
-                $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $filename;
+                $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $filename;
 
                 $event->images()->create([
                     'image_path' => $filename,

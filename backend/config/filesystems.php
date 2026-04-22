@@ -78,6 +78,7 @@ return [
             'use_path_style_endpoint' => true,
             'throw' => true,
             'report' => true,
+            'public_url' => env('SUPABASE_PUBLIC_URL'),
         ],
 
     ],

@@ -37,7 +37,7 @@ Route::get('/debug-storage', function () {
         $disk = \Illuminate\Support\Facades\Storage::disk('supabase');
         $testPath = 'test/debug-' . time() . '.txt';
         $result = $disk->put($testPath, 'hello-supabase', 'public');
-        $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET') . '/' . $testPath;
+        $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $testPath;
         $disk->delete($testPath);
         $output['upload_test'] = $result ? '✅ SUCCESS — URL would be: ' . $publicUrl : '❌ put() returned false';
     } catch (\Exception $e) {
