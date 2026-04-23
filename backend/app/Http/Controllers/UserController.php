@@ -285,7 +285,7 @@ class UserController extends Controller
             $file = request()->file('profile_picture');
             $filename = 'profiles/profile_' . $user->id . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
             try {
-                \Illuminate\Support\Facades\Storage::disk('supabase')->put($filename, file_get_contents($file->getRealPath()), 'public');
+                \Illuminate\Support\Facades\Storage::disk('supabase')->put($filename, $file->get(), 'public');
             } catch (\Exception $e) {
                 \Illuminate\Support\Facades\Log::error('Supabase profile upload failed', [
                     'error' => $e->getMessage(),

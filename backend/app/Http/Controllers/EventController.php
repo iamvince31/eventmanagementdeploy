@@ -146,15 +146,11 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'event_type' => 'required|in:event,meeting',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:25600',
             'date' => 'required|date',
             'time' => 'required',
             'member_ids' => 'nullable|array',
         ], [
             'images.max' => 'You can upload a maximum of 5 files.',
-            'images.*.file' => 'Each upload must be a valid file.',
-            'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
-            'images.*.max' => 'Each file must not exceed 25MB in size.',
             'event_type.required' => 'Event type is required.',
             'event_type.in' => 'Event type must be either event or meeting.',
         ]);
@@ -236,7 +232,7 @@ class EventController extends Controller
                 // Upload to Supabase Storage
                 $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
                 try {
-                    Storage::disk('supabase')->put($filename, file_get_contents($image->getRealPath()), 'public');
+                    Storage::disk('supabase')->put($filename, $image->get(), 'public');
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Supabase upload failed', [
                         'error' => $e->getMessage(),
@@ -286,15 +282,11 @@ class EventController extends Controller
             'location' => 'sometimes|required|string|max:255',
             'event_type' => 'sometimes|required|in:event,meeting',
             'images' => 'nullable|array|max:5',
-            'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:25600',
             'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
         ], [
             'images.max' => 'You can upload a maximum of 5 files.',
-            'images.*.file' => 'Each upload must be a valid file.',
-            'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
-            'images.*.max' => 'Each file must not exceed 25MB in size.',
             'event_type.required' => 'Event type is required.',
             'event_type.in' => 'Event type must be either event or meeting.',
         ]);
@@ -355,7 +347,7 @@ class EventController extends Controller
             foreach ($request->file('images') as $index => $image) {
                 $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
                 try {
-                    Storage::disk('supabase')->put($filename, file_get_contents($image->getRealPath()), 'public');
+                    Storage::disk('supabase')->put($filename, $image->get(), 'public');
                 } catch (\Exception $e) {
                     \Illuminate\Support\Facades\Log::error('Supabase upload failed', [
                         'error' => $e->getMessage(),

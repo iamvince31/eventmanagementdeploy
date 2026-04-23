@@ -143,6 +143,22 @@ function TimePickerInput({ value, onChange }) {
   );
 }
 
+const ROLE_DESCRIPTIONS = {
+  'Admin': 'System administrator with full access to manage users, roles, and all system settings.',
+  'Dean': 'College Dean responsible for overseeing all academic and administrative operations of the college.',
+  'Chairperson': 'Department Chairperson who manages department-level academic programs and faculty.',
+  'Coordinator': 'Program Coordinator responsible for coordinating academic programs and activities.',
+  'Research Coordinator': 'Coordinates and oversees research activities, projects, and publications.',
+  'Extension Coordinator': 'Manages community extension programs and outreach activities.',
+  'GAD Coordinator': 'Gender and Development Coordinator promoting gender equality and related programs.',
+  'CEIT Official': 'College of Engineering and Information Technology official with administrative responsibilities.',
+  'Faculty Member': 'Teaching faculty member responsible for instruction and academic activities.',
+  'Staff': 'Administrative or support staff member assisting in college operations.',
+};
+
+const getRoleDescription = (role) =>
+  ROLE_DESCRIPTIONS[role] || 'College of Engineering and Information Technology member.';
+
 export default function AccountDashboard() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
@@ -1182,6 +1198,7 @@ export default function AccountDashboard() {
                         )}
                         <p className="text-lg font-bold text-gray-900 mt-4">{user?.username}</p>
                         <p className="text-sm text-gray-500">{user?.role}</p>
+                        <p className="text-xs text-gray-400 mt-1 text-center px-2">{getRoleDescription(user?.role)}</p>
                       </div>
 
                       <div className="pb-6 border-b border-gray-200">
@@ -1243,6 +1260,7 @@ export default function AccountDashboard() {
                     <span className="text-gray-600">Role:</span>
                     <span className="font-medium text-green-700">{user?.role || 'Not specified'}</span>
                   </div>
+                  <div className="text-xs text-gray-400 mt-1">{getRoleDescription(user?.role)}</div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Status:</span>
                     <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
