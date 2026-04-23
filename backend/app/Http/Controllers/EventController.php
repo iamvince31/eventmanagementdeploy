@@ -147,7 +147,7 @@ class EventController extends Controller
             'event_type' => 'required|in:event,meeting',
             'images' => 'nullable|array|max:5',
             'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:25600',
-            'date' => 'required|date|after_or_equal:today',
+            'date' => 'required|date',
             'time' => 'required',
             'member_ids' => 'nullable|array',
         ], [
@@ -155,7 +155,6 @@ class EventController extends Controller
             'images.*.file' => 'Each upload must be a valid file.',
             'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
             'images.*.max' => 'Each file must not exceed 25MB in size.',
-            'date.after_or_equal' => 'Event date cannot be in the past.',
             'event_type.required' => 'Event type is required.',
             'event_type.in' => 'Event type must be either event or meeting.',
         ]);
@@ -288,7 +287,7 @@ class EventController extends Controller
             'event_type' => 'sometimes|required|in:event,meeting',
             'images' => 'nullable|array|max:5',
             'images.*' => 'file|mimes:jpeg,jpg,png,gif,webp,pdf|max:25600',
-            'date' => 'sometimes|required|date|after_or_equal:today',
+            'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
         ], [
@@ -296,7 +295,6 @@ class EventController extends Controller
             'images.*.file' => 'Each upload must be a valid file.',
             'images.*.mimes' => 'Files must be in JPG, PNG, GIF, WebP, or PDF format.',
             'images.*.max' => 'Each file must not exceed 25MB in size.',
-            'date.after_or_equal' => 'Event date cannot be in the past.',
             'event_type.required' => 'Event type is required.',
             'event_type.in' => 'Event type must be either event or meeting.',
         ]);
