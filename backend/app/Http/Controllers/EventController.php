@@ -160,8 +160,8 @@ class EventController extends Controller
         ]);
 
         // Validate that date/time is not in the past
-        $eventDateTime = new \DateTime($request->date . ' ' . $request->time);
-        $now = new \DateTime();
+        $eventDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . substr($request->time, 0, 5), 'Asia/Manila');
+        $now = \Carbon\Carbon::now('Asia/Manila');
 
         if ($eventDateTime < $now) {
             return response()->json([
@@ -170,8 +170,8 @@ class EventController extends Controller
         }
 
         // Sunday validation - events and meetings cannot be scheduled on Sundays
-        $eventDate = new \DateTime($request->date);
-        if ($eventDate->format('w') == 0) { // 0 = Sunday
+        $eventDate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->date, 'Asia/Manila');
+        if ($eventDate->dayOfWeek === 0) {
             return response()->json([
                 'error' => 'Events and meetings cannot be scheduled on Sundays.'
             ], 422);
@@ -301,8 +301,8 @@ class EventController extends Controller
 
         // Validate that date/time is not in the past if being updated
         if ($request->has('date') && $request->has('time')) {
-            $eventDateTime = new \DateTime($request->date . ' ' . $request->time);
-            $now = new \DateTime();
+            $eventDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . substr($request->time, 0, 5), 'Asia/Manila');
+            $now = \Carbon\Carbon::now('Asia/Manila');
 
             if ($eventDateTime < $now) {
                 return response()->json([
@@ -311,8 +311,8 @@ class EventController extends Controller
             }
 
             // Sunday validation - events and meetings cannot be scheduled on Sundays
-            $eventDate = new \DateTime($request->date);
-            if ($eventDate->format('w') == 0) { // 0 = Sunday
+            $eventDate = \Carbon\Carbon::createFromFormat('Y-m-d', $request->date, 'Asia/Manila');
+            if ($eventDate->dayOfWeek === 0) {
                 return response()->json([
                     'error' => 'Events and meetings cannot be scheduled on Sundays.'
                 ], 422);
