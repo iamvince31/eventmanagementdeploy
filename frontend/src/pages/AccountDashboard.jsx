@@ -761,7 +761,7 @@ export default function AccountDashboard() {
                   {scheduleEditMode ? (
                     <>
                       <button
-                        onClick={handleScheduleSave}
+                        onClick={handleSaveSchedule}
                         disabled={scheduleSaving}
                         className={`px-4 py-2 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 ${
                           scheduleSaving 
