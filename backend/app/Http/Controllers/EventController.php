@@ -417,12 +417,23 @@ class EventController extends Controller
 
         $request->validate([
             'status' => 'required|in:accepted,declined,pending',
-
+            'decline_reason' => 'nullable|string|max:500',
         ]);
 
         $event->members()->updateExistingPivot($user->id, [
             'status' => $request->status,
         ]);
+
+        // If declining a meeting, send decline reason as a message to the host
+        if ($request->status === 'declined' && $event->event_type === 'meeting' && $request->decline_reason) {
+            \App\Models\Message::create([
+                'sender_id' => $user->id,
+                'recipient_id' => $event->host_id,
+                'event_id' => $event->id,
+                'type' => 'meeting_declined',
+                'message' => $request->decline_reason,
+            ]);
+        }
 
         return response()->json([
             'message' => 'Invitation ' . $request->status . ' successfully',

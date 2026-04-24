@@ -2,7 +2,6 @@
 
 Fixed merge conflicts with vercel
 Redeploye changes to vercel
-
 Determined UI Issues on the other interfaces
 Updated Progress REport
 Updated SRS

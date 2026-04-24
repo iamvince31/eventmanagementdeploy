@@ -16,6 +16,9 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
   const dragRef = useRef({ startX: 0, startY: 0, panX: 0, panY: 0 });
   const [membersPanelStyle, setMembersPanelStyle] = useState({});
   const mainModalRef = useRef(null);
+  const [showDeclineForm, setShowDeclineForm] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [declineMessages, setDeclineMessages] = useState([]); // for showing decline reasons in member list
 
   useEffect(() => {
     setLocalStatus(null);
@@ -24,6 +27,19 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
     setCurrentImageIndex(0);
     setZoom(1);
     setPan({ x: 0, y: 0 });
+    setShowDeclineForm(false);
+    setDeclineReason('');
+    setDeclineMessages([]);
+
+    // Fetch decline messages for this meeting so host can see reasons
+    if (event?.id && event?.event_type === 'meeting' && isOpen) {
+      api.get('/messages').then(res => {
+        const relevant = (res.data || []).filter(
+          m => m.event_id === event.id && m.type === 'meeting_declined'
+        );
+        setDeclineMessages(relevant);
+      }).catch(() => {});
+    }
   }, [event?.id, isOpen]);
 
   // Reset zoom/pan when switching images
@@ -114,11 +130,16 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
     onClose();
   };
 
-  const handleRespond = async (status) => {
+  const handleRespond = async (status, reason = null) => {
     setResponding(true);
     try {
-      await api.post(`/events/${event.id}/respond`, { status });
+      await api.post(`/events/${event.id}/respond`, {
+        status,
+        ...(reason ? { decline_reason: reason } : {}),
+      });
       setLocalStatus(status);
+      setShowDeclineForm(false);
+      setDeclineReason('');
       onRespond?.();
     } catch (error) {
       alert('Failed to respond: ' + (error.response?.data?.error || error.message));
@@ -429,20 +450,51 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
             </div>
           )}
 
-          {/* Accept / Decline / Cancel */}
-          {isInvited && (
-            <div className="pt-4 border-t border-gray-200">
+          {/* Accept / Decline — meetings only */}
+          {isInvited && event.event_type === 'meeting' && (
+            <div className="pt-4 border-t border-gray-200 space-y-3">
               {effectiveStatus === 'pending' || !effectiveStatus ? (
-                <div className="flex gap-3">
-                  <button disabled={responding} onClick={() => handleRespond('accepted')}
-                    className="flex-1 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors touch-manipulation">
-                    {responding ? '...' : '✔ Accept'}
-                  </button>
-                  <button disabled={responding} onClick={() => handleRespond('declined')}
-                    className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-50 transition-colors touch-manipulation">
-                    {responding ? '...' : '✘ Decline'}
-                  </button>
-                </div>
+                <>
+                  {!showDeclineForm ? (
+                    <div className="flex gap-3">
+                      <button disabled={responding} onClick={() => handleRespond('accepted')}
+                        className="flex-1 py-2.5 text-sm font-semibold text-white bg-green-600 rounded-xl hover:bg-green-700 disabled:opacity-50 transition-colors touch-manipulation">
+                        {responding ? '...' : '✔ Accept'}
+                      </button>
+                      <button disabled={responding} onClick={() => setShowDeclineForm(true)}
+                        className="flex-1 py-2.5 text-sm font-semibold text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-50 transition-colors touch-manipulation">
+                        ✘ Decline
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-gray-600">Reason for declining <span className="text-gray-400">(required)</span></p>
+                      <textarea
+                        value={declineReason}
+                        onChange={e => setDeclineReason(e.target.value)}
+                        placeholder="Let the host know why you're declining..."
+                        rows={3}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:border-red-400 resize-none"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          disabled={responding || !declineReason.trim()}
+                          onClick={() => handleRespond('declined', declineReason.trim())}
+                          className="flex-1 py-2 text-sm font-semibold text-white bg-red-500 rounded-xl hover:bg-red-600 disabled:opacity-50 transition-colors"
+                        >
+                          {responding ? '...' : 'Confirm Decline'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setShowDeclineForm(false); setDeclineReason(''); }}
+                          className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               ) : (
                 <div className="flex items-center gap-3">
                   <span className={`flex-1 inline-flex items-center justify-center py-2.5 rounded-xl text-sm font-semibold ${
@@ -497,6 +549,13 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
                       {member.status === 'accepted' ? '✔ Accepted' : member.status === 'declined' ? '✘ Declined' : '⏳ Pending'}
                     </span>
                   </div>
+                  {/* Show decline reason for meetings */}
+                  {member.status === 'declined' && event.event_type === 'meeting' && (() => {
+                    const msg = declineMessages.find(m => m.sender_id === member.id || m.sender?.id === member.id);
+                    return msg ? (
+                      <p className="mt-1 ml-10 text-xs text-red-600 italic">"{msg.message}"</p>
+                    ) : null;
+                  })()}
                 ))}
               </div>
               {totalPages > 1 && (

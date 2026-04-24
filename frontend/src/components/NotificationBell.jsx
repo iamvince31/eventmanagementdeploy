@@ -342,7 +342,10 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                             <p className="text-sm font-semibold text-gray-900 truncate">{message.sender.name}</p>
                             {!message.is_read && <span className="w-2 h-2 bg-red-500 rounded-full flex-shrink-0" />}
                           </div>
-                          <p className="text-xs text-gray-600 mt-0.5">Declined: {message.event?.title || 'Event'}</p>
+                          <p className="text-xs text-gray-600 mt-0.5">
+                            {message.type === 'meeting_declined' ? 'Declined meeting: ' : 'Declined: '}
+                            {message.event?.title || 'Event'}
+                          </p>
                           <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{message.message}</p>
                           <p className="text-xs text-gray-400 mt-0.5">{formatDate(message.created_at)}</p>
                         </div>
