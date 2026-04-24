@@ -23,3 +23,4 @@ fixed calendar date issue showing on dashboard undefined
 maximizing the pillbox modal on class schedule
 fixed time schedule bugging out on restriction in weekly schedules
 declined event has a legend now and a special color for it
+added a new feature for select all feature where it has confirmation on large selections and undo toast

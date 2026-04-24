@@ -1,6 +1,8 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import DatePicker from './DatePicker';
+
+const SELECT_ALL_THRESHOLD = 10; // show confirmation if selecting more than this many
 
 export default function EventForm({ members, onEventCreated, editingEvent, onCancelEdit, defaultDate, currentUser }) {
   const [title, setTitle] = useState('');
@@ -21,6 +23,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [searchMember, setSearchMember] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
+  // Select All undo toast
+  const [undoToast, setUndoToast] = useState(null); // { prevSelection, count, timerId }
+  // Select All confirmation (for large lists)
+  const [selectAllConfirm, setSelectAllConfirm] = useState(null); // { ids } | null
+  const undoTimerRef = useRef(null);
 
   // Calculate school year based on date
   const getSchoolYearFromDate = (dateString) => {
@@ -187,17 +194,46 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const handleSelectAll = () => {
     const allFilteredIds = searchFilteredMembers.map(m => m.id);
     const allSelected = allFilteredIds.every(id => selectedMembers.includes(id));
-    
+
     if (allSelected) {
-      // Deselect all filtered members
-      setSelectedMembers(prev => prev.filter(id => !allFilteredIds.includes(id)));
-    } else {
-      // Select all filtered members
-      setSelectedMembers(prev => {
-        const newIds = allFilteredIds.filter(id => !prev.includes(id));
-        return [...prev, ...newIds];
-      });
+      // Deselect all — no confirmation needed, just do it
+      const prev = [...selectedMembers];
+      setSelectedMembers(prev.filter(id => !allFilteredIds.includes(id)));
+      return;
     }
+
+    const newIds = allFilteredIds.filter(id => !selectedMembers.includes(id));
+
+    // Option 3: show confirmation if adding more than threshold
+    if (newIds.length > SELECT_ALL_THRESHOLD) {
+      setSelectAllConfirm({ ids: newIds });
+      return;
+    }
+
+    // Option 2: do it immediately + show undo toast
+    doSelectAll(newIds);
+  };
+
+  const doSelectAll = (newIds) => {
+    const prevSelection = [...selectedMembers];
+    setSelectedMembers(prev => [...prev, ...newIds]);
+
+    // Clear any existing undo timer
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+
+    const timerId = setTimeout(() => {
+      setUndoToast(null);
+    }, 4000);
+    undoTimerRef.current = timerId;
+
+    setUndoToast({ prevSelection, count: newIds.length, timerId });
+  };
+
+  const handleUndoSelectAll = () => {
+    if (!undoToast) return;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setSelectedMembers(undoToast.prevSelection);
+    setUndoToast(null);
   };
 
   const handleImageChange = (e) => {
@@ -334,6 +370,51 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
   return (
     <div className="animate-fade-in">
+
+      {/* Undo Toast — Option 2 */}
+      {undoToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl animate-fade-in">
+          <span>{undoToast.count} member{undoToast.count !== 1 ? 's' : ''} selected</span>
+          <button
+            type="button"
+            onClick={handleUndoSelectAll}
+            className="font-semibold text-green-400 hover:text-green-300 underline underline-offset-2 transition-colors"
+          >
+            Undo
+          </button>
+          <button type="button" onClick={() => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current); setUndoToast(null); }} className="text-gray-400 hover:text-white ml-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+      )}
+
+      {/* Confirmation Dialog — Option 3 (large selections) */}
+      {selectAllConfirm && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full">
+            <h4 className="text-base font-bold text-gray-900 mb-2">Select all members?</h4>
+            <p className="text-sm text-gray-600 mb-5">
+              This will add <span className="font-semibold text-gray-900">{selectAllConfirm.ids.length}</span> more member{selectAllConfirm.ids.length !== 1 ? 's' : ''} to your invite list.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { doSelectAll(selectAllConfirm.ids); setSelectAllConfirm(null); }}
+                className="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                Confirm
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectAllConfirm(null)}
+                className="flex-1 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Error Alert */}
       {error && (
         <div className="mb-5 rounded-xl bg-red-50 border border-red-200 p-4 flex items-start space-x-3">
