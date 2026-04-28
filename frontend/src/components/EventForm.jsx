@@ -456,7 +456,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       <form onSubmit={handleSubmit} autoComplete="off">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column - Event Details Box (1/3 width) */}
-          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm lg:max-h-[42rem]">
+          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-y-auto">
             <div className="flex items-center space-x-2 mb-5">
               <div className="bg-green-100 rounded-lg p-2">
                 <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -536,6 +536,211 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                     <span className="ml-2 text-sm text-gray-700 font-medium">Meeting</span>
                   </label>
                 </div>
+              </div>
+
+              {/* ── Date & Time ── */}
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Schedule</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
+                    <DatePicker
+                      selectedDate={date}
+                      onDateSelect={handleDateChange}
+                      minDate={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Time <span className="text-red-500">*</span></label>
+                    <input
+                      type="time"
+                      required
+                      value={time}
+                      onChange={(e) => handleTimeChange(e.target.value)}
+                      className="block w-full px-2 py-2 border border-gray-300 rounded-lg shadow-sm text-xs focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Additional Dates — only when creating ── */}
+              {!editingEvent && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-medium text-gray-700">Additional Dates</label>
+                    <button
+                      type="button"
+                      onClick={() => setAdditionalDates(prev => [...prev, ''])}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900 transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add date
+                    </button>
+                  </div>
+
+                  {/* Confirmed date pills */}
+                  {additionalDates.filter(Boolean).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {additionalDates.map((d, idx) =>
+                        d ? (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-300"
+                          >
+                            {new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            <button
+                              type="button"
+                              onClick={() => setAdditionalDates(prev => prev.filter((_, i) => i !== idx))}
+                              className="text-green-600 hover:text-red-500 transition-colors"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </span>
+                        ) : null
+                      )}
+                    </div>
+                  )}
+
+                  {/* Open date-picker slots */}
+                  {additionalDates.map((d, idx) =>
+                    !d ? (
+                      <div key={idx} className="flex items-center gap-2 mb-1.5">
+                        <div className="flex-1">
+                          <DatePicker
+                            selectedDate=""
+                            onDateSelect={(newDate) => {
+                              setAdditionalDates(prev => {
+                                const updated = [...prev];
+                                updated[idx] = newDate;
+                                return updated;
+                              });
+                            }}
+                            minDate={new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setAdditionalDates(prev => prev.filter((_, i) => i !== idx))}
+                          className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : null
+                  )}
+
+                  {additionalDates.filter(Boolean).length > 0 && (
+                    <p className="text-xs text-green-700 font-medium mt-1">
+                      {1 + additionalDates.filter(Boolean).length} events will be created — one per date
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ── Event Files ── */}
+              <div className="pt-3 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Event Files</p>
+                  <span className="text-xs text-gray-400">Max 5 · 25 MB each</span>
+                </div>
+
+                {fileError && (
+                  <div className="mb-2 rounded-lg bg-red-50 border border-red-200 p-2 flex items-start gap-2">
+                    <svg className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p className="text-xs text-red-700 flex-1">{fileError}</p>
+                    <button type="button" onClick={() => setFileError('')} className="text-red-400 hover:text-red-600">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-lg p-3 transition-all duration-200 ${
+                    isDragging ? 'border-green-500 bg-green-50' :
+                    fileError ? 'border-red-300 bg-red-50/30' :
+                    'border-gray-200 bg-gray-50/50 hover:border-green-300'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,application/pdf"
+                    multiple
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="image-upload"
+                  />
+
+                  {imagePreviews.length === 0 ? (
+                    <label htmlFor="image-upload" className="flex flex-col items-center justify-center py-4 cursor-pointer">
+                      <svg className="w-8 h-8 text-gray-300 mb-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-xs font-medium text-gray-500">Drop files or <span className="text-green-600 underline">browse</span></p>
+                      <p className="text-xs text-gray-400 mt-0.5">JPG, PNG, GIF, WebP, PDF</p>
+                    </label>
+                  ) : (
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                      {images.length < 5 && (
+                        <label
+                          htmlFor="image-upload"
+                          className="flex-shrink-0 w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 hover:bg-green-50 transition-all flex items-center justify-center"
+                        >
+                          <div className="text-center">
+                            <svg className="mx-auto h-4 w-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                            </svg>
+                            <span className="text-xs text-gray-400">Add</span>
+                          </div>
+                        </label>
+                      )}
+                      {imagePreviews.map((preview, index) => (
+                        <div key={index} className="relative flex-shrink-0 group">
+                          {preview.type === 'pdf' ? (
+                            <div className="w-16 h-16 flex flex-col items-center justify-center bg-red-50 border-2 border-red-200 rounded-lg p-1">
+                              <svg className="w-5 h-5 text-red-600 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-xs text-red-700 font-medium truncate w-full text-center px-1" title={preview.name}>
+                                {preview.name.length > 8 ? preview.name.substring(0, 8) + '…' : preview.name}
+                              </span>
+                            </div>
+                          ) : (
+                            <img src={preview.url || preview} alt={`Preview ${index + 1}`} className="w-16 h-16 object-cover rounded-lg border border-gray-200" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-sm"
+                          >
+                            <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {imagePreviews.length > 0 && (
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    {imagePreviews.length} / 5 file{imagePreviews.length !== 1 ? 's' : ''} selected
+                    {images.length >= 5 && <span className="text-amber-600 font-medium ml-2">· Maximum reached</span>}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -688,253 +893,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               </div>
             </div>
           </div>
-        </div>
-
-        {/* ── Date / Time / Additional Dates row ── */}
-        <div className="mt-6 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="bg-green-100 rounded-lg p-2">
-              <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-bold text-gray-900">Schedule</h3>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
-            {/* Primary Date */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date <span className="text-red-500">*</span></label>
-              <DatePicker
-                selectedDate={date}
-                onDateSelect={handleDateChange}
-                minDate={new Date().toISOString().split('T')[0]}
-              />
-            </div>
-
-            {/* Time */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Time <span className="text-red-500">*</span></label>
-              <input
-                type="time"
-                required
-                value={time}
-                onChange={(e) => handleTimeChange(e.target.value)}
-                className="block w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
-              />
-            </div>
-          </div>
-
-          {/* Additional Dates — only when creating */}
-          {!editingEvent && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Additional Dates</p>
-                  <p className="text-xs text-gray-500 mt-0.5">Create the same event on multiple dates</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setAdditionalDates(prev => [...prev, ''])}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors"
-                >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add date
-                </button>
-              </div>
-
-              {/* Confirmed date pills */}
-              {additionalDates.filter(Boolean).length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {additionalDates.map((d, idx) =>
-                    d ? (
-                      <span
-                        key={idx}
-                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-300"
-                      >
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        <button
-                          type="button"
-                          onClick={() => setAdditionalDates(prev => prev.filter((_, i) => i !== idx))}
-                          className="ml-0.5 text-green-600 hover:text-red-500 transition-colors"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </span>
-                    ) : null
-                  )}
-                </div>
-              )}
-
-              {/* Open date-picker slots */}
-              {additionalDates.some(d => !d) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {additionalDates.map((d, idx) =>
-                    !d ? (
-                      <div key={idx} className="flex items-center gap-2">
-                        <div className="flex-1">
-                          <DatePicker
-                            selectedDate=""
-                            onDateSelect={(newDate) => {
-                              setAdditionalDates(prev => {
-                                const updated = [...prev];
-                                updated[idx] = newDate;
-                                return updated;
-                              });
-                            }}
-                            minDate={new Date().toISOString().split('T')[0]}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setAdditionalDates(prev => prev.filter((_, i) => i !== idx))}
-                          className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : null
-                  )}
-                </div>
-              )}
-
-              {additionalDates.filter(Boolean).length > 0 && (
-                <p className="text-xs text-green-700 font-medium mt-2 flex items-center gap-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  {1 + additionalDates.filter(Boolean).length} events will be created — one per date, same time &amp; members
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* ── Event Files row ── */}
-        <div className="mt-6 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <div className="flex items-center space-x-2 mb-4">
-            <div className="bg-green-50 rounded-lg p-2">
-              <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-bold text-gray-900">Event Files</h3>
-            <span className="text-xs text-gray-400 font-normal">(Max 5 files, 25 MB each — JPG, PNG, GIF, WebP, PDF)</span>
-          </div>
-
-          {/* File Error Alert */}
-          {fileError && (
-            <div className="mb-3 rounded-lg bg-red-50 border border-red-200 p-3 flex items-start space-x-2">
-              <svg className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-              </svg>
-              <div className="flex-1">
-                <p className="text-xs font-semibold text-red-800">Invalid File</p>
-                <p className="text-xs text-red-700 mt-0.5">{fileError}</p>
-              </div>
-              <button type="button" onClick={() => setFileError('')} className="text-red-400 hover:text-red-600">
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
-
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl p-4 transition-all duration-200 ${
-              isDragging
-                ? 'border-green-500 bg-green-50 scale-[1.005]'
-                : fileError
-                  ? 'border-red-300 bg-red-50/30'
-                  : 'border-gray-200 bg-gray-50/50 hover:border-green-300 hover:bg-green-50/30'
-            }`}
-          >
-            <input
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp,application/pdf"
-              multiple
-              onChange={handleImageChange}
-              className="hidden"
-              id="image-upload"
-            />
-
-            {imagePreviews.length === 0 ? (
-              <label htmlFor="image-upload" className="flex flex-col items-center justify-center py-6 cursor-pointer">
-                <svg className="w-10 h-10 text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <p className="text-sm font-medium text-gray-500">Drop files here or <span className="text-green-600 underline">browse</span></p>
-                <p className="text-xs text-gray-400 mt-1">JPG, PNG, GIF, WebP, PDF up to 25 MB</p>
-              </label>
-            ) : (
-              <div className="flex flex-wrap gap-3">
-                {/* Add more button */}
-                {images.length < 5 && (
-                  <label
-                    htmlFor="image-upload"
-                    className="flex-shrink-0 w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-green-500 hover:bg-green-50 transition-all flex items-center justify-center"
-                  >
-                    <div className="text-center">
-                      <svg className="mx-auto h-5 w-5 text-gray-300 hover:text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                      <span className="text-xs text-gray-400 font-medium">Add</span>
-                    </div>
-                  </label>
-                )}
-
-                {/* Previews */}
-                {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative flex-shrink-0 group">
-                    {preview.type === 'pdf' ? (
-                      <div className="w-20 h-20 flex flex-col items-center justify-center bg-red-50 border-2 border-red-200 rounded-lg p-1">
-                        <svg className="w-6 h-6 text-red-600 mb-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <span className="text-xs text-red-700 font-medium truncate w-full text-center px-1" title={preview.name}>
-                          {preview.name.length > 12 ? preview.name.substring(0, 12) + '...' : preview.name}
-                        </span>
-                      </div>
-                    ) : (
-                      <img
-                        src={preview.url || preview}
-                        alt={`Preview ${index + 1}`}
-                        className="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                      />
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-600 shadow-sm"
-                    >
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {imagePreviews.length > 0 && (
-            <div className="mt-2 flex items-center justify-between">
-              <p className="text-xs text-gray-400">{imagePreviews.length} / 5 file{imagePreviews.length !== 1 ? 's' : ''} selected</p>
-              {images.length >= 5 && <p className="text-xs text-amber-600 font-medium">Maximum reached</p>}
-            </div>
-          )}
         </div>
 
         {/* Submit Buttons */}

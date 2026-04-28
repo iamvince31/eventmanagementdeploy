@@ -7,4 +7,8 @@ The department drop down must be only Department of Information Technology (DIT)
 on /add-event, dates should be settable on multiple dates on event checkbox and the pillboxes will be shown on those dates as well + the /default-events when setting a date it must show the pillboxes correctly and currently it doesnt fetch data correctly on academic year + i wanted the set date could be reset to no date set yet on /default events
 when setting an event on /default-event or the academic year, it shws this improper pillbox with the incomplete modal as well with no title, what seems to be the issue here
 the event files is misplaced on ui, correct its position + i dont see the date picker on event details when choosing an event settable to multiple dates, and also the last prompt seems to be cut off can you continue it first and verify if it is properly implemented now
-untracked/hide md files from every commit 
+untracked/hide md files from every commit / fixing deployments
+Fix the Event details separated in the /add-event
+
+
+**papafix ung deploy cross sa github
