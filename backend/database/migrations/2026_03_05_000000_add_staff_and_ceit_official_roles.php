@@ -12,6 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Add new roles to the role enum
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member', 'CEIT Official') DEFAULT 'Faculty Member'");
     }
@@ -21,6 +23,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Remove the new roles from the enum
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member') DEFAULT 'Faculty Member'");
     }

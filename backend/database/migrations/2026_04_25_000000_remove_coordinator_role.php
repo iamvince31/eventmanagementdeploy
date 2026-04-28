@@ -7,6 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         DB::statement("SET SESSION sql_mode = ''");
 
         // Reassign any existing Coordinator users to Faculty Member
@@ -30,6 +32,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         DB::statement("SET SESSION sql_mode = ''");
 
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(

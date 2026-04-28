@@ -10,6 +10,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // First, update all users with 'Program Coordinator' role to 'Coordinator'
         DB::table('users')
             ->where('role', 'Program Coordinator')
@@ -35,6 +37,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Add 'Program Coordinator' back to the role enum
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(
             'Admin',

@@ -10,6 +10,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // First, update all users with 'CEIT Staff' role to 'CEIT Official'
         DB::table('users')
             ->where('role', 'CEIT Staff')
@@ -34,6 +36,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Add 'CEIT Staff' back to the role enum
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(
             'Admin',

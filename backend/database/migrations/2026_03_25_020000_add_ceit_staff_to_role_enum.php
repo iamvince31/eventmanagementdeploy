@@ -10,6 +10,8 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Add 'CEIT Staff' to the role enum
         // Position it after 'Dean' and before 'Chairperson'
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(
@@ -32,6 +34,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Remove 'CEIT Staff' from the role enum
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(
             'Admin',

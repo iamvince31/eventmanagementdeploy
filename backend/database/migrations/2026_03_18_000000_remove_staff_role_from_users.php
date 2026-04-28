@@ -7,6 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Reassign any existing Staff users to Faculty Member
         DB::table('users')->where('role', 'Staff')->update(['role' => 'Faculty Member']);
 
@@ -16,6 +18,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM('Admin', 'Dean', 'Chairperson', 'Coordinator', 'Faculty Member', 'Staff', 'CEIT Official') DEFAULT 'Faculty Member'");
     }
 };

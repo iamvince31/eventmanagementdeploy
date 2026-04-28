@@ -7,6 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Disable strict mode temporarily so ENUM alteration doesn't fail on warnings
         DB::statement("SET SESSION sql_mode = ''");
 
@@ -43,6 +45,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         DB::statement("SET SESSION sql_mode = ''");
 
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(

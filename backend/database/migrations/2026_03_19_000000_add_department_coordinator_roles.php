@@ -7,6 +7,8 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         DB::statement("ALTER TABLE users MODIFY COLUMN role ENUM(
             'Admin',
             'Dean',
@@ -22,6 +24,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (DB::getDriverName() !== 'mysql') return;
+
         // Reassign new roles back to Coordinator before dropping
         DB::table('users')
             ->whereIn('role', ['Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'])
