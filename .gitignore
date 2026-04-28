@@ -1,16 +1,17 @@
-
-mdFiles/*.md
-mdFiles2/*.md
+# Ignore all markdown files
 *.md
+!README.md   # optional
+
+# Specific files
 backend/test-brevo-api.php
 Journal/Plan.txt
-ENV_CHANGES_SUMMARY.md
+Journal
 
 # Environment files — never commit credentials
 backend/.env
 frontend/.env
 frontend/.env.production
-backend/.env
+
 # Dependencies
 backend/vendor/
 frontend/node_modules/
