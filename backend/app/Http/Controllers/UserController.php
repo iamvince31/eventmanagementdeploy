@@ -69,7 +69,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'department' => 'required|string|max:255',
-            'role' => 'required|in:Admin,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,Faculty Member,CEIT Official',
+            'role' => 'required|in:Admin,Chairperson,Research Coordinator,Extension Coordinator,Faculty Member,CEIT Official',
             'name' => 'required|string|max:255',
         ]);
 
@@ -180,7 +180,7 @@ class UserController extends Controller
     public function updateRole(Request $request, $id)
     {
         $validated = $request->validate([
-            'role' => 'required|in:Admin,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,Faculty Member,CEIT Official',
+            'role' => 'required|in:Admin,Chairperson,Research Coordinator,Extension Coordinator,Faculty Member,CEIT Official',
             'department' => 'sometimes|string|max:255',
         ]);
 

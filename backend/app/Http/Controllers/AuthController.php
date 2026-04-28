@@ -28,8 +28,13 @@ class AuthController extends Controller
                 'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
             ],
             'password' => 'required|string|min:6',
+            'department' => 'required|string|max:255',
+            'role' => 'required|in:Dean,CEIT Official,Chairperson,Research Coordinator,Extension Coordinator,Faculty Member,Staff',
         ], [
             'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
+            'department.required' => 'Please select your department.',
+            'role.required' => 'Please select your position/role.',
+            'role.in' => 'Invalid role selected.',
         ]);
 
         $email = strtolower(trim($request->email));
@@ -77,8 +82,8 @@ class AuthController extends Controller
             'last_name' => $lastName,
             'email' => $email,
             'password' => Hash::make($request->password),
-            'department' => null,
-            'role' => 'Faculty Member',
+            'department' => $request->department,
+            'role' => $request->role,
             'is_validated' => false,
             'email_verified_at' => null,
         ]);

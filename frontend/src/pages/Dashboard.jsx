@@ -301,7 +301,7 @@ export default function Dashboard() {
             {(() => {
               const canCreate = user && [
                 'Admin', 'Dean', 'Chairperson',
-                'Coordinator', 'Research Coordinator', 'Extension Coordinator',
+                'Research Coordinator', 'Extension Coordinator',
                 'CEIT Official', 'Faculty Member', 'Staff'
               ].includes(user.role);
 

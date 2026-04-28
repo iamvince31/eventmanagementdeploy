@@ -147,7 +147,6 @@ const ROLE_DESCRIPTIONS = {
   'Admin': 'System administrator with full access to manage users, roles, and all system settings.',
   'Dean': 'College Dean responsible for overseeing all academic and administrative operations of the college.',
   'Chairperson': 'Department Chairperson who manages department-level academic programs and faculty.',
-  'Coordinator': 'Program Coordinator responsible for coordinating academic programs and activities.',
   'Research Coordinator': 'Coordinates and oversees research activities, projects, and publications.',
   'Extension Coordinator': 'Manages community extension programs and outreach activities.',
   'CEIT Official': 'College of Engineering and Information Technology official with administrative responsibilities.',
@@ -217,10 +216,10 @@ export default function AccountDashboard() {
 
   const departments = [
     'Department of Information Technology',
-    'Department of Agriculture and Food Engineering',
-    'Department of Civil Engineering',
+    'Department of Industrial Engineering and Technology',
     'Department of Computer, Electronics, and Electrical Engineering',
-    'Department of Industrial Engineering and Technology'
+    'Department of Civil Engineering',
+    'Department of Agriculture and Food Engineering',
   ];
 
   // Refresh user data on mount to pick up any admin role/dept changes

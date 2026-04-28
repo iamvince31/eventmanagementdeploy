@@ -10,8 +10,27 @@ export default function Register() {
     middle_initial: '',
     email: '',
     password: '',
-    password_confirmation: ''
+    password_confirmation: '',
+    department: '',
+    role: '',
   });
+
+  const DEPARTMENTS = [
+    'College of Engineering and Information Technology',
+    'Department of Information Technology',
+    'Department of Industrial Engineering and Technology',
+    'Department of Computer, Electronics, and Electrical Engineering',
+    'Department of Civil Engineering',
+    'Department of Agriculture and Food Engineering',
+  ];
+
+  const CEIT_ROLES = ['Dean', 'CEIT Official'];
+  const DEPT_ROLES = ['Chairperson', 'Research Coordinator', 'Extension Coordinator', 'Faculty Member', 'Staff'];
+
+  const getRolesForDepartment = (dept) => {
+    if (dept === 'College of Engineering and Information Technology') return CEIT_ROLES;
+    return DEPT_ROLES;
+  };
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -73,15 +92,13 @@ export default function Register() {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: value,
+      // Reset role when department changes
+      ...(name === 'department' ? { role: '' } : {}),
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -263,6 +280,53 @@ export default function Register() {
                 />
                 {errors.email && (
                   <p className="mt-1 text-sm text-red-600">{errors.email[0]}</p>
+                )}
+              </div>
+
+              {/* Department */}
+              <div>
+                <label htmlFor="department" className="block text-sm font-medium text-gray-700">
+                  Department
+                </label>
+                <select
+                  id="department"
+                  name="department"
+                  required
+                  value={formData.department}
+                  onChange={handleChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                >
+                  <option value="">Select your department</option>
+                  {DEPARTMENTS.map(dept => (
+                    <option key={dept} value={dept}>{dept}</option>
+                  ))}
+                </select>
+                {errors.department && (
+                  <p className="mt-1 text-sm text-red-600">{errors.department[0]}</p>
+                )}
+              </div>
+
+              {/* Role / Position */}
+              <div>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
+                  Position / Role
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  required
+                  value={formData.role}
+                  onChange={handleChange}
+                  disabled={!formData.department}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
+                >
+                  <option value="">{formData.department ? 'Select your position' : 'Select a department first'}</option>
+                  {formData.department && getRolesForDepartment(formData.department).map(r => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+                {errors.role && (
+                  <p className="mt-1 text-sm text-red-600">{errors.role[0]}</p>
                 )}
               </div>
 

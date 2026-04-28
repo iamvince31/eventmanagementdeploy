@@ -24,7 +24,7 @@ class PositionSeeder extends Seeder
             'admin' => 'Admin',
             'dean' => 'Dean',
             'chairperson' => 'Chairperson',
-            'program_coordinator' => 'Coordinator',
+            'program_coordinator' => 'Faculty Member',
             'faculty' => 'Faculty Member',
             'teacher' => 'Faculty Member'
         ];
@@ -38,9 +38,9 @@ class PositionSeeder extends Seeder
 
         // Set default role for users without a proper role
         User::whereNotIn('role', [
-            'Admin', 'Dean', 'Chairperson', 'Coordinator',
-            'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator',
-            'Faculty Member', 'CEIT Official',
+            'Admin', 'Dean', 'Chairperson',
+            'Research Coordinator', 'Extension Coordinator',
+            'Faculty Member', 'CEIT Official', 'Staff',
         ])->orWhereNull('role')
           ->update(['role' => 'Faculty Member', 'is_validated' => false]);
     }

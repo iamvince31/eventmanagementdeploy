@@ -1,37 +1,57 @@
-7:00 - Time in
+7:00 - Time in WFH 4/20/2026
 
-Fixed merge conflicts with vercel
-Redeploye changes to vercel
-Determined UI Issues on the other interfaces
-Updated Progress REport
-Updated SRS
-Redeploying system due to expired trial
-DIT-OJT-2026
-adding supabase as the overseer for the pdf-png-jpeg handler of /add-event
-fixed issues on the event-files on hosted environment not showing up or working
-Fixed profile picture not being able to add on hosted environment
-fixed issues on pdf, png, jpeg on implementing in the hosted environment
-testing implementation on added new database for fetching pdf
-fixed some event management issues when creating an event conflicting timezones
-improved /account feature to be dynamic
-Fixed OTP getting bypassed when registering then refreshing then trying to login without the otp verification
-Transcripted Meting with supervisor
-Conducted meeting with supervisor
-fixed migration new after removing the gad coordinator
-fixed calendar date issue showing on dashboard undefined
-maximizing the pillbox modal on class schedule
-fixed time schedule bugging out on restriction in weekly schedules
-declined event has a legend now and a special color for it
-added a new feature for select all feature where it has confirmation on large selections and undo toast
-fixing a feature on /add event where it has a white space for members list
-improve yung time ng calendar sa set ng weekly schedule 7-7 restricted
-REstrict to mon-sat schedule weekly
-new pillbox for declined event
-lalagyan ng legend bago
-lalagyan ng pillboxes ung class schedule 
-ung select all dapat remove na, dapat select na lang
-autofill clear feature on autogenerating forms
+7:00 - 10:00 : Fixed merge conflicts with vercel
+10:00 - 11:00 : Tested Implementations
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : Redeployed changes to vercel to fix issues
+1:00 - 2:00 : Determined UI Issues on the other interfaces
+2:00 - 3:00 : Updated Progress REport
+3:00 - 4:00 : Updated SRS
+4:00 - 5:00 : Redeploying system due to expired trial
 
+Time in - 7:00 WFH 4/21/2026
+
+7:00 - 11:00 : adding supabase as the overseer for the pdf-png-jpeg handler of /add-event
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : fixed issues on the event-files on hosted environment not showing up or working
+1:00 - 2:00 : Fixed profile picture not being able to add on hosted environment
+2:00 - 3:00 : fixed issues on pdf, png, jpeg on implementing in the hosted environment
+3:00 - 5:00 : Tested Implementations
+
+Time in - 7:00 4/22/2026
+
+7:00 - 11:00 : testing implementation on added new database for fetching pdf
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : fixed some event management issues when creating an event conflicting timezones
+1:00 - 2:00 : improved /account feature to be dynamic
+2:00 - 3:00 : Fixed OTP getting bypassed when registering then refreshing then trying to login without the otp verification
+3:00 - 5:00 : Tested Implementations
+
+Time in - 7:00 4/23/2026
+
+37:00 - 10:00 : Testing Implementations
+10:00 - 11:00 : Conducted meeting with supervisor
+11:00 - 12:00 : Lunch break / declined event has a legend now and a special color for it
+12:00 - 1:00 : Transcripted Meting with supervisor
+1:00 - 2:00 : fixed migration new after removing the gad coordinator
+2:00 - 3:00 : fixed calendar date issue showing on dashboard undefined
+3:00 - 4:00 : maximizing the pillbox modal on class schedule
+4:00 - 5:00 : fixed time schedule bugging out on restriction in weekly schedules
+
+Time in - 7:00 WFH 4/24/2026
+
+7:00 - 8:00 : added a new feature for select all feature where it has confirmation on large selections and undo toast
+8:00 - 9:00 : fixing a feature on /add event where it has a white space for members list
+9:00 - 10:00 : improve time calendar when setting weekly schedule 7-7 restricted
+10:00 - 11:00 : REstrict to mon-sat schedule weekly
+11:00 - 12:00 : Lunch break / Tested Implementations
+12:00 - 1:00 : new pillbox for declined event
+1:00 - 2:00 : added new legends for newly implemented pillboxes bago
+2:00 - 3:00 : added pillboxes for class schedule 
+3:00 - 4:00 : remove autofill feature on autogenerating forms
+4:00 - 5:00 : Improved select features on /add-event
+
+Needs Fixing:
 *needs to confirm it gad coordinaor is removed
 *needs to fix issue on events, meetings issue not showing up yet new feature
 *academic year needs fixing yet

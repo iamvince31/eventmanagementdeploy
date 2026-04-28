@@ -16,14 +16,14 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
 
   const departments = [
     'College of Engineering and Information Technology',
-    'Department of Agricultural and Food Engineering',
-    'Department of Civil and Environmental Engineering and Energy',
-    'Department of Computer Engineering and Architecture',
-    'Department of Industrial and Electrical Technology',
-    'Department of Information Technology'
+    'Department of Information Technology',
+    'Department of Industrial Engineering and Technology',
+    'Department of Computer, Electronics, and Electrical Engineering',
+    'Department of Civil Engineering',
+    'Department of Agriculture and Food Engineering',
   ];
 
-  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
+  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
   const DEPT_ROLES = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator'];
 
   const getRolesForDepartment = (dept) => {

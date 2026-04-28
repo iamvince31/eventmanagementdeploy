@@ -431,10 +431,8 @@ export default function OrganizationalChart() {
                   <option value="Dean">Dean</option>
                   <option value="CEIT Official">CEIT Official</option>
                   <option value="Chairperson">Chairperson</option>
-                  <option value="Program Coordinator">Program Coordinator</option>
                   <option value="Research Coordinator">Research Coordinator</option>
                   <option value="Extension Coordinator">Extension Coordinator</option>
-                  <option value="Coordinator">Coordinator</option>
                   <option value="Faculty Member">Faculty Member</option>
                 </select>
               </div>

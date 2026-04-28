@@ -98,7 +98,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isCoordinator()
     {
         return in_array($this->role, [
-            'Coordinator',
             'Research Coordinator',
             'Extension Coordinator',
         ]);
@@ -112,7 +111,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function canCreateEvents()
     {
         return in_array($this->role, [
-            'Admin', 'Dean', 'Chairperson', 'Coordinator',
+            'Admin', 'Dean', 'Chairperson',
             'Research Coordinator', 'Extension Coordinator',
             'CEIT Official',
         ]);
@@ -121,7 +120,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function needsApprovalForEvents()
     {
         return in_array($this->role, [
-            'Chairperson', 'Coordinator',
+            'Chairperson',
             'Research Coordinator', 'Extension Coordinator',
         ]);
     }

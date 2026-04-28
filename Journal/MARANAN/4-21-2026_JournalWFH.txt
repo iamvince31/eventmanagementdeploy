@@ -1,0 +1,13 @@
+Time in - 7:00 WFH 4/21/2026
+
+7:00 - 11:00 : adding supabase as the overseer for the pdf-png-jpeg handler of /add-event
+11:00 - 12:00 : Lunch break
+12:00 - 1:00 : fixed issues on the event-files on hosted environment not showing up or working
+1:00 - 2:00 : Fixed profile picture not being able to add on hosted environment
+2:00 - 3:00 : fixed issues on pdf, png, jpeg on implementing in the hosted environment
+3:00 - 5:00 : Tested Implementations
+
+
+
+
+

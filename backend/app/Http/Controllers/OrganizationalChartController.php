@@ -36,7 +36,7 @@ class OrganizationalChartController extends Controller
             elseif ($isCollegeLevel) {
                 // For college level, get CEIT Official, Coordinator, and Faculty Members from college
                 $query->where('department', 'College of Engineering and Information Technology')
-                    ->whereIn('role', ['CEIT Official', 'Coordinator', 'Faculty Member']);
+                    ->whereIn('role', ['CEIT Official', 'Faculty Member']);
             }
 
             $users = $query->select('id', 'name', 'first_name', 'last_name', 'email', 'department', 'role', 'profile_picture')
@@ -94,10 +94,6 @@ class OrganizationalChartController extends Controller
             elseif ($user->role === 'Faculty Member' && $isCollegeLevel) {
                 // For college level view, show Faculty Members at college level
                 $hierarchy['facultyMembers'][] = $userData;
-            }
-            elseif ($user->role === 'Coordinator' && $isCollegeLevel) {
-                // For college level view, show Coordinators below CEIT Official
-                $hierarchy['ceitCoordinators'][] = $userData;
             }
             elseif ($user->role === 'Chairperson') {
                 // If viewing college level, show all chairpersons at college level
@@ -172,7 +168,7 @@ class OrganizationalChartController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'department' => 'sometimes|string|max:255',
-            'role' => 'sometimes|in:Dean,CEIT Official,Chairperson,Program Coordinator,Research Coordinator,Extension Coordinator,Coordinator,Faculty Member',
+            'role' => 'sometimes|in:Dean,CEIT Official,Chairperson,Research Coordinator,Extension Coordinator,Faculty Member',
         ]);
 
         $user = User::findOrFail($id);

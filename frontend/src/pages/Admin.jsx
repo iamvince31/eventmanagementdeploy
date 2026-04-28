@@ -39,14 +39,13 @@ export default function Admin() {
     'Admin',
     'Dean',
     'Chairperson',
-    'Coordinator',
     'Research Coordinator',
     'Extension Coordinator',
     'Faculty Member',
     'CEIT Official'
   ];
 
-  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
+  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
   const DEPT_ROLES = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator'];
 
   const deanExists = users.some(u => u.role === 'Dean');
@@ -62,12 +61,12 @@ export default function Admin() {
   };
 
   const departments = [
-    'Department of Agricultural and Food Engineering',
-    'Department of Civil and Environmental Engineering and Energy',
-    'Department of Computer Engineering and Architecture',
-    'Department of Industrial and Electrical Technology',
+    'College of Engineering and Information Technology',
     'Department of Information Technology',
-    'College of Engineering and Information Technology'
+    'Department of Industrial Engineering and Technology',
+    'Department of Computer, Electronics, and Electrical Engineering',
+    'Department of Civil Engineering',
+    'Department of Agriculture and Food Engineering',
   ];
 
   useEffect(() => {
@@ -201,7 +200,6 @@ export default function Admin() {
       'Admin': 'bg-purple-100 text-purple-800',
       'Dean': 'bg-blue-100 text-blue-800',
       'Chairperson': 'bg-indigo-100 text-indigo-800',
-      'Coordinator': 'bg-cyan-100 text-cyan-800',
       'Research Coordinator': 'bg-sky-100 text-sky-800',
       'Extension Coordinator': 'bg-teal-100 text-teal-800',
       'Faculty Member': 'bg-green-100 text-green-800',

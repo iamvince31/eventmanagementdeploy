@@ -1,0 +1,17 @@
+Time in - 7:00 WFH 4/24/2026
+
+7:00 - 8:00 : added a new feature for select all feature where it has confirmation on large selections and undo toast
+8:00 - 9:00 : fixing a feature on /add event where it has a white space for members list
+9:00 - 10:00 : improve time calendar when setting weekly schedule 7-7 restricted
+10:00 - 11:00 : REstrict to mon-sat schedule weekly
+11:00 - 12:00 : Lunch break / Tested Implementations
+12:00 - 1:00 : new pillbox for declined event
+1:00 - 2:00 : added new legends for newly implemented pillboxes bago
+2:00 - 3:00 : added pillboxes for class schedule 
+3:00 - 4:00 : remove autofill feature on autogenerating forms
+4:00 - 5:00 : Improved select features on /add-event
+
+Needs Fixing:
+*needs to confirm it gad coordinaor is removed
+*needs to fix issue on events, meetings issue not showing up yet new feature
+*academic year needs fixing yet

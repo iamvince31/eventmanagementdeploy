@@ -27,12 +27,12 @@ export default function AdminEvents() {
     });
 
     const departments = [
-        'Department of Agricultural and Food Engineering',
-        'Department of Civil and Environmental Engineering and Energy',
-        'Department of Computer and Electronics Engineering',
-        'Department of Industrial and Electrical Technology',
-        'Department of Information Technology',
         'College of Engineering and Information Technology',
+        'Department of Information Technology',
+        'Department of Industrial Engineering and Technology',
+        'Department of Computer, Electronics, and Electrical Engineering',
+        'Department of Civil Engineering',
+        'Department of Agriculture and Food Engineering',
         'Other'
     ];
 
@@ -112,12 +112,12 @@ export default function AdminEvents() {
     const abbreviateDept = (name) => {
         if (!name) return 'N/A';
         const map = {
-            'Department of Agricultural and Food Engineering': 'AFE',
-            'Department of Civil and Environmental Engineering and Energy': 'CEEE',
-            'Department of Computer and Electronics Engineering': 'CEE',
-            'Department of Industrial and Electrical Technology': 'IET',
-            'Department of Information Technology': 'DIT',
             'College of Engineering and Information Technology': 'CEIT',
+            'Department of Information Technology': 'DIT',
+            'Department of Industrial Engineering and Technology': 'DIET',
+            'Department of Computer, Electronics, and Electrical Engineering': 'DCEEE',
+            'Department of Civil Engineering': 'DCEA',
+            'Department of Agriculture and Food Engineering': 'DAFE',
         };
         return map[name] || name.split(' ').map(w => w[0]).join('').toUpperCase();
     };

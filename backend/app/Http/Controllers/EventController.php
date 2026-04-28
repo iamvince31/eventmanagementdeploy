@@ -182,7 +182,7 @@ class EventController extends Controller
 
         // Only authorized roles can create events
         if (!in_array($user->role, [
-        'Admin', 'Dean', 'Chairperson', 'Coordinator',
+        'Admin', 'Dean', 'Chairperson',
         'Research Coordinator', 'Extension Coordinator',
         'CEIT Official', 'Faculty Member',
         ])) {
