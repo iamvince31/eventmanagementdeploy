@@ -23,5 +23,8 @@ testing implementations on all features
 testing implementations on all features
 Tested decline features on meetings, added an urgent button as well for untoggleable event
 updated the notification bell to the urgent features and the event pending issue
+added new roles department ext coord and research coord
+urgent feature must only be visible to only dean, ceit officers, admin, department chairperson only
+
 **need to update pending events on event vs meeting
 
