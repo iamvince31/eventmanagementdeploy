@@ -9,6 +9,6 @@ when setting an event on /default-event or the academic year, it shws this impro
 the event files is misplaced on ui, correct its position + i dont see the date picker on event details when choosing an event settable to multiple dates, and also the last prompt seems to be cut off can you continue it first and verify if it is properly implemented now
 untracked/hide md files from every commit / fixing deployments
 Fix the Event details separated in the /add-event
-
+Fixing dead codes
 
 **papafix ung deploy cross sa github

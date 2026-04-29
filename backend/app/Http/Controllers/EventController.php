@@ -72,6 +72,7 @@ class EventController extends Controller
             'is_default_event' => false,
             'is_personal' => $event->is_personal ?? false,
             'personal_color' => $event->personal_color,
+            'is_urgent' => $event->is_urgent ?? false,
             ];
         });
 
@@ -128,6 +129,7 @@ class EventController extends Controller
             'is_default_event' => false,
             'is_personal' => $event->is_personal ?? false,
             'personal_color' => $event->personal_color,
+            'is_urgent' => $event->is_urgent ?? false,
             ];
         });
 
@@ -149,6 +151,7 @@ class EventController extends Controller
             'date' => 'required|date',
             'time' => 'required',
             'member_ids' => 'nullable|array',
+            'is_urgent' => 'nullable|boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 files.',
             'event_type.required' => 'Event type is required.',
@@ -209,6 +212,7 @@ class EventController extends Controller
             'time' => $request->time,
             'school_year' => $request->school_year,
             'host_id' => $user->id,
+            'is_urgent' => $request->boolean('is_urgent', false),
         ]);
 
         // Handle multiple images/files
@@ -285,6 +289,7 @@ class EventController extends Controller
             'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
             'member_ids' => 'nullable|array',
+            'is_urgent' => 'nullable|boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 files.',
             'event_type.required' => 'Event type is required.',
@@ -311,7 +316,7 @@ class EventController extends Controller
             }
         }
 
-        $event->update($request->only(['title', 'description', 'location', 'event_type', 'date', 'time']));
+        $event->update($request->only(['title', 'description', 'location', 'event_type', 'date', 'time', 'is_urgent']));
 
         // Handle new images/files
         if ($request->hasFile('images')) {

@@ -12,7 +12,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [date, setDate] = useState('');
-  const [additionalDates, setAdditionalDates] = useState([]); // array of extra date strings
+  const [isUrgent, setIsUrgent] = useState(false);
   const [time, setTime] = useState('');
   const [schoolYear, setSchoolYear] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -100,6 +100,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       setTime(editingEvent.time);
       setSchoolYear(editingEvent.school_year || getSchoolYearFromDate(editingEvent.date));
       setSelectedMembers(editingEvent.members.map(m => m.id));
+      setIsUrgent(editingEvent.is_urgent ?? false);
     }
   }, [editingEvent]);
 
@@ -112,57 +113,43 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
     setLoading(true);
 
-    // All dates to create events for (primary + additional)
-    const allDates = [date, ...additionalDates].filter(Boolean);
-
-    const buildFormData = (eventDate) => {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('description', description);
-      formData.append('location', location);
-      formData.append('event_type', eventType);
-      formData.append('date', eventDate);
-      formData.append('time', time);
-      formData.append('school_year', getSchoolYearFromDate(eventDate));
-      images.forEach((image) => formData.append('images[]', image));
-      selectedMembers.forEach(id => formData.append('member_ids[]', id));
-      return formData;
-    };
+    const formData = new FormData();
+    formData.append('title', title);
+    formData.append('description', description);
+    formData.append('location', location);
+    formData.append('event_type', eventType);
+    formData.append('date', date);
+    formData.append('time', time);
+    formData.append('school_year', getSchoolYearFromDate(date));
+    formData.append('is_urgent', isUrgent ? '1' : '0');
+    images.forEach((image) => formData.append('images[]', image));
+    selectedMembers.forEach(id => formData.append('member_ids[]', id));
 
     try {
       if (editingEvent) {
-        // Editing: only update the single event (no multi-date for edits)
-        const formData = buildFormData(date);
         await api.post(`/events/${editingEvent.id}`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
           params: { _method: 'PUT' }
         });
         setSuccess('Event updated successfully');
       } else {
-        // Creating: create one event per date
-        for (const eventDate of allDates) {
-          const formData = buildFormData(eventDate);
-          try {
+        try {
+          await api.post('/events', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+          });
+        } catch (err) {
+          if (err.response?.status === 409 && err.response?.data?.warning === 'schedule_conflict') {
+            formData.append('ignore_conflicts', 'true');
             await api.post('/events', formData, {
               headers: { 'Content-Type': 'multipart/form-data' }
             });
-          } catch (err) {
-            // Schedule conflict — auto-retry with ignore flag
-            if (err.response?.status === 409 && err.response?.data?.warning === 'schedule_conflict') {
-              formData.append('ignore_conflicts', 'true');
-              await api.post('/events', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-              });
-            } else {
-              throw err;
-            }
+          } else {
+            throw err;
           }
         }
-        const count = allDates.length;
-        setSuccess(count > 1 ? `${count} events created successfully` : 'Event created successfully');
+        setSuccess('Event created successfully');
         resetForm();
       }
-
       onEventCreated();
     } catch (err) {
       console.error('Error saving event:', err.response?.data);
@@ -183,7 +170,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     setDate(now.toISOString().split('T')[0]);
     setTime(now.toTimeString().slice(0, 5));
     setSelectedMembers([]);
-    setAdditionalDates([]);
+    setIsUrgent(false);
   };
 
   const handleCancel = () => {
@@ -454,9 +441,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       )}
 
       <form onSubmit={handleSubmit} autoComplete="off">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Event Details Box (1/3 width) */}
-          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm overflow-y-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+          {/* Left Column - Event Details (1/2 width) */}
+          <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col">
             <div className="flex items-center space-x-2 mb-5">
               <div className="bg-green-100 rounded-lg p-2">
                 <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -563,84 +550,20 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 </div>
               </div>
 
-              {/* ── Additional Dates — only when creating ── */}
-              {!editingEvent && (
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs font-medium text-gray-700">Additional Dates</label>
-                    <button
-                      type="button"
-                      onClick={() => setAdditionalDates(prev => [...prev, ''])}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900 transition-colors"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                      Add date
-                    </button>
+              {/* ── Urgent toggle — meetings only ── */}
+              {eventType === 'meeting' && (
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isUrgent}
+                    onChange={(e) => setIsUrgent(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-red-700">Mark as Urgent</span>
+                    <p className="text-xs text-gray-500 mt-0.5">Recipients are notified but cannot accept or decline — announcement only</p>
                   </div>
-
-                  {/* Confirmed date pills */}
-                  {additionalDates.filter(Boolean).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-2">
-                      {additionalDates.map((d, idx) =>
-                        d ? (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 border border-green-300"
-                          >
-                            {new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                            <button
-                              type="button"
-                              onClick={() => setAdditionalDates(prev => prev.filter((_, i) => i !== idx))}
-                              className="text-green-600 hover:text-red-500 transition-colors"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            </button>
-                          </span>
-                        ) : null
-                      )}
-                    </div>
-                  )}
-
-                  {/* Open date-picker slots */}
-                  {additionalDates.map((d, idx) =>
-                    !d ? (
-                      <div key={idx} className="flex items-center gap-2 mb-1.5">
-                        <div className="flex-1">
-                          <DatePicker
-                            selectedDate=""
-                            onDateSelect={(newDate) => {
-                              setAdditionalDates(prev => {
-                                const updated = [...prev];
-                                updated[idx] = newDate;
-                                return updated;
-                              });
-                            }}
-                            minDate={new Date().toISOString().split('T')[0]}
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setAdditionalDates(prev => prev.filter((_, i) => i !== idx))}
-                          className="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 transition-colors"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        </button>
-                      </div>
-                    ) : null
-                  )}
-
-                  {additionalDates.filter(Boolean).length > 0 && (
-                    <p className="text-xs text-green-700 font-medium mt-1">
-                      {1 + additionalDates.filter(Boolean).length} events will be created — one per date
-                    </p>
-                  )}
-                </div>
+                </label>
               )}
 
               {/* ── Event Files ── */}
@@ -745,10 +668,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
             </div>
           </div>
 
-          {/* Right Column - Members Only (2/3 width) - Maximized */}
-          <div className="lg:col-span-2">
-            {/* Members List Box - Now Full Height */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm lg:max-h-[42rem] flex flex-col">
+          {/* Right Column - Members (1/2 width) */}
+          <div className="flex flex-col">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col flex-1">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-2">
                   <div className="bg-green-50 rounded-lg p-2">

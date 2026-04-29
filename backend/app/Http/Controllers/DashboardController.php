@@ -143,6 +143,7 @@ class DashboardController extends Controller
             'is_default_event' => false,
             'is_personal' => $event->is_personal ?? false,
             'personal_color' => $event->personal_color,
+            'is_urgent' => $event->is_urgent ?? false,
             ];
         });
 

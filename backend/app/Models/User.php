@@ -117,14 +117,6 @@ class User extends Authenticatable implements MustVerifyEmail
         ]);
     }
 
-    public function needsApprovalForEvents()
-    {
-        return in_array($this->role, [
-            'Chairperson',
-            'Research Coordinator', 'Extension Coordinator',
-        ]);
-    }
-
     public function events()
     {
         return $this->belongsToMany(Event::class)->withTimestamps();
