@@ -1,0 +1,41 @@
+﻿=== Testing Organizational Chart Department Filtering ===
+
+1. College of Engineering and Information Technology (All Departments, No Faculty)
+======================================================================
+Dean: Roberto Santos Rodriguez
+Number of departments: 0
+
+
+
+2. Department of Information Technology (With Faculty)
+======================================================================
+Dean: Roberto Santos Rodriguez
+Number of departments: 1
+
+  Department of Information Technology
+    Chairperson: Anna Marie Delacruz
+    Program Coordinator: None
+    Coordinators: 3
+    Faculty: 11 (should be > 0)
+      - Angela Rose Navarro
+      - Antonio Carlos Gonzales
+      - Cristina Joy Castro
+      - Diana Grace Bautista
+      - Eduardo Luis Mendoza
+      - Francisco Miguel Ortiz
+      - Jennifer Mae Lopez
+      - Lisa Marie Villanueva
+      - Mark D. Vincent
+      - Ramon Pedro Aquino
+      - Roberto Jose Morales
+
+
+3. Available Departments
+======================================================================
+Total departments: 6
+  - College of Engineering and Information Technology
+  - Department of Agriculture and Food Engineering
+  - Department of Civil Engineering
+  - Department of Computer, Electronics, and Electrical Engineering
+  - Department of Industrial Engineering and Technology
+  - Department of Information Technology

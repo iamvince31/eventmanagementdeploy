@@ -88,9 +88,8 @@ function TimePickerInput({ value, onChange }) {
     <button
       key={label}
       onMouseDown={e => { e.preventDefault(); onClick(); }}
-      className={`w-full text-center px-2 py-1 text-sm rounded transition-colors ${
-        active ? 'bg-green-600 text-white font-semibold' : 'hover:bg-green-100 text-gray-700'
-      }`}
+      className={`w-full text-center px-2 py-1 text-sm rounded transition-colors ${active ? 'bg-green-600 text-white font-semibold' : 'hover:bg-green-100 text-gray-700'
+        }`}
     >
       {label}
     </button>
@@ -197,7 +196,7 @@ export default function AccountDashboard() {
   const getCurrentSemester = () => {
     const now = new Date();
     const month = now.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
-    
+
     // First Semester: September (9) to January (1)
     if (month >= 9 || month <= 1) {
       return { name: 'First Semester', period: 'September - January', active: true };
@@ -210,7 +209,7 @@ export default function AccountDashboard() {
     else if (month >= 7 && month <= 8) {
       return { name: 'Mid-Year/Summer', period: 'July - August', active: true };
     }
-    
+
     return { name: 'Break Period', period: 'Between Semesters', active: false };
   };
 
@@ -237,16 +236,16 @@ export default function AccountDashboard() {
         new_password: '',
         new_password_confirmation: '',
       });
-      
+
       // Set profile picture preview if exists
       if (user.profile_picture) {
         setProfilePicturePreview(user.profile_picture);
       }
-      
+
       // Fetch schedule and events without blocking UI
       fetchSchedule();
       fetchEvents();
-      
+
       // Automatically enter edit mode if schedule is not initialized
       if (!user.schedule_initialized) {
         setScheduleEditMode(true);
@@ -356,18 +355,18 @@ export default function AccountDashboard() {
       const formDataToSend = new FormData();
       formDataToSend.append('username', formData.username);
 
-      // Admin one-time credential change
-      if (!user?.has_changed_credentials && user?.role === 'Admin') {
-        // Send new email if changed
+      // Admin one-time email change
+      if (!user?.has_changed_email && user?.designation === 'Admin') {
         if (formData.email && formData.email !== user.email) {
           formDataToSend.append('email', formData.email);
         }
-        // Send password fields if filled
-        if (formData.current_password && formData.new_password) {
-          formDataToSend.append('current_password', formData.current_password);
-          formDataToSend.append('new_password', formData.new_password);
-          formDataToSend.append('new_password_confirmation', formData.new_password_confirmation);
-        }
+      }
+
+      // Password change (all users)
+      if (formData.current_password && formData.new_password) {
+        formDataToSend.append('current_password', formData.current_password);
+        formDataToSend.append('new_password', formData.new_password);
+        formDataToSend.append('new_password_confirmation', formData.new_password_confirmation);
       }
 
       if (profilePicture) {
@@ -384,6 +383,7 @@ export default function AccountDashboard() {
         department: response.data.user.department,
         profile_picture: response.data.user.profile_picture,
         has_changed_credentials: response.data.user.has_changed_credentials,
+        has_changed_email: response.data.user.has_changed_email,
       });
 
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
@@ -412,10 +412,10 @@ export default function AccountDashboard() {
     // Don't assign colors during editing - colors will be assigned by backend on save
     setSchedule(prev => ({
       ...prev,
-      [day]: [...(prev[day] || []), { 
-        id: Date.now(), 
-        startTime: '', 
-        endTime: '', 
+      [day]: [...(prev[day] || []), {
+        id: Date.now(),
+        startTime: '',
+        endTime: '',
         description: '',
         color: null // No color until saved
       }]
@@ -432,12 +432,53 @@ export default function AccountDashboard() {
   const updateClassSlot = (day, id, field, value) => {
     setSchedule(prev => ({
       ...prev,
-      [day]: prev[day].map(slot => 
+      [day]: prev[day].map(slot =>
         slot.id === id ? { ...slot, [field]: value } : slot
       )
     }));
   };
 
+  const handleScheduleSave = async () => {
+    setScheduleSaving(true);
+    try {
+      console.log('Saving schedule:', schedule);
+      const response = await api.post('/schedules', { schedule });
+
+      console.log('Save successful:', response.data);
+
+      setMessage({ type: 'success', text: 'Schedule saved! You can now access all event management features.' });
+
+      // Exit edit mode after successful save
+      setScheduleEditMode(false);
+
+      // Refresh schedule to get IDs from database and updated initialized status
+      invalidateCache(`schedule:${user?.id}`);
+      await fetchSchedule();
+
+      // Update user context to reflect schedule_initialized = true
+      if (updateUser) {
+        const updatedUserData = { ...user, schedule_initialized: true };
+        updateUser(updatedUserData);
+        console.log('Updated user with schedule_initialized:', updatedUserData);
+      }
+
+      // Trigger a storage event to notify other tabs/windows
+      window.dispatchEvent(new Event('scheduleUpdated'));
+
+      // Trigger custom event for Dashboard to refresh
+      window.dispatchEvent(new CustomEvent('scheduleChanged', { detail: { hasSchedule: true } }));
+    } catch (error) {
+      console.error('Error saving schedule:', error);
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to save schedule. Please try again.';
+      setMessage({ type: 'error', text: errorMessage });
+    } finally {
+      setScheduleSaving(false);
+    }
+
+    setTimeout(() => {
+      setMessage({ type: '', text: '' });
+    }, 3000);
+  };
   const getTotalScheduledClasses = () => {
     return Object.values(schedule).reduce((total, daySchedule) => total + daySchedule.length, 0);
   };
@@ -529,24 +570,26 @@ export default function AccountDashboard() {
     try {
       const response = await api.post('/schedules', { schedule });
 
+      console.log('Save successful:', response.data);
+
       setMessage({ type: 'success', text: 'Schedule saved! You can now access all event management features.' });
-      
+
       // Exit edit mode after successful save
       setScheduleEditMode(false);
-      
+
       // Refresh schedule to get IDs from database and updated initialized status
       invalidateCache(`schedule:${user?.id}`);
       await fetchSchedule();
-      
+
       // Update user context to reflect schedule_initialized = true
       if (updateUser) {
         const updatedUserData = { ...user, schedule_initialized: true };
         updateUser(updatedUserData);
       }
-      
+
       // Trigger a storage event to notify other tabs/windows
       window.dispatchEvent(new Event('scheduleUpdated'));
-      
+
       // Trigger custom event for Dashboard to refresh
       window.dispatchEvent(new CustomEvent('scheduleChanged', { detail: { hasSchedule: true } }));
     } catch (error) {
@@ -555,7 +598,7 @@ export default function AccountDashboard() {
     } finally {
       setScheduleSaving(false);
     }
-    
+
     setTimeout(() => {
       setMessage({ type: '', text: '' });
     }, 3000);
@@ -678,7 +721,7 @@ export default function AccountDashboard() {
                     Schedule Setup Required
                   </h3>
                   <p className="text-amber-700 mb-4">
-                    Welcome! Before you can access the event management features, you need to set up your schedule. 
+                    Welcome! Before you can access the event management features, you need to set up your schedule.
                     This helps prevent scheduling conflicts with your classes. You can save an empty schedule if you don't have classes yet.
                   </p>
                   <div className="flex items-center space-x-4">
@@ -702,11 +745,10 @@ export default function AccountDashboard() {
 
           {/* Success/Error Messages */}
           {message.text && (
-            <div className={`mb-6 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 ${
-              message.type === 'success'
-                ? 'bg-green-50/80 text-green-800 border-green-300 shadow-lg shadow-green-500/20'
-                : 'bg-red-50/80 text-red-800 border-red-300 shadow-lg shadow-red-500/20'
-            }`}>
+            <div className={`mb-6 p-4 rounded-xl border backdrop-blur-sm transition-all duration-300 ${message.type === 'success'
+              ? 'bg-green-50/80 text-green-800 border-green-300 shadow-lg shadow-green-500/20'
+              : 'bg-red-50/80 text-red-800 border-red-300 shadow-lg shadow-red-500/20'
+              }`}>
               <div className="flex items-center">
                 {message.type === 'success' ? (
                   <svg className="w-5 h-5 mr-3" fill="currentColor" viewBox="0 0 20 20">
@@ -727,593 +769,577 @@ export default function AccountDashboard() {
             <>
               {/* Horizontal Layout: Class Schedule (3/5) + Account Information (2/5) */}
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-8">
-            {/* Class Schedule Section - 3/5 width */}
-            <div className="lg:col-span-3">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-visible hover:shadow-xl transition-shadow duration-300 h-full">
-                <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6 flex justify-between items-center">
-                <div>
-                  <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Weekly Schedule
-                    {!user?.schedule_initialized && !scheduleSaving && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white animate-pulse">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        Required
-                      </span>
-                    )}
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/90">
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      {currentSemester.name}
-                    </span>
-                  </h3>
-                  <p className="text-green-200 text-sm mt-1">
-                    {scheduleLoading ? 'Loading schedule...' : user?.schedule_initialized
-                      ? `${getTotalScheduledClasses()} classes scheduled this week ΓÇó ${currentSemester.period}`
-                      : `No schedule set - Required to create events ΓÇó ${currentSemester.period}`}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  {scheduleEditMode ? (
-                    <>
-                      <button
-                        onClick={handleSaveSchedule}
-                        disabled={scheduleSaving}
-                        className={`px-4 py-2 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 ${
-                          scheduleSaving 
-                            ? 'bg-gray-400 cursor-not-allowed' 
-                            : 'bg-green-500 hover:bg-green-600'
-                        }`}
-                      >
-                        {scheduleSaving ? (
-                          <>
-                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                {/* Class Schedule Section - 3/5 width */}
+                <div className="lg:col-span-3">
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-visible hover:shadow-xl transition-shadow duration-300 h-full">
+                    <div className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 px-8 py-6 flex justify-between items-center">
+                      <div>
+                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                          <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Weekly Schedule
+                          {!user?.schedule_initialized && !scheduleSaving && (
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/20 text-white animate-pulse">
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                              Required
+                            </span>
+                          )}
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-white/90">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            Saving...
+                            {currentSemester.name}
+                          </span>
+                        </h3>
+                        <p className="text-green-200 text-sm mt-1">
+                          {scheduleLoading ? 'Loading schedule...' : user?.schedule_initialized
+                            ? `${getTotalScheduledClasses()} classes scheduled this week • ${currentSemester.period}`
+                            : `No schedule set - Required to create events • ${currentSemester.period}`}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {scheduleEditMode ? (
+                          <>
+                            <button
+                              onClick={handleSaveSchedule}
+                              disabled={scheduleSaving}
+                              className={`px-4 py-2 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2 ${scheduleSaving
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-green-500 hover:bg-green-600'
+                                }`}
+                            >
+                              {scheduleSaving ? (
+                                <>
+                                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  Saving...
+                                </>
+                              ) : (
+                                <>
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                                  </svg>
+                                  Save Schedule
+                                </>
+                              )}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setScheduleEditMode(false);
+                                fetchSchedule(); // Reload original data
+                              }}
+                              disabled={scheduleSaving}
+                              className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => setScheduleEditMode(true)}
+                            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2"
+                          >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit Schedule
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-6">
+                      {/* Simple semester notice - only show during break periods */}
+                      {!currentSemester.active && (
+                        <div className="mb-6 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                          <div className="flex items-center gap-2 text-orange-800">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="text-sm font-medium">
+                              Schedules are hidden during break periods and will reappear when the next semester begins.
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {scheduleLoading ? (
+                        <div className="space-y-4 animate-pulse">
+                          {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map((day) => (
+                            <div key={day} className="border border-gray-200 rounded-lg p-4">
+                              <div className="h-5 w-24 bg-gray-300 rounded mb-3"></div>
+                              <div className="space-y-2">
+                                <div className="h-16 bg-gray-200 rounded"></div>
+                                <div className="h-16 bg-gray-200 rounded"></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="flex gap-6">
+                          {/* Day Selector - Vertical */}
+                          <div className="flex flex-col gap-2 min-w-[140px]">
+                            {days.map(day => {
+                              const daySchedule = schedule[day] || [];
+                              const isSelected = selectedDay === day;
+
+                              return (
+                                <button
+                                  key={day}
+                                  onClick={() => setSelectedDay(day)}
+                                  className={`px-4 py-3 rounded-lg font-semibold text-left transition-all duration-200 flex justify-between items-center ${isSelected
+                                    ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-md'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                                >
+                                  <span>{day}</span>
+                                  <span className={`text-xs px-2 py-1 rounded-full font-bold ${isSelected ? 'bg-white/20 text-white' : 'bg-green-200 text-green-700'
+                                    }`}>
+                                    {daySchedule.length}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Schedule Table - Green Box */}
+                          <div className="flex-1 bg-green-100 border-2 border-green-300 rounded-lg p-6">
+                            <div className="flex justify-between items-center mb-4">
+                              <h4 className="text-xl font-bold text-gray-900">{selectedDay} Schedule</h4>
+                              {scheduleEditMode && (
+                                <button
+                                  onClick={() => addNewClass(selectedDay)}
+                                  className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-1"
+                                >
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                  </svg>
+                                  Add Class
+                                </button>
+                              )}
+                            </div>
+
+                            {getTotalScheduledClasses() === 0 ? (
+                              <div className="text-center py-12 text-gray-500">
+                                <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <p className="text-lg font-medium">No schedule set yet</p>
+                                <p className="text-sm mt-1">Click "Edit Schedule" then "Add Class" to add your classes</p>
+                              </div>
+                            ) : schedule[selectedDay]?.length === 0 ? (
+                              <div className="text-center py-12 text-gray-500">
+                                <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                </svg>
+                                <p className="text-lg font-medium">No classes on {selectedDay}</p>
+                                {scheduleEditMode && <p className="text-sm mt-1">Click "Add Class" to add a class</p>}
+                              </div>
+                            ) : (
+                              <div className="bg-white rounded-lg overflow-visible border border-green-300">
+                                <table className="w-full">
+                                  <thead>
+                                    <tr className="bg-green-200">
+                                      {!scheduleEditMode && (
+                                        <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 w-12">
+                                          Color
+                                        </th>
+                                      )}
+                                      <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
+                                        Time Range
+                                      </th>
+                                      <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
+                                        Class Description
+                                      </th>
+                                      {scheduleEditMode && (
+                                        <th className="px-4 py-3 text-center text-sm font-bold text-gray-900 w-20">
+                                          Action
+                                        </th>
+                                      )}
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {(schedule[selectedDay] || []).map((slot, index) => (
+                                      <tr
+                                        key={slot.id}
+                                        className={`border-b border-green-200 transition-all duration-200 ${index % 2 === 0 ? 'bg-white' : 'bg-green-100/50'
+                                          }`}
+                                      >
+                                        {!scheduleEditMode && (
+                                          <td className="px-4 py-3">
+                                            <div
+                                              className="w-8 h-8 rounded-full shadow-md border-2 border-white"
+                                              style={{ backgroundColor: slot.color || '#10b981' }}
+                                              title={`Color: ${slot.color || '#10b981'}`}
+                                            ></div>
+                                          </td>
+                                        )}
+                                        <td className="px-4 py-3">
+                                          {scheduleEditMode ? (
+                                            <div className="flex items-center gap-2">
+                                              <TimePickerInput
+                                                value={slot.startTime}
+                                                onChange={(v) => updateClassSlot(selectedDay, slot.id, 'startTime', v)}
+                                              />
+                                              <span className="text-gray-500 font-bold">-</span>
+                                              <TimePickerInput
+                                                value={slot.endTime}
+                                                onChange={(v) => updateClassSlot(selectedDay, slot.id, 'endTime', v)}
+                                              />
+                                            </div>
+                                          ) : (
+                                            <div className="flex items-center gap-2 text-gray-900 font-medium">
+                                              <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                              </svg>
+                                              {formatTime12Hour(slot.startTime)} - {formatTime12Hour(slot.endTime)}
+                                            </div>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-3">
+                                          {scheduleEditMode ? (
+                                            <input
+                                              type="text"
+                                              placeholder="Enter class name..."
+                                              value={slot.description}
+                                              onChange={(e) => updateClassSlot(selectedDay, slot.id, 'description', e.target.value)}
+                                              className="w-full px-3 py-2 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+                                            />
+                                          ) : (
+                                            <div className="text-gray-900">{slot.description || <span className="text-gray-400 italic">No description</span>}</div>
+                                          )}
+                                        </td>
+                                        {scheduleEditMode && (
+                                          <td className="px-4 py-3 text-center">
+                                            <button
+                                              onClick={() => removeClassSlot(selectedDay, slot.id)}
+                                              className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                              title="Remove class"
+                                            >
+                                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                              </svg>
+                                            </button>
+                                          </td>
+                                        )}
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Account Information Section - 2/5 width */}
+                <div className="lg:col-span-2">
+                  <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
+                    <div className="bg-gradient-to-r from-green-700 via-green-700 to-green-800 px-8 py-6">
+                      <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                        {editMode ? (
+                          <>
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit Profile
                           </>
                         ) : (
                           <>
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
-                            Save Schedule
+                            Account Information
                           </>
                         )}
-                      </button>
-                      <button
-                        onClick={() => {
-                          setScheduleEditMode(false);
-                          fetchSchedule(); // Reload original data
-                        }}
-                        disabled={scheduleSaving}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2"
-                      >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => setScheduleEditMode(true)}
-                      className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 shadow-md flex items-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                      Edit Schedule
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="p-6">
-                {/* Simple semester notice - only show during break periods */}
-                {!currentSemester.active && (
-                  <div className="mb-6 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                    <div className="flex items-center gap-2 text-orange-800">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="text-sm font-medium">
-                        Schedules are hidden during break periods and will reappear when the next semester begins.
-                      </span>
+                      </h3>
                     </div>
-                  </div>
-                )}
 
-                {scheduleLoading ? (
-                  <div className="space-y-4 animate-pulse">
-                    {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => (
-                      <div key={day} className="border border-gray-200 rounded-lg p-4">
-                        <div className="h-5 w-24 bg-gray-300 rounded mb-3"></div>
-                        <div className="space-y-2">
-                          <div className="h-16 bg-gray-200 rounded"></div>
-                          <div className="h-16 bg-gray-200 rounded"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex gap-6">
-                  {/* Day Selector - Vertical */}
-                  <div className="flex flex-col gap-2 min-w-[140px]">
-                    {days.map(day => {
-                      const daySchedule = schedule[day] || [];
-                      const isSelected = selectedDay === day;
-                      
-                      return (
-                        <button
-                          key={day}
-                          onClick={() => setSelectedDay(day)}
-                          className={`px-4 py-3 rounded-lg font-semibold text-left transition-all duration-200 flex justify-between items-center ${
-                            isSelected
-                              ? 'bg-gradient-to-r from-green-600 to-green-700 text-white shadow-md'
-                              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                          }`}
-                        >
-                          <span>{day}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-bold ${
-                            isSelected ? 'bg-white/20 text-white' : 'bg-green-200 text-green-700'
-                          }`}>
-                            {daySchedule.length}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Schedule Table - Green Box */}
-                  <div className="flex-1 bg-green-100 border-2 border-green-300 rounded-lg p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-xl font-bold text-gray-900">{selectedDay} Schedule</h4>
-                      {scheduleEditMode && (
-                        <button
-                          onClick={() => addNewClass(selectedDay)}
-                          className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-1"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
-                          Add Class
-                        </button>
-                      )}
-                    </div>
-                    
-                    {getTotalScheduledClasses() === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <svg className="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <p className="text-lg font-medium">No schedule set yet</p>
-                        <p className="text-sm mt-1">Click "Edit Schedule" then "Add Class" to add your classes</p>
-                      </div>
-                    ) : schedule[selectedDay]?.length === 0 ? (
-                      <div className="text-center py-12 text-gray-500">
-                        <svg className="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                        </svg>
-                        <p className="text-lg font-medium">No classes on {selectedDay}</p>
-                        {scheduleEditMode && <p className="text-sm mt-1">Click "Add Class" to add a class</p>}
-                      </div>
-                    ) : (
-                      <div className="bg-white rounded-lg overflow-visible border border-green-300">
-                        <table className="w-full">
-                          <thead>
-                            <tr className="bg-green-200">
-                              {!scheduleEditMode && (
-                                <th className="px-4 py-3 text-left text-sm font-bold text-gray-900 w-12">
-                                  Color
-                                </th>
-                              )}
-                              <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
-                                Time Range
-                              </th>
-                              <th className="px-4 py-3 text-left text-sm font-bold text-gray-900">
-                                Class Description
-                              </th>
-                              {scheduleEditMode && (
-                                <th className="px-4 py-3 text-center text-sm font-bold text-gray-900 w-20">
-                                  Action
-                                </th>
-                              )}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(schedule[selectedDay] || []).map((slot, index) => (
-                              <tr 
-                                key={slot.id}
-                                className={`border-b border-green-200 transition-all duration-200 ${
-                                  index % 2 === 0 ? 'bg-white' : 'bg-green-100/50'
-                                }`}
-                              >
-                                {!scheduleEditMode && (
-                                  <td className="px-4 py-3">
-                                    <div 
-                                      className="w-8 h-8 rounded-full shadow-md border-2 border-white"
-                                      style={{ backgroundColor: slot.color || '#10b981' }}
-                                      title={`Color: ${slot.color || '#10b981'}`}
-                                    ></div>
-                                  </td>
+                    <div className="px-8 py-8">
+                      {editMode ? (
+                        <form onSubmit={handleSaveChanges}>
+                          <div className="space-y-6">
+                            {/* Profile Picture Upload */}
+                            <div className="flex flex-col items-center pb-6 border-b border-gray-200">
+                              <label className="block text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
+                                Profile Picture
+                              </label>
+                              <div className="relative">
+                                {profilePicturePreview ? (
+                                  <img
+                                    src={profilePicturePreview}
+                                    alt="Profile preview"
+                                    className="w-32 h-32 rounded-full object-cover border-4 border-green-200"
+                                  />
+                                ) : (
+                                  <div className="w-32 h-32 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-4xl">
+                                    {user?.username?.charAt(0).toUpperCase()}
+                                  </div>
                                 )}
-                                <td className="px-4 py-3">
-                                  {scheduleEditMode ? (
-                                    <div className="flex items-center gap-2">
-                                      <TimePickerInput
-                                        value={slot.startTime}
-                                        onChange={(v) => updateClassSlot(selectedDay, slot.id, 'startTime', v)}
-                                      />
-                                      <span className="text-gray-500 font-bold">-</span>
-                                      <TimePickerInput
-                                        value={slot.endTime}
-                                        onChange={(v) => updateClassSlot(selectedDay, slot.id, 'endTime', v)}
-                                      />
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-2 text-gray-900 font-medium">
-                                      <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      {formatTime12Hour(slot.startTime)} - {formatTime12Hour(slot.endTime)}
-                                    </div>
-                                  )}
-                                </td>
-                                <td className="px-4 py-3">
-                                  {scheduleEditMode ? (
-                                    <input
-                                      type="text"
-                                      placeholder="Enter class name..."
-                                      value={slot.description}
-                                      onChange={(e) => updateClassSlot(selectedDay, slot.id, 'description', e.target.value)}
-                                      className="w-full px-3 py-2 text-sm border border-green-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-                                    />
-                                  ) : (
-                                    <div className="text-gray-900">{slot.description || <span className="text-gray-400 italic">No description</span>}</div>
-                                  )}
-                                </td>
-                                {scheduleEditMode && (
-                                  <td className="px-4 py-3 text-center">
-                                    <button
-                                      onClick={() => removeClassSlot(selectedDay, slot.id)}
-                                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
-                                      title="Remove class"
-                                    >
-                                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                      </svg>
-                                    </button>
-                                  </td>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                )}
-              </div>
-            </div>
-          </div>
+                                <label
+                                  htmlFor="profile-picture-input"
+                                  className="absolute bottom-0 right-0 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-colors"
+                                >
+                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                  </svg>
+                                </label>
+                                <input
+                                  id="profile-picture-input"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleProfilePictureChange}
+                                  className="hidden"
+                                />
+                              </div>
+                              <p className="text-xs text-gray-500 mt-2">JPG, PNG, GIF (Max 2MB)</p>
+                            </div>
 
-            {/* Account Information Section - 2/5 width */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-shadow duration-300 h-full">
-                <div className="bg-gradient-to-r from-green-700 via-green-700 to-green-800 px-8 py-6">
-                  <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                    {editMode ? (
-                      <>
-                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit Profile
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Account Information
-                      </>
-                    )}
-                  </h3>
-                </div>
-
-                <div className="px-8 py-8">
-                  {editMode ? (
-                    <form onSubmit={handleSaveChanges} autoComplete="off">
-                      <div className="space-y-6">
-                        {/* Profile Picture Upload */}
-                        <div className="flex flex-col items-center pb-6 border-b border-gray-200">
-                          <label className="block text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wide">
-                            Profile Picture
-                          </label>
-                          <div className="relative">
-                            {profilePicturePreview ? (
-                              <img 
-                                src={profilePicturePreview} 
-                                alt="Profile preview"
-                                className="w-32 h-32 rounded-full object-cover border-4 border-green-200"
+                            <div>
+                              <label htmlFor="username" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                                Username
+                              </label>
+                              <input
+                                type="text"
+                                id="username"
+                                name="username"
+                                value={formData.username}
+                                onChange={handleInputChange}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
                               />
+                            </div>
+
+                            <div>
+                              <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                                Email
+                              </label>
+                              <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                value={formData.email}
+                                onChange={handleInputChange}
+                                disabled={!(!user?.has_changed_email && user?.designation === 'Admin')}
+                                className={`w-full px-4 py-3 border-2 rounded-lg shadow-sm focus:outline-none transition-all duration-300 ${!user?.has_changed_email && user?.designation === 'Admin'
+                                  ? 'border-gray-200 focus:ring-2 focus:ring-green-600 focus:border-green-600 hover:border-gray-300'
+                                  : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
+                                  }`}
+                              />
+                              {!user?.has_changed_email && user?.designation === 'Admin' && (
+                                <p className="mt-1 text-xs text-amber-600">One-time change only</p>
+                              )}
+                            </div>
+
+                            <div>
+                              <label htmlFor="department" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                                Department
+                              </label>
+                              <select
+                                id="department"
+                                name="department"
+                                value={formData.department}
+                                disabled
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
+                              >
+                                <option value="">Select a department</option>
+                                {departments.map((dept) => (
+                                  <option key={dept} value={dept}>
+                                    {dept}
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
+
+                            {/* Password change - available for all users */}
+                            <div className="space-y-4 pt-4 border-t border-gray-100">
+                              <h4 className="text-lg font-bold text-gray-900">Change Password</h4>
+                              <div>
+                                <label htmlFor="current_password" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                                  Current Password
+                                </label>
+                                <PasswordInput
+                                  id="current_password"
+                                  name="current_password"
+                                  value={formData.current_password}
+                                  onChange={handleInputChange}
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor="new_password" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                                  New Password
+                                </label>
+                                <PasswordInput
+                                  id="new_password"
+                                  name="new_password"
+                                  value={formData.new_password}
+                                  onChange={handleInputChange}
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
+                                />
+                              </div>
+                              <div>
+                                <label htmlFor="new_password_confirmation" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
+                                  Confirm New Password
+                                </label>
+                                <PasswordInput
+                                  id="new_password_confirmation"
+                                  name="new_password_confirmation"
+                                  value={formData.new_password_confirmation}
+                                  onChange={handleInputChange}
+                                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-6 border-t border-gray-200">
+                              <button
+                                type="submit"
+                                className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 shadow-lg hover:shadow-xl"
+                              >
+                                Save Changes
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditMode(false);
+                                  setFormData({
+                                    username: user.username || '',
+                                    email: user.email || '',
+                                    department: user.department || '',
+                                    current_password: '',
+                                    new_password: '',
+                                    new_password_confirmation: '',
+                                  });
+                                  setProfilePicture(null);
+                                  setProfilePicturePreview(user.profile_picture || null);
+                                }}
+                                className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-300"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        </form>
+                      ) : (
+                        <div className="space-y-6">
+                          <div className="flex flex-col items-center pb-6 border-b border-gray-200">
+                            {user?.profile_picture ? (
+                              <img src={user.profile_picture} alt={user?.username} className="w-32 h-32 rounded-full object-cover border-4 border-green-200 shadow-lg" />
                             ) : (
-                              <div className="w-32 h-32 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-4xl">
+                              <div className="w-32 h-32 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-4xl shadow-lg">
                                 {user?.username?.charAt(0).toUpperCase()}
                               </div>
                             )}
-                            <label 
-                              htmlFor="profile-picture-input"
-                              className="absolute bottom-0 right-0 bg-green-600 hover:bg-green-700 text-white p-2 rounded-full cursor-pointer shadow-lg transition-colors"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                            </label>
-                            <input
-                              id="profile-picture-input"
-                              type="file"
-                              accept="image/*"
-                              onChange={handleProfilePictureChange}
-                              className="hidden"
-                            />
+                            <p className="text-lg font-bold text-gray-900 mt-4">{user?.username}</p>
+                            <p className="text-sm text-gray-500">{user?.designation}</p>
+                            <p className="text-xs text-gray-400 mt-1 text-center px-2">{getRoleDescription(user?.designation)}</p>
                           </div>
-                          <p className="text-xs text-gray-500 mt-2">JPG, PNG, GIF (Max 2MB)</p>
-                        </div>
-
-                        <div>
-                          <label htmlFor="username" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                            Username
-                          </label>
-                          <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            value={formData.username}
-                            onChange={handleInputChange}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
-                          />
-                        </div>
-
-                        <div>
-                          <label htmlFor="email" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                            Email
-                          </label>
-                          <input
-                            type="email"
-                            id="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            disabled={!(!user?.has_changed_credentials && user?.role === 'Admin')}
-                            className={`w-full px-4 py-3 border-2 rounded-lg shadow-sm focus:outline-none transition-all duration-300 ${
-                              !user?.has_changed_credentials && user?.role === 'Admin'
-                                ? 'border-gray-200 focus:ring-2 focus:ring-green-600 focus:border-green-600 hover:border-gray-300'
-                                : 'border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed'
-                            }`}
-                          />
-                          {!user?.has_changed_credentials && user?.role === 'Admin' && (
-                            <p className="mt-1 text-xs text-amber-600">One-time change only</p>
-                          )}
-                        </div>
-
-                        <div>
-                          <label htmlFor="department" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                            Department
-                          </label>
-                          <select
-                            id="department"
-                            name="department"
-                            value={formData.department}
-                            disabled
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed"
-                          >
-                            <option value="">Select a department</option>
-                            {departments.map((dept) => (
-                              <option key={dept} value={dept}>
-                                {dept}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        {/* One-time password change for Admin */}
-                        {!user?.has_changed_credentials && user?.role === 'Admin' && (
-                          <div className="space-y-4 pt-4 border-t border-gray-100">
-                            <h4 className="text-lg font-bold text-gray-900">Change Password <span className="text-xs font-normal text-amber-600">(One-Time Only)</span></h4>
-                            <div>
-                              <label htmlFor="current_password" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                                Current Password
-                              </label>
-                              <PasswordInput
-                                id="current_password"
-                                name="current_password"
-                                value={formData.current_password}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="new_password" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                                New Password
-                              </label>
-                              <PasswordInput
-                                id="new_password"
-                                name="new_password"
-                                value={formData.new_password}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor="new_password_confirmation" className="block text-sm font-semibold text-gray-900 mb-2 uppercase tracking-wide">
-                                Confirm New Password
-                              </label>
-                              <PasswordInput
-                                id="new_password_confirmation"
-                                name="new_password_confirmation"
-                                value={formData.new_password_confirmation}
-                                onChange={handleInputChange}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300 hover:border-gray-300"
-                              />
-                            </div>
+                          <div className="pb-6 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
+                            <p className="text-lg text-gray-900 font-medium">February 2026</p>
                           </div>
-                        )}
-
-                        <div className="flex gap-3 pt-6 border-t border-gray-200">
+                          <div className="pb-6 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Email Address</p>
+                            <p className="text-lg text-gray-900 font-medium">{user.email}</p>
+                          </div>
+                          <div className="pb-6 border-b border-gray-200">
+                            <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Department</p>
+                            <p className="text-lg text-gray-900 font-medium">{user.department || 'Not specified'}</p>
+                          </div>
                           <button
-                            type="submit"
-                            className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-300 shadow-lg hover:shadow-xl"
+                            onClick={() => setEditMode(true)}
+                            className="mt-8 w-full px-6 py-3 bg-gradient-to-r from-green-700 to-green-800 text-white font-semibold rounded-lg hover:from-green-800 hover:to-green-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 transition-all duration-300 shadow-lg hover:shadow-xl"
                           >
-                            Save Changes
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditMode(false);
-                              setFormData({
-                                username: user.username || '',
-                                email: user.email || '',
-                                department: user.department || '',
-                                current_password: '',
-                                new_password: '',
-                                new_password_confirmation: '',
-                              });
-                              setProfilePicture(null);
-                              setProfilePicturePreview(user.profile_picture || null);
-                            }}
-                            className="flex-1 px-6 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-all duration-300"
-                          >
-                            Cancel
+                            Edit Profile
                           </button>
                         </div>
-                      </div>
-                    </form>
-                  ) : (
-                    <div className="space-y-6">
-                      {/* Profile Picture Display */}
-                      <div className="flex flex-col items-center pb-6 border-b border-gray-200">
-                        {user?.profile_picture ? (
-                          <img 
-                            src={user.profile_picture} 
-                            alt={user?.username}
-                            className="w-32 h-32 rounded-full object-cover border-4 border-green-200 shadow-lg"
-                          />
-                        ) : (
-                          <div className="w-32 h-32 bg-gradient-to-br from-green-300 to-green-600 rounded-full flex items-center justify-center text-white font-bold text-4xl shadow-lg">
-                            {user?.username?.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <p className="text-lg font-bold text-gray-900 mt-4">{user?.username}</p>
-                        <p className="text-sm text-gray-500">{user?.role}</p>
-                        <p className="text-xs text-gray-400 mt-1 text-center px-2">{getRoleDescription(user?.role)}</p>
-                      </div>
-
-                      <div className="pb-6 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
-                        <p className="text-lg text-gray-900 font-medium">February 2026</p>
-                      </div>
-
-                      <div className="pb-6 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Email Address</p>
-                        <p className="text-lg text-gray-900 font-medium">{user.email}</p>
-                      </div>
-
-                      <div className="pb-6 border-b border-gray-200">
-                        <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Department</p>
-                        <p className="text-lg text-gray-900 font-medium">{user.department || 'Not specified'}</p>
-                      </div>
-
-                      <button
-                        onClick={() => setEditMode(true)}
-                        className="mt-8 w-full px-6 py-3 bg-gradient-to-r from-green-700 to-green-800 text-white font-semibold rounded-lg hover:from-green-800 hover:to-green-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 transition-all duration-300 shadow-lg hover:shadow-xl"
-                      >
-                        Edit Profile
-                      </button>
+                      )}
                     </div>
-                  )}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Validation Required Modal - Black Screen Overlay */}
+          {!user?.is_validated && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black">
+              <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+                    <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Account Validation Required</h3>
+
+                  <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left">
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Name:</span>
+                        <span className="font-medium text-gray-900">{user?.username}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Email:</span>
+                        <span className="font-medium text-gray-900">{user?.email}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Role:</span>
+                        <span className="font-medium text-green-700">{user?.role || 'Not specified'}</span>
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">{getRoleDescription(user?.role)}</div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Status:</span>
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          Pending Validation
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-left">
+                    <p className="text-sm text-blue-800 font-medium mb-2">What happens next?</p>
+                    <ol className="text-xs text-blue-700 list-decimal list-inside space-y-1">
+                      <li>Administrator reviews your account</li>
+                      <li>You'll gain access to all features</li>
+                      <li>Set up your weekly schedule</li>
+                      <li>Create and manage events</li>
+                    </ol>
+                  </div>
+
+                  <p className="text-sm text-gray-600 mb-4">
+                    Contact your administrator if you need immediate access.
+                  </p>
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
+                  >
+                    <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
-          </>
           )}
+
         </div>
       </main>
-
-      {/* Validation Required Modal - Black Screen Overlay */}
-      {!user?.is_validated && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black">
-          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
-                <svg className="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              
-              <h3 className="text-xl font-bold text-gray-900 mb-3">Account Validation Required</h3>
-              
-              <div className="bg-gray-50 rounded-lg p-4 mb-4 text-left">
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Name:</span>
-                    <span className="font-medium text-gray-900">{user?.username}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Email:</span>
-                    <span className="font-medium text-gray-900">{user?.email}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Role:</span>
-                    <span className="font-medium text-green-700">{user?.role || 'Not specified'}</span>
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">{getRoleDescription(user?.role)}</div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Status:</span>
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                      Pending Validation
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-left">
-                <p className="text-sm text-blue-800 font-medium mb-2">What happens next?</p>
-                <ol className="text-xs text-blue-700 list-decimal list-inside space-y-1">
-                  <li>Administrator reviews your account</li>
-                  <li>You'll gain access to all features</li>
-                  <li>Set up your weekly schedule</li>
-                  <li>Create and manage events</li>
-                </ol>
-              </div>
-
-              <p className="text-sm text-gray-600 mb-4">
-                Contact your administrator if you need immediate access.
-              </p>
-
-              <button
-                onClick={handleLogout}
-                className="w-full px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors"
-              >
-                <svg className="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
     </div>
   );
 }

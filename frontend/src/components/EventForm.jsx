@@ -20,7 +20,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const [filterDepartment, setFilterDepartment] = useState('all');
-  const [filterRole, setFilterRole] = useState('all');
+  const [filterDesignation, setFilterDesignation] = useState('all');
   const [searchMember, setSearchMember] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [fileError, setFileError] = useState('');
@@ -33,11 +33,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   // Calculate school year based on date
   const getSchoolYearFromDate = (dateString) => {
     if (!dateString) return '';
-    
+
     const dateObj = new Date(dateString);
     const year = dateObj.getFullYear();
     const month = dateObj.getMonth() + 1; // 1-12
-    
+
     // If we're in Sept-Dec, school year is current-next
     // If we're in Jan-Aug, school year is previous-current
     if (month >= 9) {
@@ -111,7 +111,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
     setError('');
     return true;
-  };  useEffect(() => {
+  }; useEffect(() => {
     if (editingEvent) {
       setTitle(editingEvent.title);
       setDescription(editingEvent.description || '');
@@ -367,25 +367,25 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     if (member.id === currentUser?.id) return false;
 
     // When urgent is on and host is not Admin/Dean, hide Dean members
-    const hostCanInviteDean = ['Admin', 'Dean'].includes(currentUser?.role);
-    if (isUrgent && eventType === 'meeting' && !hostCanInviteDean && member.role === 'Dean') return false;
+    const hostCanInviteDean = ['Admin', 'Dean'].includes(currentUser?.designation);
+    if (isUrgent && eventType === 'meeting' && !hostCanInviteDean && member.designation === 'Dean') return false;
 
     // Always show selected members regardless of filters
     if (selectedMembers.includes(member.id)) return true;
-    
+
     // Filter by department
     if (filterDepartment !== 'all' && member.department !== filterDepartment) return false;
-    
-    // Filter by role
-    if (filterRole !== 'all' && member.role !== filterRole) return false;
-    
+
+    // Filter by designation
+    if (filterDesignation !== 'all' && member.designation !== filterDesignation) return false;
+
     return true;
   });
 
   // Auto-remove Dean from selectedMembers when urgent is toggled on by non-Admin/Dean
   useEffect(() => {
-    if (isUrgent && eventType === 'meeting' && !['Admin', 'Dean'].includes(currentUser?.role)) {
-      const deanIds = members.filter(m => m.role === 'Dean').map(m => m.id);
+    if (isUrgent && eventType === 'meeting' && !['Admin', 'Dean'].includes(currentUser?.designation)) {
+      const deanIds = members.filter(m => m.designation === 'Dean').map(m => m.id);
       if (deanIds.length > 0) {
         setSelectedMembers(prev => prev.filter(id => !deanIds.includes(id)));
       }
@@ -402,16 +402,16 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       // Sort selected members first
       const aSelected = selectedMembers.includes(a.id);
       const bSelected = selectedMembers.includes(b.id);
-      
+
       if (aSelected && !bSelected) return -1;
       if (!aSelected && bSelected) return 1;
-      
+
       // If both selected or both not selected, sort alphabetically
       return a.username.localeCompare(b.username);
     });
 
   const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
-  const availableRoles = [...new Set(members.map(m => m.role).filter(Boolean))];
+  const availableDesignations = [...new Set(members.map(m => m.designation).filter(Boolean))];
 
   return (
     <div className="animate-fade-in">
@@ -721,11 +721,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed rounded-lg p-3 transition-all duration-200 ${
-                    isDragging ? 'border-green-500 bg-green-50' :
-                    fileError ? 'border-red-300 bg-red-50/30' :
-                    'border-gray-200 bg-gray-50/50 hover:border-green-300'
-                  }`}
+                  className={`border-2 border-dashed rounded-lg p-3 transition-all duration-200 ${isDragging ? 'border-green-500 bg-green-50' :
+                      fileError ? 'border-red-300 bg-red-50/30' :
+                        'border-gray-200 bg-gray-50/50 hover:border-green-300'
+                    }`}
                 >
                   <input
                     type="file"
@@ -841,17 +840,36 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 </div>
               </div>
 
-              {/* Filters + Select All */}
-              <div className="flex gap-2">
-                <select value={filterDepartment} onChange={(e) => setFilterDepartment(e.target.value)} className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors">
+              {/* Department and Designation Filters with Select All */}
+              <div className="mb-3 flex gap-2">
+                <select
+                  value={filterDepartment}
+                  onChange={(e) => setFilterDepartment(e.target.value)}
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                >
                   <option value="all">All Departments</option>
                   {availableDepartments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
                 </select>
-                <select value={filterRole} onChange={(e) => setFilterRole(e.target.value)} className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors">
-                  <option value="all">All Roles</option>
-                  {availableRoles.filter(role => !(currentUser?.role === 'Dean' && role === 'Dean')).map(role => <option key={role} value={role}>{role}</option>)}
+
+                <select
+                  value={filterDesignation}
+                  onChange={(e) => setFilterDesignation(e.target.value)}
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                >
+                  <option value="all">All Designations</option>
+                  {availableDesignations
+                    .filter(designation => !(currentUser?.designation === 'Dean' && designation === 'Dean'))
+                    .map(designation => (
+                      <option key={designation} value={designation}>{designation}</option>
+                    ))}
                 </select>
-                <button type="button" onClick={handleSelectAll} disabled={searchFilteredMembers.length === 0} className="px-4 py-2.5 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap">
+
+                <button
+                  type="button"
+                  onClick={handleSelectAll}
+                  disabled={searchFilteredMembers.length === 0}
+                  className="px-4 py-2.5 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                >
                   {searchFilteredMembers.length > 0 && searchFilteredMembers.every(m => selectedMembers.includes(m.id)) ? (
                     <span className="flex items-center"><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>Deselect All</span>
                   ) : (
@@ -876,8 +894,16 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                         <span className="ml-2.5 text-sm text-gray-700 font-medium">
                           {member.username}
                           <div className="flex items-center gap-2 mt-0.5">
-                            {member.role && <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">{member.role}</span>}
-                            {member.department && <span className="text-xs text-gray-500 font-normal">{member.department}</span>}
+                            {member.designation && (
+                              <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                                {member.designation}
+                              </span>
+                            )}
+                            {member.department && (
+                              <span className="text-xs text-gray-500 font-normal">
+                                {member.department}
+                              </span>
+                            )}
                           </div>
                         </span>
                       </label>

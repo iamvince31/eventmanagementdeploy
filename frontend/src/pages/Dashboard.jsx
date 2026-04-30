@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [navRefreshTrigger, setNavRefreshTrigger] = useState(0);
-  
+
   // Personal Event Modal States
   const [isPersonalEventModalOpen, setIsPersonalEventModalOpen] = useState(false);
   const [editingPersonalEvent, setEditingPersonalEvent] = useState(null);
@@ -42,9 +42,9 @@ export default function Dashboard() {
       navigate('/account');
       return;
     }
-    
+
     fetchData();
-    
+
     // Auto-select today's date
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
@@ -190,19 +190,19 @@ export default function Dashboard() {
 
   const handleDateSelect = (date, events) => {
     setSelectedDate(date);
-    
+
     // Get default events that fall within their date ranges for this date
     const defaultEventsForDate = defaultEvents.filter(defEvent => {
       if (!defEvent.date) return false;
-      
+
       const eventStartDate = new Date(defEvent.date);
       const checkDate = new Date(date);
-      
+
       // If no end_date, check if it's the same day
       if (!defEvent.end_date) {
         return eventStartDate.toDateString() === checkDate.toDateString();
       }
-      
+
       // If end_date exists, check if date is within range
       const eventEndDate = new Date(defEvent.end_date);
       return checkDate >= eventStartDate && checkDate <= eventEndDate;
@@ -226,7 +226,7 @@ export default function Dashboard() {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     let currentSemester;
-    
+
     if (currentMonth >= 9 || currentMonth <= 1) {
       currentSemester = 'first';
     } else if (currentMonth >= 2 && currentMonth <= 6) {
@@ -238,7 +238,7 @@ export default function Dashboard() {
     // Check if the specific date falls within the current semester
     const dateMonth = checkDate.getMonth() + 1;
     let dateInCurrentSemester = false;
-    
+
     if (currentSemester === 'first' && (dateMonth >= 9 || dateMonth <= 1)) {
       dateInCurrentSemester = true;
     } else if (currentSemester === 'second' && (dateMonth >= 2 && dateMonth <= 6)) {
@@ -251,7 +251,7 @@ export default function Dashboard() {
       if (schedule.day !== dayName) {
         return false;
       }
-      
+
       // Only show schedules during the current semester period
       // This ensures Tuesday classes only show on Tuesdays within the current semester
       return dateInCurrentSemester;
@@ -262,7 +262,7 @@ export default function Dashboard() {
       members: [],
       images: []
     }));
-    
+
     // Combine regular events with default events and schedule events
     const allEvents = [...events, ...defaultEventsForDate, ...scheduleEventsForDate];
     setSelectedDateEvents(allEvents);
@@ -291,7 +291,7 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
             {/* Academic Calendar - Admin Only */}
-            {user?.role === 'Admin' && (
+            {user?.designation === 'Admin' && (
               <button
                 onClick={() => navigate('/default-events')}
                 className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
@@ -302,7 +302,7 @@ export default function Dashboard() {
                 Academic
               </button>
             )}
-            
+
             {/* Role-based Event Creation Buttons */}
             {(() => {
               const canCreate = user && [
@@ -310,7 +310,7 @@ export default function Dashboard() {
                 'Research Coordinator', 'Extension Coordinator',
                 'Department Research Coordinator', 'Department Extension Coordinator',
                 'CEIT Official', 'Faculty Member', 'Staff'
-              ].includes(user.role);
+              ].includes(user.designation);
 
               if (!canCreate) return null;
 

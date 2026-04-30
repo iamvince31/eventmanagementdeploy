@@ -26,13 +26,14 @@ class User extends Authenticatable implements MustVerifyEmail
         'email',
         'password',
         'department',
+        'designation',
         'profile_picture',
-        'role',
         'is_validated',
         'email_verified_at',
         'schedule_initialized',
         'is_bootstrap',
         'has_changed_credentials',
+        'has_changed_email',
     ];
 
     /**
@@ -63,41 +64,43 @@ class User extends Authenticatable implements MustVerifyEmail
     protected static function boot()
     {
         parent::boot();
-        
+
         static::creating(function ($user) {
-            if ($user->role === 'Admin') {
+            if ($user->designation === 'Admin') {
                 $user->is_validated = true;
                 $user->schedule_initialized = true;
             }
         });
-        
+
         static::updating(function ($user) {
-            if ($user->role === 'Admin') {
+            if ($user->designation === 'Admin') {
                 $user->is_validated = true;
                 $user->schedule_initialized = true;
             }
         });
     }
 
-    // Helper methods for role checking
+    // Helper methods for designation checking
     public function isAdmin()
     {
-        return $this->role === 'Admin';
+        return $this->designation === 'Admin';
     }
 
     public function isDean()
     {
-        return $this->role === 'Dean';
+        return $this->designation === 'Dean';
     }
 
     public function isChairperson()
     {
-        return $this->role === 'Chairperson';
+        return $this->designation === 'Chairperson';
     }
 
     public function isCoordinator()
     {
-        return in_array($this->role, [
+        return in_array($this->designation, [
+            'Coordinator',
+            'Program Coordinator',
             'Research Coordinator',
             'Extension Coordinator',
             'Department Research Coordinator',
@@ -105,21 +108,55 @@ class User extends Authenticatable implements MustVerifyEmail
         ]);
     }
 
-    public function isFacultyMember()
+    public function isFaculty()
     {
-        return $this->role === 'Faculty Member';
+        return $this->designation === 'Faculty Member';
+    }
+
+    public function isCEITOfficial()
+    {
+        return in_array($this->designation, [
+            'Dean',
+            'CEIT Official'
+        ]);
+    }
+
+    public function isDeptLevel()
+    {
+        return in_array($this->designation, [
+            'Chairperson',
+            'Coordinator',
+            'Program Coordinator',
+            'Research Coordinator',
+            'Extension Coordinator',
+            'GAD Coordinator'
+        ]);
     }
 
     public function canCreateEvents()
     {
-        return in_array($this->role, [
-            'Admin', 'Dean', 'Chairperson',
-            'Research Coordinator', 'Extension Coordinator',
-            'Department Research Coordinator', 'Department Extension Coordinator',
+        return in_array($this->designation, [
+            'Admin',
+            'Dean',
+            'Chairperson',
+            'Coordinator',
+            'Research Coordinator',
+            'Extension Coordinator',
+            'GAD Coordinator',
             'CEIT Official',
         ]);
     }
 
+    public function needsApprovalForEvents()
+    {
+        return in_array($this->designation, [
+            'Chairperson',
+            'Coordinator',
+            'Research Coordinator',
+            'Extension Coordinator',
+            'GAD Coordinator',
+        ]);
+    }
     public function events()
     {
         return $this->belongsToMany(Event::class)->withTimestamps();

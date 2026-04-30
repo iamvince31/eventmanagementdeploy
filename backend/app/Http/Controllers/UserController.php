@@ -12,44 +12,44 @@ class UserController extends Controller
     {
         // Cache for 10 minutes - this is the key optimization
         $members = Cache::remember('users_list_non_admin', 600, function () {
-            return User::where('role', '!=', 'Admin')
-            ->where('is_validated', true)
-            ->select('id', 'name', 'email', 'department', 'role', 'is_validated')
-            ->orderBy('role')
-            ->orderBy('name', 'asc')
-            ->limit(500) // Add limit to prevent huge result sets
-            ->get();
+            return User::where('designation', '!=', 'Admin')
+                ->where('is_validated', true)
+                ->select('id', 'name', 'email', 'department', 'designation', 'is_validated')
+                ->orderBy('designation')
+                ->orderBy('name', 'asc')
+                ->limit(500) // Add limit to prevent huge result sets
+                ->get();
         });
 
         return response()->json([
             'members' => $members->map(fn($user) => [
-        'id' => $user->id,
-        'username' => $user->name,
-        'email' => $user->email,
-        'department' => $user->department,
-        'role' => $user->role,
-        'is_validated' => $user->is_validated,
-        ]),
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'designation' => $user->designation,
+                'is_validated' => $user->is_validated,
+            ]),
         ]);
     }
 
     public function all()
     {
         // Get all users including admins (for admin panel)
-        $users = User::orderBy('role')
+        $users = User::orderBy('designation')
             ->orderBy('name', 'asc')
             ->limit(500)
             ->get();
 
         return response()->json([
             'members' => $users->map(fn($user) => [
-        'id' => $user->id,
-        'username' => $user->name,
-        'email' => $user->email,
-        'department' => $user->department,
-        'role' => $user->role,
-        'is_validated' => $user->is_validated,
-        ]),
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'designation' => $user->designation,
+                'is_validated' => $user->is_validated,
+            ]),
         ]);
     }
 
@@ -69,7 +69,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'department' => 'required|string|max:255',
-            'role' => 'required|in:Admin,Chairperson,Research Coordinator,Extension Coordinator,Department Research Coordinator,Department Extension Coordinator,Faculty Member,CEIT Official',
+            'designation' => 'required|in:Admin,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Faculty Member,CEIT Official',
             'name' => 'required|string|max:255',
         ]);
 
@@ -79,7 +79,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'department' => $validated['department'],
-            'role' => $validated['role'],
+            'designation' => $validated['designation'],
             'is_validated' => true, // Admin-created users are automatically validated
             'email_verified_at' => now(),
         ]);
@@ -91,7 +91,7 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated,
             ],
         ], 201);
@@ -114,13 +114,13 @@ class UserController extends Controller
 
         return response()->json([
             'pending_users' => $pendingUsers->map(fn($user) => [
-        'id' => $user->id,
-        'username' => $user->name,
-        'email' => $user->email,
-        'department' => $user->department,
-        'role' => $user->role,
-        'created_at' => $user->created_at,
-        ]),
+                'id' => $user->id,
+                'username' => $user->name,
+                'email' => $user->email,
+                'department' => $user->department,
+                'designation' => $user->designation,
+                'created_at' => $user->created_at,
+            ]),
             'count' => $pendingUsers->count(),
         ]);
     }
@@ -145,7 +145,7 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated,
             ],
         ]);
@@ -171,16 +171,16 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated,
             ],
         ]);
     }
 
-    public function updateRole(Request $request, $id)
+    public function updateDesignation(Request $request, $id)
     {
         $validated = $request->validate([
-            'role' => 'required|in:Admin,Chairperson,Research Coordinator,Extension Coordinator,Department Research Coordinator,Department Extension Coordinator,Faculty Member,CEIT Official',
+            'designation' => 'required|in:Admin,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Faculty Member,CEIT Official',
             'department' => 'sometimes|string|max:255',
         ]);
 
@@ -189,11 +189,11 @@ class UserController extends Controller
         // Prevent changing own role
         if ($user->id === $request->user()->id) {
             return response()->json([
-                'error' => 'You cannot change your own role.'
+                'error' => 'You cannot change your own designation.'
             ], 403);
         }
 
-        $updateData = ['role' => $validated['role']];
+        $updateData = ['designation' => $validated['designation']];
         if (isset($validated['department'])) {
             $updateData['department'] = $validated['department'];
         }
@@ -207,7 +207,7 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated,
             ],
         ]);
@@ -220,7 +220,7 @@ class UserController extends Controller
         }
 
         // Enforce single Dean rule
-        if (User::where('role', 'Dean')->exists()) {
+        if (User::where('designation', 'Dean')->exists()) {
             return response()->json(['error' => 'A Dean already exists. Only one Dean is allowed.'], 422);
         }
 
@@ -238,7 +238,7 @@ class UserController extends Controller
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'department' => 'College of Engineering and Information Technology',
-            'role' => 'Dean',
+            'designation' => 'Dean',
             'is_validated' => true,
             'email_verified_at' => now(),
         ]);
@@ -250,7 +250,7 @@ class UserController extends Controller
                 'username' => $user->name,
                 'email' => $user->email,
                 'department' => $user->department,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated,
             ],
         ], 201);
@@ -301,28 +301,27 @@ class UserController extends Controller
             $validated['profile_picture_public_id'] = $filename;
         }
 
-        // One-time credential change for Admin (email + password)
-        if (!$user->has_changed_credentials && $user->role === 'Admin') {
-            // Handle email change
-            if (isset($validated['email']) && $validated['email'] !== $user->email) {
-                $validated['has_changed_credentials'] = true;
+        // One-time email change for Admin
+        if (isset($validated['email']) && $validated['email'] !== $user->email) {
+            if ($user->has_changed_email || $user->designation !== 'Admin') {
+                unset($validated['email']);
+            } else {
+                $validated['has_changed_email'] = true;
             }
-
-            // Handle password change
-            if (isset($validated['current_password']) && isset($validated['new_password'])) {
-                if (!\Hash::check($validated['current_password'], $user->password)) {
-                    return response()->json(['message' => 'Current password is incorrect.'], 422);
-                }
-                if (($validated['new_password_confirmation'] ?? '') !== $validated['new_password']) {
-                    return response()->json(['message' => 'New passwords do not match.'], 422);
-                }
-                $validated['password'] = \Hash::make($validated['new_password']);
-                $validated['has_changed_credentials'] = true;
-            }
-        }
-        else {
-            // Not allowed to change email/password after first time
+        } else {
             unset($validated['email']);
+        }
+
+        // Password change (allowed for all users)
+        if (isset($validated['current_password']) && isset($validated['new_password'])) {
+            if (!\Hash::check($validated['current_password'], $user->password)) {
+                return response()->json(['message' => 'Current password is incorrect.'], 422);
+            }
+            if (($validated['new_password_confirmation'] ?? '') !== $validated['new_password']) {
+                return response()->json(['message' => 'New passwords do not match.'], 422);
+            }
+            $validated['password'] = \Hash::make($validated['new_password']);
+            $validated['has_changed_credentials'] = true;
         }
 
         unset($validated['current_password'], $validated['new_password'], $validated['new_password_confirmation']);
@@ -339,10 +338,11 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'profile_picture' => $user->profile_picture ?? null,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated,
                 'schedule_initialized' => $user->schedule_initialized ?? false,
                 'has_changed_credentials' => $user->has_changed_credentials ?? false,
+                'has_changed_email' => $user->has_changed_email ?? false,
             ],
         ]);
     }
@@ -367,7 +367,7 @@ class UserController extends Controller
         }
 
         // Prevent deleting other admins
-        if ($userToDelete->role === 'Admin') {
+        if ($userToDelete->designation === 'Admin') {
             return response()->json(['error' => 'Admin accounts cannot be deleted.'], 403);
         }
 

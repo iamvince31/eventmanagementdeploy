@@ -18,10 +18,10 @@ $request->merge(['department' => 'College of Engineering and Information Technol
 try {
     $response = $controller->index($request);
     $data = json_decode($response->getContent(), true);
-    
+
     echo "Dean: " . ($data['dean'] ? $data['dean']['name'] : 'None') . "\n";
     echo "Number of departments: " . count($data['departments']) . "\n\n";
-    
+
     foreach ($data['departments'] as $dept) {
         echo "  {$dept['name']}\n";
         echo "    Chairperson: " . ($dept['chairperson'] ? $dept['chairperson']['name'] : 'None') . "\n";
@@ -29,7 +29,8 @@ try {
         echo "    Coordinators: " . (isset($dept['coordinators']) ? count($dept['coordinators']) : 0) . "\n";
         echo "    Faculty: " . (isset($dept['faculty']) ? count($dept['faculty']) : 0) . " (should be 0)\n";
     }
-} catch (Exception $e) {
+}
+catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }
 
@@ -44,10 +45,10 @@ $request2->merge(['department' => 'Department of Information Technology']);
 try {
     $response = $controller->index($request2);
     $data = json_decode($response->getContent(), true);
-    
+
     echo "Dean: " . ($data['dean'] ? $data['dean']['name'] : 'None') . "\n";
     echo "Number of departments: " . count($data['departments']) . "\n\n";
-    
+
     foreach ($data['departments'] as $dept) {
         echo "  {$dept['name']}\n";
         echo "    Chairperson: " . ($dept['chairperson'] ? $dept['chairperson']['name'] : 'None') . "\n";
@@ -60,7 +61,8 @@ try {
             }
         }
     }
-} catch (Exception $e) {
+}
+catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }
 
@@ -74,11 +76,12 @@ $request3 = new \Illuminate\Http\Request();
 try {
     $response = $controller->departments();
     $data = json_decode($response->getContent(), true);
-    
+
     echo "Total departments: " . count($data['departments']) . "\n";
     foreach ($data['departments'] as $dept) {
         echo "  - {$dept}\n";
     }
-} catch (Exception $e) {
+}
+catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
 }

@@ -16,14 +16,14 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingUserId, setEditingUserId] = useState(null);
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedDesignation, setSelectedDesignation] = useState('');
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [showCreateUserModal, setShowCreateUserModal] = useState(false);
   const [showCreateDeanModal, setShowCreateDeanModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [isEditUserModalOpen, setIsEditUserModalOpen] = useState(false);
   const [showPendingOnly, setShowPendingOnly] = useState(false);
-  const [filterRole, setFilterRole] = useState('');
+  const [filterDesignation, setFilterDesignation] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const usersPerPage = 10;
   const tableRef = useRef(null);
@@ -35,7 +35,7 @@ export default function Admin() {
     return next;
   });
 
-  const roles = [
+  const designations = [
     'Admin',
     'Dean',
     'Chairperson',
@@ -47,18 +47,17 @@ export default function Admin() {
     'CEIT Official'
   ];
 
-  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
-  const DEPT_ROLES = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator'];
+  const CEIT_DESIGNATIONS = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
+  const DEPT_DESIGNATIONS = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'];
 
-  const deanExists = users.some(u => u.role === 'Dean');
+  const deanExists = users.some(u => u.designation === 'Dean');
 
-  const getRolesForDepartment = (dept, excludingUserId = null) => {
-    // Check if dean exists, optionally ignoring the user being edited
-    const deanTaken = users.some(u => u.role === 'Dean' && u.id !== excludingUserId);
+  const getDesignationsForDepartment = (dept, excludingUserId = null) => {
+    const deanTaken = users.some(u => u.designation === 'Dean' && u.id !== excludingUserId);
     let base;
-    if (!dept) base = roles;
-    else if (dept === 'College of Engineering and Information Technology') base = CEIT_ROLES;
-    else base = DEPT_ROLES;
+    if (!dept) base = designations;
+    else if (dept === 'College of Engineering and Information Technology') base = CEIT_DESIGNATIONS;
+    else base = DEPT_DESIGNATIONS;
     return deanTaken ? base.filter(r => r !== 'Dean') : base;
   };
 
@@ -72,28 +71,23 @@ export default function Admin() {
   ];
 
   useEffect(() => {
-    // Check if user is admin and validated
-    if (user && (user.role !== 'Admin' || !user.is_validated)) {
+    if (user && (user.designation !== 'Admin' || !user.is_validated)) {
       navigate('/account');
       return;
     }
     fetchUsers();
   }, [user, navigate]);
 
-  // Handle navigation state to show pending users
   useEffect(() => {
     if (location.state?.highlightPending) {
       setShowPendingOnly(true);
-      // Scroll to table after a short delay to ensure it's rendered
       setTimeout(() => {
         tableRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
-      // Clear the state
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location, navigate]);
 
-  // Close account dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (isAccountDropdownOpen && !event.target.closest('.account-dropdown-container')) {
@@ -112,12 +106,11 @@ export default function Admin() {
     if (cached) {
       setUsers(cached);
       setLoading(false);
-      // Background refresh
       try {
         const response = await api.get('/users/all');
         setCache(cacheKey, response.data.members || []);
         setUsers(response.data.members || []);
-      } catch { /* silently fail */ }
+      } catch { }
       return;
     }
 
@@ -132,24 +125,19 @@ export default function Admin() {
     }
   };
 
-  const handleViewEvent = (event) => {
-    // Navigate to dashboard to view the event
-    navigate('/dashboard');
-  };
-
   const handleLogout = async () => {
     await logout();
   };
 
-  const handleRoleChange = async (userId, newRole) => {
+  const handleDesignationChange = async (userId, newDesignation) => {
     try {
-      await api.put(`/users/${userId}/role`, { role: newRole });
+      await api.put(`/users/${userId}/designation`, { designation: newDesignation });
       invalidateCache('admin-users');
       await fetchUsers();
       setEditingUserId(null);
     } catch (error) {
-      console.error('Error updating role:', error);
-      alert('Failed to update role');
+      console.error('Error updating designation:', error);
+      alert('Failed to update designation');
     }
   };
 
@@ -187,17 +175,17 @@ export default function Admin() {
     }
   };
 
-  const startEditRole = (userId, currentRole) => {
+  const startEditDesignation = (userId, currentDesignation) => {
     setEditingUserId(userId);
-    setSelectedRole(currentRole);
+    setSelectedDesignation(currentDesignation);
   };
 
-  const cancelEditRole = () => {
+  const cancelEditDesignation = () => {
     setEditingUserId(null);
-    setSelectedRole('');
+    setSelectedDesignation('');
   };
 
-  const getRoleColor = (role) => {
+  const getDesignationColor = (designation) => {
     const colors = {
       'Admin': 'bg-purple-100 text-purple-800',
       'Dean': 'bg-blue-100 text-blue-800',
@@ -209,13 +197,13 @@ export default function Admin() {
       'Faculty Member': 'bg-green-100 text-green-800',
       'CEIT Official': 'bg-orange-100 text-orange-800'
     };
-    return colors[role] || 'bg-gray-100 text-gray-800';
+    return colors[designation] || 'bg-gray-100 text-gray-800';
   };
 
   const handleEditUser = (user) => {
     setEditingUser({
       ...user,
-      role: user.role || 'Faculty Member',
+      designation: user.designation || 'Faculty Member',
       department: user.department || ''
     });
     setIsEditUserModalOpen(true);
@@ -223,8 +211,8 @@ export default function Admin() {
 
   const handleUpdateUser = async () => {
     try {
-      await api.put(`/users/${editingUser.id}/role`, {
-        role: editingUser.role,
+      await api.put(`/users/${editingUser.id}/designation`, {
+        designation: editingUser.designation,
         department: editingUser.department
       });
       invalidateCache('admin-users');
@@ -237,19 +225,17 @@ export default function Admin() {
     }
   };
 
-  // Filter users based on search term, role filter, and pending status
   const filteredUsers = users.filter(u => {
     const matchesSearch = u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.department && u.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesPendingFilter = !showPendingOnly || !u.is_validated;
-    const matchesRole = filterRole === '' || u.role === filterRole;
+    const matchesDesignation = filterDesignation === '' || u.designation === filterDesignation;
 
-    return matchesSearch && matchesPendingFilter && matchesRole;
+    return matchesSearch && matchesPendingFilter && matchesDesignation;
   });
 
-  // Pagination
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * usersPerPage, currentPage * usersPerPage);
 
@@ -261,7 +247,6 @@ export default function Admin() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Navigation Bar Skeleton */}
         <nav className="bg-white shadow-md sticky top-0 z-20">
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -280,7 +265,6 @@ export default function Admin() {
           </div>
         </nav>
 
-        {/* Main Content Skeleton */}
         <main className="w-full py-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8 animate-pulse">
@@ -324,10 +308,8 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-50">
       <Navbar isLoading={loading} />
 
-      {/* Main Content */}
       <main className="flex-1 w-full px-2 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Stats Cards */}
+        <div className="max-w-[1600px] w-full mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6 mb-4 sm:mb-8">
             {loading ? (
               <>
@@ -345,7 +327,6 @@ export default function Admin() {
               </>
             ) : (
               <>
-                {/* Total Users Card */}
                 <div className="bg-white rounded-2xl shadow-md p-3 sm:p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className="bg-green-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shrink-0">
@@ -360,7 +341,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Validated Card */}
                 <div className="bg-white rounded-2xl shadow-md p-3 sm:p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className="bg-green-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shrink-0">
@@ -375,7 +355,6 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Departments Card */}
                 <div className="bg-white rounded-2xl shadow-md p-3 sm:p-6 hover:shadow-lg hover:scale-105 transition-all duration-300">
                   <div className="flex items-center space-x-3 sm:space-x-4">
                     <div className="bg-green-100 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 shrink-0">
@@ -395,99 +374,92 @@ export default function Admin() {
             )}
           </div>
 
-          {/* User Management Section */}
-          <div className="bg-white rounded-2xl shadow-md px-4 py-3 sm:p-6 hover:shadow-lg transition-shadow duration-300">
-            {/* Header */}
-            <div className="mb-3 sm:mb-6">
-              <div className="flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-md px-3 py-3 sm:p-6 lg:p-8 hover:shadow-lg transition-shadow duration-300">
+            <div className="mb-3 sm:mb-6 lg:mb-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900">User Management</h2>
-                  <p className="text-xs sm:text-sm text-gray-600 mt-0.5 sm:mt-1">Manage users, roles, and validations</p>
+                  <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">User Management</h2>
+                  <p className="text-sm lg:text-base text-gray-600 mt-0.5">Manage users, designations, and validations</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                   {!deanExists && (
                     <button
                       onClick={() => setShowCreateDeanModal(true)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                      className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all shadow-md text-sm font-semibold"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                       </svg>
-                      <span className="font-semibold">Create Dean</span>
+                      <span>Create Dean</span>
                     </button>
                   )}
                   <button
                     onClick={() => setShowCreateUserModal(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all duration-300 shadow-md hover:shadow-lg"
+                    className="flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-md text-sm font-semibold"
                   >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                     </svg>
-                    <span className="font-semibold">Create User</span>
+                    <span>Create User</span>
                   </button>
                 </div>
               </div>
             </div>
 
-            {/* Search and Filter */}
-            <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 sm:gap-3 items-center">
-              <div className="flex-1 min-w-[200px] relative">
+            <div className="mb-4 sm:mb-6 flex flex-wrap gap-2 items-center">
+              <div className="flex-1 min-w-[160px] relative">
                 <input
                   type="text"
-                  placeholder="Search by name, email, or department..."
+                  placeholder="Search by name, email, or dept..."
                   value={searchTerm}
                   onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-                  className="w-full pl-8 sm:pl-10 pr-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all text-sm"
                 />
-                <svg className="absolute left-2.5 sm:left-3 top-2.5 sm:top-3.5 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
 
-              {/* Role Filter */}
               <select
-                value={filterRole}
-                onChange={handleFilterChange(setFilterRole)}
-                className="px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white text-xs sm:text-sm text-gray-700"
+                value={filterDesignation}
+                onChange={handleFilterChange(setFilterDesignation)}
+                className="px-3 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all bg-white text-sm text-gray-700"
               >
-                <option value="">All Roles</option>
-                {roles.map(role => (
-                  <option key={role} value={role}>{role}</option>
+                <option value="">All Designations</option>
+                {designations.map(designation => (
+                  <option key={designation} value={designation}>{designation}</option>
                 ))}
               </select>
 
-              {/* Pending Filter Button */}
               <button
                 onClick={() => { setShowPendingOnly(!showPendingOnly); setCurrentPage(1); }}
-                className={`flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap shadow-sm hover:shadow-md ${showPendingOnly
+                className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap shadow-sm hover:shadow-md ${showPendingOnly
                   ? 'bg-green-600 text-white hover:bg-green-700'
                   : 'bg-white text-gray-700 border-2 border-gray-300 hover:border-green-500'
                   }`}
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
                 {showPendingOnly ? 'Show All' : 'Pending Only'}
                 {showPendingOnly && (
-                  <span className="ml-1 px-2.5 py-0.5 bg-white text-green-600 rounded-full text-xs font-bold">
+                  <span className="ml-1 px-2 py-0.5 bg-white text-green-600 rounded-full text-xs font-bold">
                     {filteredUsers.length}
                   </span>
                 )}
               </button>
             </div>
 
-            {/* Users Table */}
-            <div ref={tableRef}>
+            <div ref={tableRef} className="overflow-x-auto -mx-4 sm:mx-0">
               <table className="min-w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="px-3 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User</th>
-                    {/* Hidden on mobile */}
-                    <th className="hidden sm:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
-                    <th className="hidden sm:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Department</th>
-                    <th className="hidden sm:table-cell px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Role</th>
-                    <th className="px-0 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                    <th className="pl-0 pr-16 sm:px-6 py-3 sm:py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
+                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[45%] sm:w-auto whitespace-nowrap">User</th>
+                    <th className="hidden md:table-cell px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Email</th>
+                    <th className="hidden lg:table-cell px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Department</th>
+                    <th className="hidden sm:table-cell px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider whitespace-nowrap">Designation</th>
+                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[25%] sm:w-auto whitespace-nowrap">Status</th>
+                    <th className="px-3 sm:px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider w-[20%] sm:w-auto whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -503,14 +475,11 @@ export default function Admin() {
                   ) : (
                     paginatedUsers.map((u) => (
                       <>
-                        {/* Main row */}
                         <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                          {/* User — always visible */}
-                          <td className="px-3 sm:px-6 py-2.5 sm:py-4 whitespace-nowrap">
+                          <td className="px-3 sm:px-4 py-2.5 sm:py-3 w-[45%] sm:w-auto">
                             <div className="flex items-center">
-                              {/* Mobile expand chevron */}
                               <button
-                                className="sm:hidden mr-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+                                className="sm:hidden mr-1.5 text-gray-400 hover:text-gray-600 transition-colors shrink-0"
                                 onClick={() => toggleRow(u.id)}
                                 aria-label="Expand row"
                               >
@@ -521,24 +490,22 @@ export default function Admin() {
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                                 </svg>
                               </button>
-                              <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-md">
+                              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
                                 {u.username.charAt(0).toUpperCase()}
                               </div>
-                              <div className="ml-2 sm:ml-4">
-                                <div className="text-xs sm:text-sm font-semibold text-gray-900 leading-tight">{u.username}</div>
+                              <div className="ml-2 min-w-0">
+                                <div className="text-sm font-semibold text-gray-900 leading-tight truncate max-w-[90px] sm:max-w-none">{u.username}</div>
                               </div>
                             </div>
                           </td>
 
-                          {/* Email — hidden on mobile */}
-                          <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-600">{u.email}</div>
+                          <td className="hidden md:table-cell px-4 py-3 whitespace-nowrap">
+                            <div className="text-sm text-gray-600 max-w-[180px] truncate">{u.email}</div>
                           </td>
 
-                          {/* Department — hidden on mobile */}
-                          <td className="hidden sm:table-cell px-6 py-4">
+                          <td className="hidden lg:table-cell px-4 py-3">
                             {u.department ? (
-                              <span className="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                              <span className="px-2 py-1 inline-block text-xs font-bold rounded-lg bg-green-100 text-green-800 leading-tight shadow-sm border border-green-200/50 max-w-[170px] break-words">
                                 {u.department}
                               </span>
                             ) : (
@@ -546,48 +513,42 @@ export default function Admin() {
                             )}
                           </td>
 
-                          {/* Role — hidden on mobile */}
-                          <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
+                          <td className="hidden sm:table-cell px-4 py-3 whitespace-nowrap">
                             {editingUserId === u.id ? (
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center gap-1.5">
                                 <select
-                                  value={selectedRole}
-                                  onChange={(e) => setSelectedRole(e.target.value)}
-                                  className="text-xs border border-gray-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                  value={selectedDesignation}
+                                  onChange={(e) => setSelectedDesignation(e.target.value)}
+                                  className="text-sm border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-green-500"
                                 >
-                                  {getRolesForDepartment(u.department, u.id).map(role => (
-                                    <option key={role} value={role}>{role}</option>
+                                  {getDesignationsForDepartment(u.department, u.id).map(designation => (
+                                    <option key={designation} value={designation}>{designation}</option>
                                   ))}
                                 </select>
-                                <button onClick={() => handleRoleChange(u.id, selectedRole)} className="text-green-600 hover:text-green-700 text-xs font-semibold">Save</button>
-                                <button onClick={cancelEditRole} className="text-gray-600 hover:text-gray-700 text-xs font-semibold">Cancel</button>
+                                <button onClick={() => handleDesignationChange(u.id, selectedDesignation)} className="text-green-600 hover:text-green-700 text-sm font-semibold">Save</button>
+                                <button onClick={cancelEditDesignation} className="text-gray-600 hover:text-gray-700 text-sm font-semibold">Cancel</button>
                               </div>
                             ) : (
-                              <span className={`px-3 py-1 inline-flex text-xs font-semibold rounded-full ${getRoleColor(u.role)}`}>
-                                {u.role}
+                              <span className={`px-2 py-1 inline-block text-xs font-bold rounded-lg ${getDesignationColor(u.designation)} text-center leading-tight shadow-sm`}>
+                                {u.designation}
                               </span>
                             )}
                           </td>
 
-                          {/* Status — always visible */}
-                          <td className="px-0 sm:px-6 py-2.5 sm:py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <span className={`px-2 py-0.5 inline-flex text-[10px] sm:text-xs font-semibold rounded-full ${u.is_validated ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                                }`}>
+                          <td className="px-3 sm:px-4 py-3 w-[25%] sm:w-auto whitespace-nowrap">
+                            <div className="flex items-center gap-1 flex-nowrap pr-0">
+                              <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full ${u.is_validated ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
                                 {u.is_validated ? 'Validated' : 'Pending'}
                               </span>
-                              {u.role === 'Admin' && (
-                                <span className="px-3 py-1 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">Auto</span>
-                              )}
-                              {!u.is_validated && u.role !== 'Admin' ? (
-                                <button onClick={() => handleValidateUser(u.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Validate User">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              {!u.is_validated && u.designation !== 'Admin' ? (
+                                <button onClick={() => handleValidateUser(u.id)} className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Validate User">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                                   </svg>
                                 </button>
-                              ) : u.is_validated && u.role !== 'Admin' ? (
-                                <button onClick={() => handleRevokeValidation(u.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Revoke Validation">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              ) : u.is_validated && u.designation !== 'Admin' ? (
+                                <button onClick={() => handleRevokeValidation(u.id)} className="p-1 text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Revoke Validation">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                   </svg>
                                 </button>
@@ -595,19 +556,18 @@ export default function Admin() {
                             </div>
                           </td>
 
-                          {/* Actions — always visible */}
-                          <td className="pl-0 pr-16 sm:px-6 py-2.5 sm:py-4 whitespace-nowrap">
-                            <div className="flex items-center space-x-2">
+                          <td className="px-1 sm:px-4 py-3 w-[20%] sm:w-auto whitespace-nowrap">
+                            <div className="flex items-center gap-1">
                               {user?.id !== u.id && (
                                 <button onClick={() => handleEditUser(u)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Edit User">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                   </svg>
                                 </button>
                               )}
-                              {user?.id !== u.id && u.role !== 'Admin' && (
+                              {user?.id !== u.id && u.designation !== 'Admin' && (
                                 <button onClick={() => handleDeleteUser(u)} className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete User">
-                                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                   </svg>
                                 </button>
@@ -616,33 +576,28 @@ export default function Admin() {
                           </td>
                         </tr>
 
-                        {/* Mobile expand panel1 — Email / Department / Role */}
                         {expandedRows.has(u.id) && (
                           <tr key={`${u.id}-expand`} className="sm:hidden bg-gray-50">
                             <td colSpan="3" className="px-4 py-3">
                               <div className="space-y-2 text-sm">
                                 <div>
                                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</span>
-                                  <p className="text-gray-800 mt-0.5">{u.email}</p>
+                                  <p className="text-gray-800 mt-0.5 break-all">{u.email}</p>
                                 </div>
                                 <div>
                                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</span>
                                   <p className="mt-0.5">
                                     {u.department ? (
-                                      <span className="px-2 py-0.5 inline-flex text-xs font-semibold rounded-full bg-green-100 text-green-800">{u.department}</span>
+                                      <span className="px-2 py-1 inline-block text-[11px] font-bold rounded-lg bg-green-100 text-green-800 leading-tight max-w-[200px] break-words">{u.department}</span>
                                     ) : (
                                       <span className="text-gray-400 italic">Not assigned</span>
                                     )}
                                   </p>
                                 </div>
                                 <div>
-                                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</span>
+                                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation</span>
                                   <p className="mt-0.5">
-                                    {editingUserId === u.id ? (
-                                      <span className="text-gray-500 italic text-xs">Editing in desktop view</span>
-                                    ) : (
-                                      <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full ${getRoleColor(u.role)}`}>{u.role}</span>
-                                    )}
+                                    <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full ${getDesignationColor(u.designation)}`}>{u.designation}</span>
                                   </p>
                                 </div>
                               </div>
@@ -656,26 +611,26 @@ export default function Admin() {
               </table>
             </div>
 
-            <div className="mt-3 sm:mt-6 pt-4 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-xs sm:text-sm text-gray-600 font-medium text-center sm:text-left">
+            <div className="mt-3 sm:mt-6 lg:mt-8 pt-4 lg:pt-6 border-t border-gray-200 flex flex-col sm:flex-row items-center justify-between gap-3 lg:gap-6">
+              <p className="text-xs sm:text-sm lg:text-base text-gray-600 font-medium text-center sm:text-left">
                 Showing {filteredUsers.length === 0 ? 0 : (currentPage - 1) * usersPerPage + 1}-{Math.min(currentPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
                 {filteredUsers.length !== users.length && (
                   <span className="block sm:inline"> (filtered from {users.length} total)</span>
                 )}
               </p>
               {totalPages > 1 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 lg:gap-2">
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    className="px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs sm:text-sm lg:text-base font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                   >
                     &laquo;
                   </button>
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    className="px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs sm:text-sm lg:text-base font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                   >
                     &lsaquo;
                   </button>
@@ -688,12 +643,12 @@ export default function Admin() {
                     }, [])
                     .map((item, idx) =>
                       item === '...' ? (
-                        <span key={`ellipsis-${idx}`} className="px-2 text-gray-400">...</span>
+                        <span key={`ellipsis-${idx}`} className="px-2 lg:px-3 text-gray-400">...</span>
                       ) : (
                         <button
                           key={item}
                           onClick={() => setCurrentPage(item)}
-                          className={`px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium border transition-colors ${currentPage === item
+                          className={`px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs sm:text-sm lg:text-base font-medium border transition-colors ${currentPage === item
                             ? 'bg-green-600 text-white border-green-600'
                             : 'border-gray-300 hover:bg-gray-50'
                             }`}
@@ -706,14 +661,14 @@ export default function Admin() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    className="px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs sm:text-sm lg:text-base font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                   >
                     &rsaquo;
                   </button>
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
-                    className="px-2 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+                    className="px-2 py-1 sm:px-3 sm:py-1.5 lg:px-4 lg:py-2 rounded-lg text-xs sm:text-sm lg:text-base font-medium border border-gray-300 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
                   >
                     &raquo;
                   </button>
@@ -725,7 +680,6 @@ export default function Admin() {
         </div>
       </main>
 
-      {/* Create User Modal */}
       <CreateUserModal
         isOpen={showCreateUserModal}
         onClose={() => setShowCreateUserModal(false)}
@@ -736,7 +690,6 @@ export default function Admin() {
         }}
       />
 
-      {/* Create Dean Modal */}
       <CreateDeanModal
         isOpen={showCreateDeanModal}
         onClose={() => setShowCreateDeanModal(false)}
@@ -746,7 +699,6 @@ export default function Admin() {
         }}
       />
 
-      {/* Edit User Modal */}
       {isEditUserModalOpen && editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
@@ -782,11 +734,11 @@ export default function Admin() {
                   value={editingUser.department}
                   onChange={(e) => setEditingUser(prev => {
                     const newDept = e.target.value;
-                    const valid = getRolesForDepartment(newDept, prev.id);
+                    const valid = getDesignationsForDepartment(newDept, prev.id);
                     return {
                       ...prev,
                       department: newDept,
-                      role: valid.includes(prev.role) ? prev.role : (valid[0] || prev.role),
+                      designation: valid.includes(prev.designation) ? prev.designation : (valid[0] || prev.designation),
                     };
                   })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
@@ -799,15 +751,15 @@ export default function Admin() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Designation</label>
                 <select
-                  value={editingUser.role}
-                  onChange={(e) => setEditingUser(prev => ({ ...prev, role: e.target.value }))}
+                  value={editingUser.designation}
+                  onChange={(e) => setEditingUser(prev => ({ ...prev, designation: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
                 >
-                  <option value="">Select Role</option>
-                  {getRolesForDepartment(editingUser.department, editingUser.id).map(role => (
-                    <option key={role} value={role}>{role}</option>
+                  <option value="">Select Designation</option>
+                  {getDesignationsForDepartment(editingUser.department, editingUser.id).map(designation => (
+                    <option key={designation} value={designation}>{designation}</option>
                   ))}
                 </select>
               </div>

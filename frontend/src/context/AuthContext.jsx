@@ -34,7 +34,11 @@ const initAuthState = () => {
   }
 
   try {
-    return { user: JSON.parse(savedUser) };
+    const userData = JSON.parse(savedUser);
+    if (userData && userData.role && !userData.designation) {
+      userData.designation = userData.role;
+    }
+    return { user: userData };
   } catch {
     return { user: null };
   }
@@ -161,8 +165,9 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem(LAST_ACTIVITY_KEY, Date.now().toString());
     }
 
-    setUser(user);
-    return response.data;
+    const normalizedUser = { ...user, designation: user.designation || user.role };
+    setUser(normalizedUser);
+    return { ...response.data, user: normalizedUser };
   };
 
   const register = async (username, email, password, department) => {

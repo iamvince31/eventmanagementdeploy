@@ -15,7 +15,7 @@ class ArchiveController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role !== 'Admin') {
+        if (!in_array($user->designation, ['Admin', 'System Administrator'])) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -26,26 +26,25 @@ class ArchiveController extends Controller
 
         $transformedEvents = $archivedEvents->map(function ($event) {
             return [
-            'id' => $event->id,
-            'title' => $event->title,
-            'description' => $event->description,
-            'location' => $event->location,
-            'event_type' => $event->event_type ?? 'event',
-            'images' => $event->images->map(fn($img) => [
-            'url' => $img->cloudinary_url
-                ?? (rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $img->image_path),
-            'original_filename' => $img->original_filename,
-            ]),
-            'date' => $event->date,
-            'time' => $event->time,
-            'school_year' => $event->school_year,
-            'host' => [
-            'id' => $event->host->id,
-            'username' => $event->host->name,
-            'email' => $event->host->email,
-            ],
-            'is_default_event' => false,
-            'is_archived' => true,
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'location' => $event->location,
+                'event_type' => $event->event_type ?? 'event',
+                'images' => $event->images->map(fn($img) => [
+                    'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+                    'original_filename' => $img->original_filename,
+                ]),
+                'date' => $event->date,
+                'time' => $event->time,
+                'school_year' => $event->school_year,
+                'host' => [
+                    'id' => $event->host->id,
+                    'username' => $event->host->name,
+                    'email' => $event->host->email,
+                ],
+                'is_default_event' => false,
+                'is_archived' => true,
             ];
         });
 
@@ -62,7 +61,7 @@ class ArchiveController extends Controller
     {
         $user = $request->user();
 
-        if ($user->role !== 'Admin') {
+        if ($user->designation !== 'Admin') {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 

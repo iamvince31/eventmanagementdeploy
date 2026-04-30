@@ -21,7 +21,7 @@ class AdminSeeder extends Seeder
     public function run(): void
     {
         // Check if any admin already exists
-        $adminExists = User::where('role', 'Admin')->exists();
+        $adminExists = User::where('designation', 'Admin')->exists();
 
         if ($adminExists) {
             $this->command->info('Admin user already exists. Skipping bootstrap admin creation.');
@@ -64,7 +64,7 @@ class AdminSeeder extends Seeder
                 'name' => $name,
                 'email' => $email,
                 'password' => Hash::make($password),
-                'role' => 'Admin',
+                'designation' => 'Admin',
                 'department' => 'System Administration',
                 'is_bootstrap' => true,
                 'is_validated' => true, // Bootstrap admin is pre-validated
@@ -75,12 +75,13 @@ class AdminSeeder extends Seeder
             $this->command->info('Bootstrap admin created successfully!');
             $this->command->warn('⚠️  This is a TEMPORARY admin account for initial setup.');
             $this->command->warn('⚠️  It will be automatically removed when you create a real admin.');
-            
+
             Log::info('AdminSeeder: Bootstrap admin created', [
                 'email' => $email,
                 'id' => $admin->id,
             ]);
-        } catch (\Exception $e) {
+        }
+        catch (\Exception $e) {
             $this->command->error('Failed to create bootstrap admin: ' . $e->getMessage());
             Log::error('AdminSeeder: Failed to create bootstrap admin', [
                 'error' => $e->getMessage(),

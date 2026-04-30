@@ -9,12 +9,13 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
     email: '',
     password: '',
     department: '',
-    role: 'Faculty Member'
+    designation: 'Faculty Member'
   });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
 
   const departments = [
+    'College of Engineering and Information Technology',
     'College of Engineering and Information Technology',
     'Department of Information Technology',
     'Department of Industrial Engineering and Technology',
@@ -23,16 +24,16 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
     'Department of Agriculture and Food Engineering',
   ];
 
-  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
-  const DEPT_ROLES = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator'];
+  const CEIT_DESIGNATIONS = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
+  const DEPT_DESIGNATIONS = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'];
 
-  const getRolesForDepartment = (dept) => {
-    if (!dept) return [...CEIT_ROLES, ...DEPT_ROLES]; // show all if none selected
-    if (dept === 'College of Engineering and Information Technology') return CEIT_ROLES;
-    return DEPT_ROLES;
+  const getDesignationsForDepartment = (dept) => {
+    if (!dept) return [...CEIT_DESIGNATIONS, ...DEPT_DESIGNATIONS]; // show all if none selected
+    if (dept === 'College of Engineering and Information Technology') return CEIT_DESIGNATIONS;
+    return DEPT_DESIGNATIONS;
   };
 
-  const availableRoles = getRolesForDepartment(formData.department)
+  const availableDesignations = getDesignationsForDepartment(formData.department)
     .filter(r => !(r === 'Dean' && deanExists));
 
   const generateFullName = () => {
@@ -55,11 +56,11 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
     const { name, value } = e.target;
     setFormData(prev => {
       const updated = { ...prev, [name]: value };
-      // Reset role if it's not valid for the newly selected department
+      // Reset designation if it's not valid for the newly selected department
       if (name === 'department') {
-        const valid = getRolesForDepartment(value);
-        if (!valid.includes(updated.role)) {
-          updated.role = valid[0] || '';
+        const valid = getDesignationsForDepartment(value);
+        if (!valid.includes(updated.designation)) {
+          updated.designation = valid[0] || '';
         }
       }
       return updated;
@@ -124,7 +125,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
         email: '',
         password: '',
         department: '',
-        role: 'Faculty Member'
+        designation: 'Faculty Member'
       });
 
       onSuccess();
@@ -305,21 +306,21 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role <span className="text-red-500">*</span>
+              Designation <span className="text-red-500">*</span>
             </label>
             <select
-              name="role"
-              value={formData.role}
+              name="designation"
+              value={formData.designation}
               onChange={handleChange}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
-              {availableRoles.map(role => (
-                <option key={role} value={role}>{role}</option>
+              {availableDesignations.map(designation => (
+                <option key={designation} value={designation}>{designation}</option>
               ))}
             </select>
-            {errors.role && (
-              <p className="mt-1 text-sm text-red-600">{errors.role[0]}</p>
+            {errors.designation && (
+              <p className="mt-1 text-sm text-red-600">{errors.designation[0]}</p>
             )}
           </div>
 

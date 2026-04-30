@@ -11,19 +11,19 @@ export default function OrganizationalChart() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-  const canEdit = user?.role === 'Admin' || user?.role === 'Dean';
-  
+
+  const canEdit = user?.designation === 'Admin' || user?.designation === 'Dean';
+
   useEffect(() => {
     fetchDepartments();
   }, []);
-  
+
   useEffect(() => {
     if (selectedDepartment) {
       fetchOrganizationalChart();
     }
   }, [selectedDepartment]);
-  
+
   const fetchDepartments = async () => {
     try {
       const response = await api.get('/organizational-chart/departments');
@@ -38,12 +38,12 @@ export default function OrganizationalChart() {
       setLoading(false);
     }
   };
-  
+
   const fetchOrganizationalChart = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/organizational-chart', { 
-        params: { department: selectedDepartment } 
+      const response = await api.get('/organizational-chart', {
+        params: { department: selectedDepartment }
       });
       setHierarchy(response.data);
     } catch (error) {
@@ -52,15 +52,15 @@ export default function OrganizationalChart() {
       setLoading(false);
     }
   };
-  
+
   const handleEdit = (member) => {
     setEditingUser(member);
     setIsEditModalOpen(true);
   };
-  
+
   const handleDelete = async (memberId) => {
     if (!window.confirm('Are you sure you want to delete this member?')) return;
-    
+
     try {
       await api.delete(`/organizational-chart/${memberId}`);
       fetchOrganizationalChart();
@@ -69,7 +69,7 @@ export default function OrganizationalChart() {
       alert('Failed to delete member');
     }
   };
-  
+
   const handleSaveEdit = async (e) => {
     e.preventDefault();
     try {
@@ -82,7 +82,7 @@ export default function OrganizationalChart() {
       alert('Failed to update member');
     }
   };
-  
+
   const MemberCard = ({ member, showActions = true, size = 'medium' }) => {
     // Define sizes based on hierarchy level - fully responsive
     const sizes = {
@@ -94,8 +94,8 @@ export default function OrganizationalChart() {
         icon: 'w-10 h-10 md:w-12 md:h-12',
         name: 'text-base md:text-lg',
         nameHeight: 'min-h-[48px] md:min-h-[56px]',
-        role: 'text-xs md:text-sm',
-        roleHeight: 'min-h-[20px] md:min-h-[24px]',
+        designation: 'text-xs md:text-sm',
+        designationHeight: 'min-h-[20px] md:min-h-[24px]',
         dept: 'text-xs',
         deptHeight: 'min-h-[52px] md:min-h-[60px]',
         px: 'px-4 md:px-5',
@@ -109,8 +109,8 @@ export default function OrganizationalChart() {
         icon: 'w-8 h-8 md:w-10 md:h-10',
         name: 'text-sm md:text-base',
         nameHeight: 'min-h-[40px] md:min-h-[48px]',
-        role: 'text-xs',
-        roleHeight: 'min-h-[18px] md:min-h-[20px]',
+        designation: 'text-xs',
+        designationHeight: 'min-h-[18px] md:min-h-[20px]',
         dept: 'text-xs',
         deptHeight: 'min-h-[48px] md:min-h-[56px]',
         px: 'px-3 md:px-4',
@@ -124,8 +124,8 @@ export default function OrganizationalChart() {
         icon: 'w-7 h-7 md:w-8 md:h-8',
         name: 'text-xs md:text-sm',
         nameHeight: 'min-h-[36px] md:min-h-[44px]',
-        role: 'text-xs',
-        roleHeight: 'min-h-[16px] md:min-h-[18px]',
+        designation: 'text-xs',
+        designationHeight: 'min-h-[16px] md:min-h-[18px]',
         dept: 'text-xs',
         deptHeight: 'min-h-[44px] md:min-h-[52px]',
         px: 'px-3',
@@ -139,17 +139,17 @@ export default function OrganizationalChart() {
         icon: 'w-6 h-6 md:w-7 md:h-7',
         name: 'text-xs',
         nameHeight: 'min-h-[32px] md:min-h-[40px]',
-        role: 'text-[10px] md:text-xs',
-        roleHeight: 'min-h-[14px] md:min-h-[16px]',
+        designation: 'text-[10px] md:text-xs',
+        designationHeight: 'min-h-[14px] md:min-h-[16px]',
         dept: 'text-[10px] md:text-xs',
         deptHeight: 'min-h-[40px] md:min-h-[48px]',
         px: 'px-2 md:px-3',
         pb: 'pb-2 md:pb-3'
       }
     };
-    
+
     const s = sizes[size];
-    
+
     return (
       <div className={`bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow border-t-4 border-green-600 relative ${s.cardPt}`}>
         {/* Profile Photo */}
@@ -168,7 +168,7 @@ export default function OrganizationalChart() {
             </div>
           )}
         </div>
-        
+
         {/* Card Content */}
         <div className={`${s.px} ${s.pb} pt-1 md:pt-2`}>
           <div className="text-center">
@@ -176,12 +176,12 @@ export default function OrganizationalChart() {
             <div className={`${s.nameHeight} flex items-center justify-center mb-1`}>
               <h3 className={`font-bold ${s.name} leading-tight text-gray-800 line-clamp-2`}>{member.name}</h3>
             </div>
-            
-            {/* Role - Flexible height */}
-            <div className={`${s.roleHeight} flex items-center justify-center mb-1 md:mb-2`}>
-              <p className={`${s.role} text-green-600 font-medium line-clamp-1`}>{member.role}</p>
+
+            {/* Designation - Flexible height */}
+            <div className={`${s.designationHeight} flex items-center justify-center mb-1 md:mb-2`}>
+              <p className={`${s.designation} text-green-600 font-medium line-clamp-1`}>{member.designation}</p>
             </div>
-            
+
             {/* Department - Flexible height */}
             <div className={`${s.deptHeight} flex items-center justify-center`}>
               {member.department && (
@@ -189,7 +189,7 @@ export default function OrganizationalChart() {
               )}
             </div>
           </div>
-          
+
           {canEdit && showActions && (
             <div className="flex justify-center gap-1.5 md:gap-2 mt-2">
               <button
@@ -216,11 +216,11 @@ export default function OrganizationalChart() {
       </div>
     );
   };
-  
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50 to-gray-50">
       <Navbar pageTitle="Organizational Chart" />
-      
+
       <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-6 md:py-8">
         {/* Header with Department Filter */}
         <div className="mb-6 md:mb-8 flex flex-col gap-3 md:gap-4">
@@ -228,7 +228,7 @@ export default function OrganizationalChart() {
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2">Organizational Chart</h1>
             <p className="text-xs sm:text-sm md:text-base text-gray-600">View the hierarchical structure of all members</p>
           </div>
-          
+
           {/* Department Filter */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full">
             <label className="font-medium text-gray-700 text-xs sm:text-sm md:text-base whitespace-nowrap">Select Department:</label>
@@ -243,7 +243,7 @@ export default function OrganizationalChart() {
             </select>
           </div>
         </div>
-        
+
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
@@ -258,7 +258,7 @@ export default function OrganizationalChart() {
                 </div>
               </div>
             )}
-            
+
             {/* CEIT Official Level (Below Dean) - Large - 1 on mobile, 2 on tablet+ */}
             {hierarchy.ceitStaff && hierarchy.ceitStaff.length > 0 && (
               <div className="flex flex-col items-center mb-10 md:mb-14">
@@ -271,7 +271,7 @@ export default function OrganizationalChart() {
                 </div>
               </div>
             )}
-            
+
             {/* CEIT Coordinators Level (Below CEIT Official) - Medium - 1 on mobile, 2 on tablet, 3 on desktop */}
             {hierarchy.ceitCoordinators && hierarchy.ceitCoordinators.length > 0 && (
               <div className="flex flex-col items-center mb-10 md:mb-14">
@@ -284,7 +284,7 @@ export default function OrganizationalChart() {
                 </div>
               </div>
             )}
-            
+
             {/* Faculty Members Level (Below CEIT Official/Coordinator) - Medium - 1 on mobile, 2 on tablet, 3 on desktop */}
             {hierarchy.facultyMembers && hierarchy.facultyMembers.length > 0 && (
               <div className="flex flex-col items-center mb-10 md:mb-14">
@@ -297,7 +297,7 @@ export default function OrganizationalChart() {
                 </div>
               </div>
             )}
-            
+
             {/* Department Branches */}
             {hierarchy.departments.length > 0 && (
               <div className="flex justify-center gap-6 md:gap-8 lg:gap-12 px-3 md:px-4 flex-wrap">
@@ -309,7 +309,7 @@ export default function OrganizationalChart() {
                         <MemberCard member={dept.chairperson} size="medium" />
                       </div>
                     )}
-                    
+
                     {/* Program Coordinators - Small - 1 on mobile, 2 on tablet, 3 on desktop */}
                     {dept.programCoordinators && dept.programCoordinators.length > 0 && (
                       <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-8 md:gap-y-10 mb-10 md:mb-12 w-full max-w-[660px] px-4 md:px-0">
@@ -320,7 +320,7 @@ export default function OrganizationalChart() {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Other Coordinators (Research/Extension/GAD) - Small - 1 on mobile, 2 on tablet, 3 on desktop */}
                     {dept.coordinators.length > 0 && (
                       <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-8 md:gap-y-10 mb-10 md:mb-12 w-full max-w-[660px] px-4 md:px-0">
@@ -331,7 +331,7 @@ export default function OrganizationalChart() {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Faculty Members - Extra Small - 2 per row on mobile, 3 on tablet, 4 on desktop */}
                     {dept.faculty.length > 0 && (
                       <div className="flex flex-wrap justify-center gap-x-2 md:gap-x-3 gap-y-7 md:gap-y-9 mt-2 md:mt-4 w-full max-w-[700px] px-4 md:px-0">
@@ -346,7 +346,7 @@ export default function OrganizationalChart() {
                 ))}
               </div>
             )}
-            
+
             {/* Empty State */}
             {!hierarchy.dean && hierarchy.departments.length === 0 && (
               <div className="text-center py-12 md:py-20 px-4">
@@ -360,7 +360,7 @@ export default function OrganizationalChart() {
           </div>
         )}
       </div>
-      
+
       {/* Edit Modal */}
       {isEditModalOpen && editingUser && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -399,7 +399,7 @@ export default function OrganizationalChart() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                {editingUser.role === 'Dean' ? (
+                {editingUser.designation === 'Dean' ? (
                   <input
                     type="text"
                     value="College of Engineering and Information Technology"
@@ -421,10 +421,10 @@ export default function OrganizationalChart() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
                 <select
-                  value={editingUser.role}
-                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  value={editingUser.designation}
+                  onChange={(e) => setEditingUser({ ...editingUser, designation: e.target.value })}
                   className="w-full px-3 md:px-4 py-2 text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                   required
                 >

@@ -53,11 +53,11 @@ class TestUsersSeeder extends Seeder
         $pick = fn(array $arr) => $arr[$seed % count($arr)];
 
         $dayRotations = [
-            [0 => 'Monday', 1 => 'Tuesday',   2 => 'Wednesday', 3 => 'Thursday', 4 => 'Friday'],
-            [0 => 'Monday', 1 => 'Wednesday',  2 => 'Tuesday',   3 => 'Friday',   4 => 'Thursday'],
-            [0 => 'Tuesday', 1 => 'Monday',    2 => 'Thursday',  3 => 'Wednesday', 4 => 'Friday'],
-            [0 => 'Wednesday', 1 => 'Monday',  2 => 'Friday',    3 => 'Tuesday',  4 => 'Thursday'],
-            [0 => 'Thursday', 1 => 'Tuesday',  2 => 'Monday',    3 => 'Friday',   4 => 'Wednesday'],
+            [0 => 'Monday', 1 => 'Tuesday', 2 => 'Wednesday', 3 => 'Thursday', 4 => 'Friday'],
+            [0 => 'Monday', 1 => 'Wednesday', 2 => 'Tuesday', 3 => 'Friday', 4 => 'Thursday'],
+            [0 => 'Tuesday', 1 => 'Monday', 2 => 'Thursday', 3 => 'Wednesday', 4 => 'Friday'],
+            [0 => 'Wednesday', 1 => 'Monday', 2 => 'Friday', 3 => 'Tuesday', 4 => 'Thursday'],
+            [0 => 'Thursday', 1 => 'Tuesday', 2 => 'Monday', 3 => 'Friday', 4 => 'Wednesday'],
         ];
         $days = $dayRotations[$seed % count($dayRotations)];
 
@@ -106,10 +106,10 @@ class TestUsersSeeder extends Seeder
     public function run(): void
     {
         $departments = [
-            'DAFE' => 'Department of Agricultural and Food Engineering',
-            'DCEEE' => 'Department of Civil and Environmental Engineering and Energy',
-            'DCEA' => 'Department of Computer Engineering and Architecture',
-            'DIET' => 'Department of Industrial and Electrical Technology',
+            'DAFE' => 'Department of Agriculture and Food Engineering',
+            'DCEA' => 'Department of Civil Engineering',
+            'DCEEE' => 'Department of Computer, Electronics, and Electrical Engineering',
+            'DIET' => 'Department of Industrial Engineering and Technology',
             'DIT' => 'Department of Information Technology',
         ];
 
@@ -127,7 +127,7 @@ class TestUsersSeeder extends Seeder
             'email' => 'admin@cvsu.edu.ph',
             'password' => Hash::make('11111111'),
             'department' => 'Administration',
-            'role' => 'Admin',
+            'designation' => 'Admin',
             'is_validated' => true,
             'email_verified_at' => now(),
             'schedule_initialized' => true,
@@ -145,7 +145,7 @@ class TestUsersSeeder extends Seeder
             'email' => 'dean.rodriguez@cvsu.edu.ph',
             'password' => Hash::make('11111111'),
             'department' => 'College of Engineering and Information Technology',
-            'role' => 'Dean',
+            'designation' => 'Dean',
             'is_validated' => true,
             'email_verified_at' => now(),
             'schedule_initialized' => true,
@@ -178,7 +178,7 @@ class TestUsersSeeder extends Seeder
                 'email' => strtolower("{$official['first']}.{$official['last']}.ceit{$n}@cvsu.edu.ph"),
                 'password' => Hash::make('11111111'),
                 'department' => 'College of Engineering and Information Technology',
-                'role' => 'CEIT Official',
+                'designation' => 'CEIT Official',
                 'is_validated' => true,
                 'email_verified_at' => now(),
                 'schedule_initialized' => true,
@@ -212,7 +212,7 @@ class TestUsersSeeder extends Seeder
                 'email' => strtolower("{$coordinator['first']}.{$coordinator['last']}.coord{$n}@cvsu.edu.ph"),
                 'password' => Hash::make('11111111'),
                 'department' => 'College of Engineering and Information Technology',
-                'role' => 'Coordinator',
+                'designation' => 'Coordinator',
                 'is_validated' => true,
                 'email_verified_at' => now(),
                 'schedule_initialized' => true,
@@ -224,16 +224,16 @@ class TestUsersSeeder extends Seeder
         // 4.5. CEIT FACULTY MEMBERS (10 - College level, role = 'Faculty Member')
         // ========================================
         $ceitFaculty = [
-            ['first' => 'Luzviminda', 'middle' => 'Perez',  'last' => 'Rivera'],
-            ['first' => 'Arturo',     'middle' => 'Luis',   'last' => 'Gomez'],
-            ['first' => 'Teresa',     'middle' => 'Ann',    'last' => 'Salvador'],
-            ['first' => 'Enrique',    'middle' => 'Jose',   'last' => 'Villanueva'],
-            ['first' => 'Josefina',   'middle' => 'Marie',  'last' => 'Mendoza'],
-            ['first' => 'Rogelio',    'middle' => 'Pedro',  'last' => 'Cabrera'],
-            ['first' => 'Beatrice',   'middle' => 'Mae',    'last' => 'Ramos'],
-            ['first' => 'Guillermo',  'middle' => 'Juan',   'last' => 'Tolentino'],
-            ['first' => 'Clarissa',   'middle' => 'Joy',    'last' => 'Navarro'],
-            ['first' => 'Victor',     'middle' => 'Manuel', 'last' => 'Bautista'],
+            ['first' => 'Luzviminda', 'middle' => 'Perez', 'last' => 'Rivera'],
+            ['first' => 'Arturo', 'middle' => 'Luis', 'last' => 'Gomez'],
+            ['first' => 'Teresa', 'middle' => 'Ann', 'last' => 'Salvador'],
+            ['first' => 'Enrique', 'middle' => 'Jose', 'last' => 'Villanueva'],
+            ['first' => 'Josefina', 'middle' => 'Marie', 'last' => 'Mendoza'],
+            ['first' => 'Rogelio', 'middle' => 'Pedro', 'last' => 'Cabrera'],
+            ['first' => 'Beatrice', 'middle' => 'Mae', 'last' => 'Ramos'],
+            ['first' => 'Guillermo', 'middle' => 'Juan', 'last' => 'Tolentino'],
+            ['first' => 'Clarissa', 'middle' => 'Joy', 'last' => 'Navarro'],
+            ['first' => 'Victor', 'middle' => 'Manuel', 'last' => 'Bautista'],
         ];
 
         foreach ($ceitFaculty as $index => $faculty) {
@@ -246,7 +246,7 @@ class TestUsersSeeder extends Seeder
                 'email' => strtolower("{$faculty['first']}.{$faculty['last']}.ceitfac{$n}@cvsu.edu.ph"),
                 'password' => Hash::make('11111111'),
                 'department' => 'College of Engineering and Information Technology',
-                'role' => 'Faculty Member',
+                'designation' => 'Faculty Member',
                 'is_validated' => true,
                 'email_verified_at' => now(),
                 'schedule_initialized' => true,
@@ -274,7 +274,7 @@ class TestUsersSeeder extends Seeder
                 'email' => strtolower("{$chair['first']}.{$chair['last']}.chair.{$deptCode}@cvsu.edu.ph"),
                 'password' => Hash::make('11111111'),
                 'department' => $departments[$deptCode],
-                'role' => 'Chairperson',
+                'designation' => 'Chairperson',
                 'is_validated' => true,
                 'email_verified_at' => now(),
                 'schedule_initialized' => true,
@@ -308,7 +308,7 @@ class TestUsersSeeder extends Seeder
                 'email' => strtolower("{$faculty['first']}.{$faculty['last']}.fac{$n}.CEIT@cvsu.edu.ph"),
                 'password' => Hash::make('11111111'),
                 'department' => 'College of Engineering and Information Technology',
-                'role' => 'Faculty Member',
+                'designation' => 'Faculty Member',
                 'is_validated' => true,
                 'email_verified_at' => now(),
                 'schedule_initialized' => true,
@@ -324,11 +324,11 @@ class TestUsersSeeder extends Seeder
             'Program Coordinator' => [
                 'abbrev' => 'progcoord',
                 'people' => [
-                    'DAFE'  => ['first' => 'Herminia',  'middle' => 'Cruz',   'last' => 'Buenaventura'],
-                    'DCEEE' => ['first' => 'Simplicio', 'middle' => 'Reyes',  'last' => 'Catalan'],
-                    'DCEA'  => ['first' => 'Adoracion', 'middle' => 'Santos', 'last' => 'Delos Reyes'],
-                    'DIET'  => ['first' => 'Prudencio', 'middle' => 'Garcia', 'last' => 'Enriquez'],
-                    'DIT'   => ['first' => 'Filomena',  'middle' => 'Lopez',  'last' => 'Fuentes'],
+                    'DAFE' => ['first' => 'Herminia', 'middle' => 'Cruz', 'last' => 'Buenaventura'],
+                    'DCEEE' => ['first' => 'Simplicio', 'middle' => 'Reyes', 'last' => 'Catalan'],
+                    'DCEA' => ['first' => 'Adoracion', 'middle' => 'Santos', 'last' => 'Delos Reyes'],
+                    'DIET' => ['first' => 'Prudencio', 'middle' => 'Garcia', 'last' => 'Enriquez'],
+                    'DIT' => ['first' => 'Filomena', 'middle' => 'Lopez', 'last' => 'Fuentes'],
                 ],
             ],
             'Research Coordinator' => [
@@ -373,7 +373,7 @@ class TestUsersSeeder extends Seeder
                     'email' => strtolower("{$person['first']}.{$person['last']}.{$roleData['abbrev']}.{$deptCode}@cvsu.edu.ph"),
                     'password' => Hash::make('11111111'),
                     'department' => $departments[$deptCode],
-                    'role' => $role,
+                    'designation' => $role,
                     'is_validated' => true,
                     'email_verified_at' => now(),
                     'schedule_initialized' => true,
@@ -409,7 +409,7 @@ class TestUsersSeeder extends Seeder
                     'email' => strtolower("{$faculty['first']}.{$faculty['last']}.fac{$n}.{$deptCode}@cvsu.edu.ph"),
                     'password' => Hash::make('11111111'),
                     'department' => $deptName,
-                    'role' => 'Faculty Member',
+                    'designation' => 'Faculty Member',
                     'is_validated' => true,
                     'email_verified_at' => now(),
                     'schedule_initialized' => true,

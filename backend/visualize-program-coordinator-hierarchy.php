@@ -1,8 +1,8 @@
 <?php
 
-require __DIR__.'/vendor/autoload.php';
+require __DIR__ . '/vendor/autoload.php';
 
-$app = require_once __DIR__.'/bootstrap/app.php';
+$app = require_once __DIR__ . '/bootstrap/app.php';
 $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 
 use Illuminate\Support\Facades\DB;
@@ -12,7 +12,7 @@ echo "║         ORGANIZATIONAL CHART HIERARCHY - PROGRAM COORDINATOR          
 echo "╚════════════════════════════════════════════════════════════════════════════╝\n\n";
 
 // Get a sample department with all coordinator types
-$dept = 'Department of Agricultural and Food Engineering';
+$dept = 'Department of Agriculture and Food Engineering';
 
 echo "Department: $dept\n\n";
 
@@ -32,13 +32,13 @@ foreach ($users as $user) {
     if ($currentRole !== $user->role) {
         $currentRole = $user->role;
         $level++;
-        
+
         echo "\n";
         echo str_repeat("─", 80) . "\n";
-        
+
         // Visual hierarchy indicator
         $indent = str_repeat("  ", $level - 1);
-        
+
         switch ($user->role) {
             case 'Chairperson':
                 echo "{$indent}┌─ LEVEL 1: CHAIRPERSON\n";
@@ -57,10 +57,10 @@ foreach ($users as $user) {
                 echo "{$indent}└─ LEVEL 4: FACULTY MEMBERS\n";
                 break;
         }
-        
+
         echo str_repeat("─", 80) . "\n";
     }
-    
+
     $indent = str_repeat("  ", $level);
     $roleLabel = str_pad($user->role, 25);
     echo "{$indent}• {$roleLabel} : {$user->name}\n";

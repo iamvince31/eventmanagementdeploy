@@ -15,11 +15,11 @@ class PositionSeeder extends Seeder
     public function run(): void
     {
         // Update existing admin users to be validated
-        User::where('role', 'Admin')->update([
+        User::where('designation', 'Admin')->update([
             'is_validated' => true
         ]);
 
-        // Update users with old role values to new enum values
+        // Update users with old designation values to new enum values
         $roleMapping = [
             'admin' => 'Admin',
             'dean' => 'Dean',
@@ -30,18 +30,24 @@ class PositionSeeder extends Seeder
         ];
 
         foreach ($roleMapping as $oldRole => $newRole) {
-            User::where('role', $oldRole)->update([
-                'role' => $newRole,
+            User::where('designation', $oldRole)->update([
+                'designation' => $newRole,
                 'is_validated' => $newRole === 'Admin' ? true : false
             ]);
         }
 
-        // Set default role for users without a proper role
-        User::whereNotIn('role', [
-            'Admin', 'Dean', 'Chairperson',
-            'Research Coordinator', 'Extension Coordinator',
-            'Faculty Member', 'CEIT Official', 'Staff',
-        ])->orWhereNull('role')
-          ->update(['role' => 'Faculty Member', 'is_validated' => false]);
+        // Set default designation for users without a proper designation
+        User::whereNotIn('designation', [
+            'Admin',
+            'Dean',
+            'Chairperson',
+            'Coordinator',
+            'Research Coordinator',
+            'Extension Coordinator',
+            'GAD Coordinator',
+            'Faculty Member',
+            'CEIT Official',
+        ])->orWhereNull('designation')
+            ->update(['designation' => 'Faculty Member', 'is_validated' => false]);
     }
 }

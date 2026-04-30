@@ -20,23 +20,26 @@ class EventController extends Controller
             'images:id,event_id,image_path,original_filename,order,cloudinary_url'
         ])
             ->where(function ($query) use ($user) {
-            // User is the host
-            $query->where('host_id', $user->id)
-                // Or user is a member/invited
-                ->orWhereHas('members', function ($q) use ($user) {
-                $q->where('users.id', $user->id);
-            }
-            );
-        })
+                // User is the host
+                $query->where('host_id', $user->id)
+                    // Or user is a member/invited
+                    ->orWhereHas(
+                        'members',
+                        function ($q) use ($user) {
+                        $q->where('users.id', $user->id);
+                    }
+                    );
+            })
             // Exclude personal events from other users
             ->where(function ($query) use ($user) {
-            $query->where('is_personal', false)
-                ->orWhere(function ($q) use ($user) {
-                $q->where('is_personal', true)
-                    ->where('host_id', $user->id);
-            }
-            );
-        })
+                $query->where('is_personal', false)
+                    ->orWhere(
+                        function ($q) use ($user) {
+                            $q->where('is_personal', true)
+                                ->where('host_id', $user->id);
+                        }
+                    );
+            })
             ->orderBy('date', 'desc')
             ->orderBy('time', 'desc')
             ->limit(100)
@@ -45,35 +48,34 @@ class EventController extends Controller
         // Transform regular events
         $transformedEvents = $events->map(function ($event) {
             return [
-            'id' => $event->id,
-            'title' => $event->title,
-            'description' => $event->description,
-            'location' => $event->location,
-            'event_type' => $event->event_type ?? 'event',
-            'images' => $event->images->map(fn($img) => [
-            'url' => $img->cloudinary_url
-                ?? (rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $img->image_path),
-            'original_filename' => $img->original_filename,
-            ]),
-            'date' => $event->date,
-            'time' => $event->time,
-            'end_time' => $event->end_time,
-            'school_year' => $event->school_year,
-            'host' => [
-            'id' => $event->host->id,
-            'username' => $event->host->name,
-            'email' => $event->host->email,
-            ],
-            'members' => $event->members->map(fn($m) => [
-            'id' => $m->id,
-            'username' => $m->name,
-            'email' => $m->email,
-            'status' => $m->pivot->status,
-            ]),
-            'is_default_event' => false,
-            'is_personal' => $event->is_personal ?? false,
-            'personal_color' => $event->personal_color,
-            'is_urgent' => $event->is_urgent ?? false,
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'location' => $event->location,
+                'event_type' => $event->event_type ?? 'event',
+                'images' => $event->images->map(fn($img) => [
+                    'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+                    'original_filename' => $img->original_filename,
+                ]),
+                'date' => $event->date,
+                'time' => $event->time,
+                'end_time' => $event->end_time,
+                'school_year' => $event->school_year,
+                'host' => [
+                    'id' => $event->host->id,
+                    'username' => $event->host->name,
+                    'email' => $event->host->email,
+                ],
+                'members' => $event->members->map(fn($m) => [
+                    'id' => $m->id,
+                    'username' => $m->name,
+                    'email' => $m->email,
+                    'status' => $m->pivot->status,
+                ]),
+                'is_default_event' => false,
+                'is_personal' => $event->is_personal ?? false,
+                'personal_color' => $event->personal_color,
+                'is_urgent' => $event->is_urgent ?? false,
             ];
         });
 
@@ -103,35 +105,34 @@ class EventController extends Controller
         // Transform regular events
         $transformedEvents = $events->map(function ($event) {
             return [
-            'id' => $event->id,
-            'title' => $event->title,
-            'description' => $event->description,
-            'location' => $event->location,
-            'event_type' => $event->event_type ?? 'event',
-            'images' => $event->images->map(fn($img) => [
-            'url' => $img->cloudinary_url
-                ?? (rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $img->image_path),
-            'original_filename' => $img->original_filename,
-            ]),
-            'date' => $event->date,
-            'time' => $event->time,
-            'end_time' => $event->end_time,
-            'school_year' => $event->school_year,
-            'host' => [
-            'id' => $event->host->id ?? null,
-            'username' => $event->host->name ?? 'Unknown',
-            'email' => $event->host->email ?? 'Unknown',
-            ],
-            'members' => $event->members->map(fn($m) => [
-            'id' => $m->id,
-            'username' => $m->name,
-            'email' => $m->email,
-            'status' => $m->pivot->status,
-            ]),
-            'is_default_event' => false,
-            'is_personal' => $event->is_personal ?? false,
-            'personal_color' => $event->personal_color,
-            'is_urgent' => $event->is_urgent ?? false,
+                'id' => $event->id,
+                'title' => $event->title,
+                'description' => $event->description,
+                'location' => $event->location,
+                'event_type' => $event->event_type ?? 'event',
+                'images' => $event->images->map(fn($img) => [
+                    'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+                    'original_filename' => $img->original_filename,
+                ]),
+                'date' => $event->date,
+                'time' => $event->time,
+                'end_time' => $event->end_time,
+                'school_year' => $event->school_year,
+                'host' => [
+                    'id' => $event->host->id ?? null,
+                    'username' => $event->host->name ?? 'Unknown',
+                    'email' => $event->host->email ?? 'Unknown',
+                ],
+                'members' => $event->members->map(fn($m) => [
+                    'id' => $m->id,
+                    'username' => $m->name,
+                    'email' => $m->email,
+                    'status' => $m->pivot->status,
+                ]),
+                'is_default_event' => false,
+                'is_personal' => $event->is_personal ?? false,
+                'personal_color' => $event->personal_color,
+                'is_urgent' => $event->is_urgent ?? false,
             ];
         });
 
@@ -187,12 +188,20 @@ class EventController extends Controller
             ->toArray() : [];
 
         // Only authorized roles can create events
-        if (!in_array($user->role, [
-        'Admin', 'Dean', 'Chairperson',
-        'Research Coordinator', 'Extension Coordinator',
-        'Department Research Coordinator', 'Department Extension Coordinator',
-        'CEIT Official', 'Faculty Member',
-        ])) {
+        if (
+            !in_array($user->designation, [
+                'Admin',
+                'System Administrator',
+                'Dean',
+                'Chairperson',
+                'Coordinator',
+                'Research Coordinator',
+                'Extension Coordinator',
+                'GAD Coordinator',
+                'CEIT Official',
+                'Faculty Member',
+            ])
+        ) {
             return response()->json([
                 'error' => 'Unauthorized to create events.'
             ], 403);
@@ -345,9 +354,9 @@ class EventController extends Controller
             // Delete old images from Supabase (or local fallback)
             foreach ($event->images as $oldImage) {
                 if ($oldImage->cloudinary_url && $oldImage->image_path) {
-                    Storage::disk('supabase')->delete($oldImage->image_path);
-                }
-                else {
+                    // Cloudinary — destroy by public_id
+                    cloudinary()->uploadApi()->destroy($oldImage->image_path);
+                } else {
                     // Legacy local storage fallback
                     Storage::disk('public')->delete($oldImage->image_path);
                 }
@@ -467,14 +476,13 @@ class EventController extends Controller
 
         // Parse event time
         $timeParts = explode(':', $time);
-        $eventHour = (int)$timeParts[0];
-        $eventMinute = isset($timeParts[1]) ? (int)$timeParts[1] : 0;
+        $eventHour = (int) $timeParts[0];
+        $eventMinute = isset($timeParts[1]) ? (int) $timeParts[1] : 0;
 
         // Handle AM/PM
         if (stripos($time, 'pm') !== false && $eventHour < 12) {
             $eventHour += 12;
-        }
-        elseif (stripos($time, 'am') !== false && $eventHour === 12) {
+        } elseif (stripos($time, 'am') !== false && $eventHour === 12) {
             $eventHour = 0;
         }
 
@@ -505,13 +513,13 @@ class EventController extends Controller
         $existingEvents = Event::where('date', $date)
             ->where('time', $time)
             ->whereHas('members', function ($query) use ($userIds) {
-            $query->whereIn('users.id', $userIds);
-        })
+                $query->whereIn('users.id', $userIds);
+            })
             ->orWhere(function ($query) use ($date, $time, $userIds) {
-            $query->where('date', $date)
-                ->where('time', $time)
-                ->whereIn('host_id', $userIds);
-        })
+                $query->where('date', $date)
+                    ->where('time', $time)
+                    ->whereIn('host_id', $userIds);
+            })
             ->with(['host:id,name,email', 'members:id,name,email'])
             ->get();
 

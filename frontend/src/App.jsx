@@ -73,7 +73,7 @@ const RoleProtectedRoute = ({ children, allowedRoles }) => {
   }
 
   // Check if user's role is allowed
-  if (!allowedRoles.includes(user.role)) {
+  if (!allowedRoles.includes(user.designation)) {
     return <Navigate to="/dashboard" />;
   }
 

@@ -83,7 +83,7 @@ class AuthController extends Controller
             'email' => $email,
             'password' => Hash::make($request->password),
             'department' => $request->department,
-            'role' => $request->role,
+            'designation' => $request->role,
             'is_validated' => false,
             'email_verified_at' => null,
         ]);
@@ -257,9 +257,11 @@ class AuthController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'profile_picture' => $user->profile_picture ?? null,
-                'role' => $user->role,
+                'designation' => $user->designation,
                 'is_validated' => $user->is_validated ?? false,
                 'schedule_initialized' => $user->schedule_initialized ?? false,
+                'has_changed_credentials' => $user->has_changed_credentials ?? false,
+                'has_changed_email' => $user->has_changed_email ?? false,
             ],
             'token' => $token,
         ]);
@@ -282,9 +284,11 @@ class AuthController extends Controller
                 'username' => $request->user()->name,
                 'email' => $request->user()->email,
                 'department' => $request->user()->department,
-                'role' => $request->user()->role,
+                'designation' => $request->user()->designation,
                 'is_validated' => $request->user()->is_validated ?? false,
                 'schedule_initialized' => $request->user()->schedule_initialized ?? false,
+                'has_changed_credentials' => $request->user()->has_changed_credentials ?? false,
+                'has_changed_email' => $request->user()->has_changed_email ?? false,
             ],
         ]);
     }
@@ -314,7 +318,7 @@ class AuthController extends Controller
             $token = Password::broker()->createToken($user);
             $user->sendPasswordResetNotification($token);
 
-            $frontendUrl = rtrim((string)env('FRONTEND_URL', 'http://localhost:5173'), '/');
+            $frontendUrl = rtrim((string) env('FRONTEND_URL', 'http://localhost:5173'), '/');
 
             return response()->json([
                 'message' => 'Password reset link sent to your email.',
@@ -396,8 +400,7 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'OTP sent to your email. Please check your inbox.',
             ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to send OTP', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -455,9 +458,9 @@ class AuthController extends Controller
             DB::table('password_reset_otps')
                 ->where('id', $otpRecord->id)
                 ->update([
-                'reset_token' => $resetToken,
-                'reset_token_expires_at' => now()->addMinutes(30),
-            ]);
+                    'reset_token' => $resetToken,
+                    'reset_token_expires_at' => now()->addMinutes(30),
+                ]);
 
             Log::info('OTP verified successfully', [
                 'email' => $email,
@@ -468,8 +471,7 @@ class AuthController extends Controller
                 'message' => 'OTP verified successfully.',
                 'reset_token' => $resetToken,
             ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to verify OTP', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -566,8 +568,7 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Password reset successfully. You can now log in with your new password.',
             ]);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             Log::error('Failed to reset password', [
                 'email' => $email,
                 'error' => $e->getMessage(),
@@ -682,8 +683,8 @@ class AuthController extends Controller
             ->where('email', $email)
             ->where('otp', $token)
             ->where(function ($q) {
-            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-        })
+                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+            })
             ->first();
 
         if (!$record) {
@@ -733,17 +734,17 @@ class AuthController extends Controller
 
         $email = strtolower(trim($request->email));
         $status = Password::reset(
-        [
-            'email' => $email,
-            'password' => $request->password,
-            'password_confirmation' => $request->password_confirmation,
-            'token' => $request->token
-        ],
+            [
+                'email' => $email,
+                'password' => $request->password,
+                'password_confirmation' => $request->password_confirmation,
+                'token' => $request->token
+            ],
             function ($user, $password) {
-            $user->forceFill([
-                'password' => Hash::make($password),
-            ])->save();
-        }
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                ])->save();
+            }
         );
 
         if ($status === Password::PASSWORD_RESET) {

@@ -102,7 +102,7 @@ export default function Archive() {
     ];
 
     // Only Administrator can access this page
-    if (user && user.role !== 'Admin') {
+    if (user && user.designation !== 'Admin') {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 text-center">
