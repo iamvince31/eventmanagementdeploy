@@ -410,7 +410,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       return a.username.localeCompare(b.username);
     });
 
-  const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))];
+  const availableDepartments = [...new Set(members.map(m => m.department).filter(Boolean))].filter(d => d !== 'College of Engineering and Information Technology');
   const availableDesignations = [...new Set(members.map(m => m.designation).filter(Boolean))];
 
   return (
@@ -722,8 +722,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                   className={`border-2 border-dashed rounded-lg p-3 transition-all duration-200 ${isDragging ? 'border-green-500 bg-green-50' :
-                      fileError ? 'border-red-300 bg-red-50/30' :
-                        'border-gray-200 bg-gray-50/50 hover:border-green-300'
+                    fileError ? 'border-red-300 bg-red-50/30' :
+                      'border-gray-200 bg-gray-50/50 hover:border-green-300'
                     }`}
                 >
                   <input
@@ -899,7 +899,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                                 {member.designation}
                               </span>
                             )}
-                            {member.department && (
+                            {member.department && member.department !== 'College of Engineering and Information Technology' && (
                               <span className="text-xs text-gray-500 font-normal">
                                 {member.department}
                               </span>
