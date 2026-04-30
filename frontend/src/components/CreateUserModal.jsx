@@ -22,8 +22,8 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
     'Department of Agriculture and Food Engineering',
   ];
 
-  const CEIT_DESIGNATIONS = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
-  const DEPT_DESIGNATIONS = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'];
+  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
+  const DEPT_ROLES = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
 
   const getDesignationsForDepartment = (dept) => {
     if (!dept) return [...CEIT_DESIGNATIONS, ...DEPT_DESIGNATIONS]; // show all if none selected

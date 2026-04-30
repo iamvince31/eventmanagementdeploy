@@ -29,7 +29,7 @@ class AuthController extends Controller
             ],
             'password' => 'required|string|min:6',
             'department' => 'required|string|max:255',
-            'role' => 'required|in:Dean,CEIT Official,Chairperson,Research Coordinator,Extension Coordinator,Department Research Coordinator,Department Extension Coordinator,Faculty Member,Staff',
+            'role' => 'required|in:Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
         ], [
             'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
             'department.required' => 'Please select your department.',

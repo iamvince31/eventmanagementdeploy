@@ -69,7 +69,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'department' => 'required|string|max:255',
-            'designation' => 'required|in:Admin,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Faculty Member,CEIT Official',
+            'designation' => 'required|in:Admin,Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
             'name' => 'required|string|max:255',
         ]);
 
@@ -180,7 +180,7 @@ class UserController extends Controller
     public function updateDesignation(Request $request, $id)
     {
         $validated = $request->validate([
-            'designation' => 'required|in:Admin,Chairperson,Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Faculty Member,CEIT Official',
+            'designation' => 'required|in:Admin,Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
             'department' => 'sometimes|string|max:255',
         ]);
 

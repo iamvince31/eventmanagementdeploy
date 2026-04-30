@@ -38,17 +38,15 @@ export default function Admin() {
   const designations = [
     'Admin',
     'Dean',
+    'CEIT Official',
     'Chairperson',
-    'Research Coordinator',
-    'Extension Coordinator',
     'Department Research Coordinator',
     'Department Extension Coordinator',
     'Faculty Member',
-    'CEIT Official'
   ];
 
-  const CEIT_DESIGNATIONS = ['Dean', 'CEIT Official', 'Coordinator', 'Faculty Member'];
-  const DEPT_DESIGNATIONS = ['Chairperson', 'Faculty Member', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator'];
+  const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
+  const DEPT_ROLES = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
 
   const deanExists = users.some(u => u.designation === 'Dean');
 
@@ -189,12 +187,10 @@ export default function Admin() {
       'Admin': 'bg-purple-100 text-purple-800',
       'Dean': 'bg-blue-100 text-blue-800',
       'Chairperson': 'bg-indigo-100 text-indigo-800',
-      'Research Coordinator': 'bg-sky-100 text-sky-800',
-      'Extension Coordinator': 'bg-teal-100 text-teal-800',
       'Department Research Coordinator': 'bg-cyan-100 text-cyan-800',
       'Department Extension Coordinator': 'bg-emerald-100 text-emerald-800',
       'Faculty Member': 'bg-green-100 text-green-800',
-      'CEIT Official': 'bg-orange-100 text-orange-800'
+      'CEIT Official': 'bg-orange-100 text-orange-800',
     };
     return colors[designation] || 'bg-gray-100 text-gray-800';
   };

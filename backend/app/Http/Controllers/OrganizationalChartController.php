@@ -165,7 +165,7 @@ class OrganizationalChartController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'department' => 'sometimes|string|max:255',
-            'designation' => 'sometimes|in:Dean,CEIT Official,Chairperson,Program Coordinator,Research Coordinator,Extension Coordinator,GAD Coordinator,Coordinator,Faculty Member',
+            'designation' => 'sometimes|in:Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
         ]);
 
         $user = User::findOrFail($id);

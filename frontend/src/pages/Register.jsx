@@ -24,7 +24,7 @@ export default function Register() {
   ];
 
   const CEIT_ROLES = ['Dean', 'CEIT Official'];
-  const DEPT_ROLES = ['Chairperson', 'Research Coordinator', 'Extension Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member', 'Staff'];
+  const DEPT_ROLES = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
 
   const getRolesForDepartment = (dept) => {
     if (dept === 'College of Engineering and Information Technology') return CEIT_ROLES;

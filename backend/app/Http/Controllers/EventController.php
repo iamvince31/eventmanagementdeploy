@@ -188,20 +188,11 @@ class EventController extends Controller
             ->toArray() : [];
 
         // Only authorized roles can create events
-        if (
-            !in_array($user->designation, [
-                'Admin',
-                'System Administrator',
-                'Dean',
-                'Chairperson',
-                'Coordinator',
-                'Research Coordinator',
-                'Extension Coordinator',
-                'GAD Coordinator',
-                'CEIT Official',
-                'Faculty Member',
-            ])
-        ) {
+        if (!in_array($user->role, [
+        'Admin', 'Dean', 'Chairperson',
+        'Department Research Coordinator', 'Department Extension Coordinator',
+        'CEIT Official', 'Faculty Member',
+        ])) {
             return response()->json([
                 'error' => 'Unauthorized to create events.'
             ], 403);

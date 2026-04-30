@@ -10,8 +10,10 @@ git push deployed Integration:merge-ready
 git push deployed Integration:master
 
 Setup pagpull sa other repo
+git stash
 git fetch deployed
-git merge deployed/master --allow-unrelated-histories
+git merge deployed/master
+git stash pop
 
 Test
 Test
