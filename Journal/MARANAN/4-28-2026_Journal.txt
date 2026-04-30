@@ -28,6 +28,12 @@ urgent feature must only be visible to only dean, ceit officers, admin, departme
 DCE changed to DCEA 
 Rerunning Migrations and restoring third party application runs
 Updating Seeders to our current implementations
+fix multple dates increment no restriction on /add-event
+removed old role base access specific function where it disables the 
+personal events add a time end also that is optional
+
+
+
 
 **UI of Members List
 **need to update pending events on event vs meeting

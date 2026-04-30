@@ -16,7 +16,8 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
     title: '',
     description: '',
     date: '',
-    time: ''
+    time: '',
+    end_time: '',
   });
 
   useEffect(() => {
@@ -25,7 +26,8 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
         title: editingEvent?.title || '',
         description: editingEvent?.description || '',
         date: editingEvent?.date || selectedDate,
-        time: editingEvent?.time || ''
+        time: editingEvent?.time || '',
+        end_time: editingEvent?.end_time || '',
       });
       setMessage({ type: '', text: '' });
       setIsDatePickerOpen(false);
@@ -267,7 +269,7 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="date" className="block text-sm font-semibold text-gray-900 mb-2">
                 Date *
@@ -286,7 +288,7 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
 
             <div>
               <label htmlFor="time" className="block text-sm font-semibold text-gray-900 mb-2">
-                Time *
+                Start Time *
               </label>
               <input
                 type="time"
@@ -295,6 +297,20 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
                 value={formData.time}
                 onChange={handleInputChange}
                 required
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="end_time" className="block text-sm font-semibold text-gray-900 mb-2">
+                End Time <span className="text-gray-400 font-normal text-xs">(optional)</span>
+              </label>
+              <input
+                type="time"
+                id="end_time"
+                name="end_time"
+                value={formData.end_time}
+                onChange={handleInputChange}
                 className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300"
               />
             </div>

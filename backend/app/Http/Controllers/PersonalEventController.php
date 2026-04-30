@@ -19,6 +19,7 @@ class PersonalEventController extends Controller
             'description' => 'nullable|string',
             'date' => 'required|date',
             'time' => 'required',
+            'end_time' => 'nullable|date_format:H:i',
         ]);
 
         if ($validator->fails()) {
@@ -36,11 +37,12 @@ class PersonalEventController extends Controller
             'description' => $request->description ?? '',
             'date' => $request->date,
             'time' => $request->time,
-            'location' => 'Personal', // Default location for personal events
+            'end_time' => $request->end_time ?: null,
+            'location' => 'Personal',
             'host_id' => $user->id,
             'is_open' => false,
             'is_personal' => true,
-            'personal_color' => '#8b5cf6', // Purple color
+            'personal_color' => '#8b5cf6',
         ]);
 
         return response()->json([
@@ -68,6 +70,7 @@ class PersonalEventController extends Controller
             'description' => 'nullable|string',
             'date' => 'sometimes|required|date',
             'time' => 'sometimes|required',
+            'end_time' => 'nullable|date_format:H:i',
         ]);
 
         if ($validator->fails()) {
@@ -77,7 +80,7 @@ class PersonalEventController extends Controller
             ], 422);
         }
 
-        $event->update($request->only(['title', 'description', 'date', 'time']));
+        $event->update($request->only(['title', 'description', 'date', 'time', 'end_time']));
 
         return response()->json([
             'message' => 'Personal event updated successfully',

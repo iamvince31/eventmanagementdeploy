@@ -367,8 +367,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     if (member.id === currentUser?.id) return false;
 
     // When urgent is on and host is not Admin/Dean, hide Dean members
-    const hostCanInviteDean = ['Admin', 'Dean'].includes(currentUser?.designation);
-    if (isUrgent && eventType === 'meeting' && !hostCanInviteDean && member.designation === 'Dean') return false;
+    const hostCanInviteDean = ['Admin', 'Dean'].includes(currentUser?.role);
+    if (isUrgent && eventType === 'meeting' && !hostCanInviteDean && member.role === 'Dean') return false;
 
     // Always show selected members regardless of filters
     if (selectedMembers.includes(member.id)) return true;
@@ -384,8 +384,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
   // Auto-remove Dean from selectedMembers when urgent is toggled on by non-Admin/Dean
   useEffect(() => {
-    if (isUrgent && eventType === 'meeting' && !['Admin', 'Dean'].includes(currentUser?.designation)) {
-      const deanIds = members.filter(m => m.designation === 'Dean').map(m => m.id);
+    if (isUrgent && eventType === 'meeting' && !['Admin', 'Dean'].includes(currentUser?.role)) {
+      const deanIds = members.filter(m => m.role === 'Dean').map(m => m.id);
       if (deanIds.length > 0) {
         setSelectedMembers(prev => prev.filter(id => !deanIds.includes(id)));
       }
