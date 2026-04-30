@@ -258,6 +258,7 @@ class AuthController extends Controller
                 'department' => $user->department,
                 'profile_picture' => $user->profile_picture ?? null,
                 'designation' => $user->designation,
+                'ceit_officer_type' => $user->ceit_officer_type,
                 'is_validated' => $user->is_validated ?? false,
                 'schedule_initialized' => $user->schedule_initialized ?? false,
                 'has_changed_credentials' => $user->has_changed_credentials ?? false,

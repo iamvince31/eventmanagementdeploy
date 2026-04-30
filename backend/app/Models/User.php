@@ -27,6 +27,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'password',
         'department',
         'designation',
+        'ceit_officer_type',
         'profile_picture',
         'is_validated',
         'email_verified_at',

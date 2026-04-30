@@ -28,6 +28,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'designation' => $user->designation,
+                'ceit_officer_type' => $user->ceit_officer_type,
                 'is_validated' => $user->is_validated,
             ]),
         ]);
@@ -48,6 +49,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'designation' => $user->designation,
+                'ceit_officer_type' => $user->ceit_officer_type,
                 'is_validated' => $user->is_validated,
             ]),
         ]);
@@ -70,6 +72,7 @@ class UserController extends Controller
             'password' => 'required|string|min:8',
             'department' => 'required|string|max:255',
             'designation' => 'required|in:Admin,Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
+            'ceit_officer_type' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
         ]);
 
@@ -80,7 +83,8 @@ class UserController extends Controller
             'password' => bcrypt($validated['password']),
             'department' => $validated['department'],
             'designation' => $validated['designation'],
-            'is_validated' => true, // Admin-created users are automatically validated
+            'ceit_officer_type' => $validated['designation'] === 'CEIT Official' ? ($request->ceit_officer_type ?: null) : null,
+            'is_validated' => true,
             'email_verified_at' => now(),
         ]);
 
@@ -92,6 +96,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'designation' => $user->designation,
+                'ceit_officer_type' => $user->ceit_officer_type,
                 'is_validated' => $user->is_validated,
             ],
         ], 201);
@@ -182,6 +187,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'designation' => 'required|in:Admin,Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
             'department' => 'sometimes|string|max:255',
+            'ceit_officer_type' => 'nullable|string|max:255',
         ]);
 
         $user = User::findOrFail($id);
@@ -197,6 +203,10 @@ class UserController extends Controller
         if (isset($validated['department'])) {
             $updateData['department'] = $validated['department'];
         }
+        // Only store ceit_officer_type when designation is CEIT Official
+        $updateData['ceit_officer_type'] = $validated['designation'] === 'CEIT Official'
+            ? ($request->ceit_officer_type ?: null)
+            : null;
 
         $user->update($updateData);
 
@@ -208,6 +218,7 @@ class UserController extends Controller
                 'email' => $user->email,
                 'department' => $user->department,
                 'designation' => $user->designation,
+                'ceit_officer_type' => $user->ceit_officer_type,
                 'is_validated' => $user->is_validated,
             ],
         ]);

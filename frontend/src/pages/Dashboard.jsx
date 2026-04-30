@@ -291,7 +291,7 @@ export default function Dashboard() {
           </div>
           <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
             {/* Academic Calendar - Admin Only */}
-            {user?.designation === 'Admin' && (
+            {(user?.designation === 'Admin' || user?.role === 'Admin') && (
               <button
                 onClick={() => navigate('/default-events')}
                 className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"

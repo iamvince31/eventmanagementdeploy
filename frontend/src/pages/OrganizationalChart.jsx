@@ -12,7 +12,7 @@ export default function OrganizationalChart() {
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  const canEdit = user?.designation === 'Admin' || user?.designation === 'Dean';
+  const canEdit = (user?.designation === 'Admin' || user?.role === 'Admin') || (user?.designation === 'Dean' || user?.role === 'Dean');
 
   useEffect(() => {
     fetchDepartments();

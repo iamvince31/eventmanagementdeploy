@@ -29,7 +29,7 @@ const DefaultEvents = () => {
 
   // Redirect non-admin users
   useEffect(() => {
-    if (user && user.designation !== 'Admin') {
+    if (user && user.designation !== 'Admin' && user.role !== 'Admin') {
       navigate('/dashboard');
     }
   }, [user, navigate]);

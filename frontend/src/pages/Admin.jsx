@@ -45,6 +45,28 @@ export default function Admin() {
     'Faculty Member',
   ];
 
+  const CEIT_OFFICER_TYPES = [
+    'College Secretary', 'College Inspector', 'College Budget Officer', 'College Registrar',
+    'Assistant College Registrar', 'Records Custodian', 'College MIS', 'ILCLO',
+    'Coordinator, Research Services', 'Coordinator, Graduate Programs',
+    'Coordinator, Research Monitoring and Evaluation Unit', 'Coordinator, Extension Services',
+    'Coordinator, Extension Monitoring and Evaluation Unit', 'College OJT Coordinator',
+    'Coordinator, College Quality Assurance and Accreditation',
+    'Asst. Coordinator, College Quality Assurance and Accreditation',
+    'Coordinator, Knowledge Management Unit', 'Coordinator, Gender and Development Program',
+    'Coordinator, Gender and Development Program (alternate)', 'Coordinator, Sports Development',
+    'Coordinator, Socio-cultural Development', 'Coordinator, Continuous Quality Improvement (CQI)',
+    'College Public Information Officer', 'Coordinator, Pollution Control',
+    'College Review Coordinator for BSABE and BSCE', 'College Review Coordinator for BSECE and BSEE',
+    'College Guidance Facilitator for BSABE, BSIT, BSCS, and Architecture Programs',
+    'College Guidance Facilitator for BSCE, BSECE, BSEE, BSCpE, BSIE and BIT programs',
+    'College Job Placement Officer', 'College Property Custodian', 'College Canvasser',
+    'In-charge, College Reading Room', 'In-charge, Material Testing Laboratory',
+    'College Civil Security Officer', 'College Safety Officer',
+    'In-charge, Simulation and Math Laboratory', 'Head, CCL and Technical Support Services Unit',
+    'University Web Master', 'In-charge, e-Learning Team',
+  ];
+
   const CEIT_ROLES = ['Dean', 'CEIT Official', 'Faculty Member'];
   const DEPT_ROLES = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
 
@@ -54,8 +76,8 @@ export default function Admin() {
     const deanTaken = users.some(u => u.designation === 'Dean' && u.id !== excludingUserId);
     let base;
     if (!dept) base = designations;
-    else if (dept === 'College of Engineering and Information Technology') base = CEIT_DESIGNATIONS;
-    else base = DEPT_DESIGNATIONS;
+    else if (dept === 'College of Engineering and Information Technology') base = CEIT_ROLES;
+    else base = DEPT_ROLES;
     return deanTaken ? base.filter(r => r !== 'Dean') : base;
   };
 
@@ -68,7 +90,7 @@ export default function Admin() {
   ];
 
   useEffect(() => {
-    if (user && (user.designation !== 'Admin' || !user.is_validated)) {
+    if (user && (user.designation !== 'Admin' && user.role !== 'Admin' || !user.is_validated)) {
       navigate('/account');
       return;
     }
@@ -128,7 +150,7 @@ export default function Admin() {
 
   const handleDesignationChange = async (userId, newDesignation) => {
     try {
-      await api.put(`/users/${userId}/designation`, { designation: newDesignation });
+      await api.put(`/users/${userId}/role`, { role: newDesignation });
       invalidateCache('admin-users');
       await fetchUsers();
       setEditingUserId(null);
@@ -199,16 +221,18 @@ export default function Admin() {
     setEditingUser({
       ...user,
       designation: user.designation || 'Faculty Member',
-      department: user.department || ''
+      department: user.department || '',
+      ceit_officer_type: user.ceit_officer_type || '',
     });
     setIsEditUserModalOpen(true);
   };
 
   const handleUpdateUser = async () => {
     try {
-      await api.put(`/users/${editingUser.id}/designation`, {
-        designation: editingUser.designation,
-        department: editingUser.department
+      await api.put(`/users/${editingUser.id}/role`, {
+        role: editingUser.designation,
+        department: editingUser.department,
+        ceit_officer_type: editingUser.designation === 'CEIT Official' ? (editingUser.ceit_officer_type || null) : null,
       });
       invalidateCache('admin-users');
       await fetchUsers();
@@ -524,9 +548,16 @@ export default function Admin() {
                                 <button onClick={cancelEditDesignation} className="text-gray-600 hover:text-gray-700 text-sm font-semibold">Cancel</button>
                               </div>
                             ) : (
-                              <span className={`px-2 py-1 inline-block text-xs font-bold rounded-lg ${getDesignationColor(u.designation)} text-center leading-tight shadow-sm`}>
-                                {u.designation}
-                              </span>
+                              <div className="flex flex-col gap-1">
+                                <span className={`px-2 py-1 inline-block text-xs font-bold rounded-lg ${getDesignationColor(u.designation)} text-center leading-tight shadow-sm`}>
+                                  {u.designation}
+                                </span>
+                                {u.designation === 'CEIT Official' && u.ceit_officer_type && (
+                                  <span className="px-2 py-0.5 inline-block text-xs font-medium rounded-md bg-orange-50 text-orange-700 border border-orange-200 leading-tight max-w-[160px] truncate" title={u.ceit_officer_type}>
+                                    {u.ceit_officer_type}
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </td>
 
@@ -593,8 +624,11 @@ export default function Admin() {
                                 </div>
                                 <div>
                                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Designation</span>
-                                  <p className="mt-0.5">
+                                  <p className="mt-0.5 flex flex-col gap-1">
                                     <span className={`px-2 py-0.5 inline-flex text-xs font-semibold rounded-full ${getDesignationColor(u.designation)}`}>{u.designation}</span>
+                                    {u.designation === 'CEIT Official' && u.ceit_officer_type && (
+                                      <span className="px-2 py-0.5 inline-flex text-xs font-medium rounded-md bg-orange-50 text-orange-700 border border-orange-200 max-w-[200px] break-words">{u.ceit_officer_type}</span>
+                                    )}
                                   </p>
                                 </div>
                               </div>
@@ -751,7 +785,7 @@ export default function Admin() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Designation</label>
                 <select
                   value={editingUser.designation}
-                  onChange={(e) => setEditingUser(prev => ({ ...prev, designation: e.target.value }))}
+                  onChange={(e) => setEditingUser(prev => ({ ...prev, designation: e.target.value, ceit_officer_type: '' }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
                 >
                   <option value="">Select Designation</option>
@@ -760,6 +794,31 @@ export default function Admin() {
                   ))}
                 </select>
               </div>
+
+              {/* CEIT Officer Type — only when CEIT Official */}
+              {editingUser.designation === 'CEIT Official' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Officer Type <span className="text-red-500">*</span>
+                    <span className="ml-1 text-xs text-gray-400 font-normal">(specific CEIT role)</span>
+                  </label>
+                  <select
+                    value={editingUser.ceit_officer_type || ''}
+                    onChange={(e) => setEditingUser(prev => ({ ...prev, ceit_officer_type: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
+                  >
+                    <option value="">Select officer type...</option>
+                    {CEIT_OFFICER_TYPES.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  {editingUser.ceit_officer_type && (
+                    <span className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200">
+                      {editingUser.ceit_officer_type}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex space-x-3 mt-6">
