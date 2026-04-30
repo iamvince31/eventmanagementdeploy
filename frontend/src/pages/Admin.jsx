@@ -503,12 +503,12 @@ export default function Admin() {
                           </td>
 
                           <td className="hidden lg:table-cell px-4 py-3">
-                            {u.department ? (
+                            {u.department && u.department !== 'College of Engineering and Information Technology' ? (
                               <span className="px-2 py-1 inline-block text-xs font-bold rounded-lg bg-green-100 text-green-800 leading-tight shadow-sm border border-green-200/50 max-w-[170px] break-words">
-                                {u.department === 'College of Engineering and Information Technology' ? 'CEIT' : u.department}
+                                {u.department}
                               </span>
                             ) : (
-                              <span className="text-sm text-gray-400 italic">Not assigned</span>
+                              <span className="text-sm text-gray-400 font-medium">-</span>
                             )}
                           </td>
 
@@ -586,12 +586,12 @@ export default function Admin() {
                                 <div>
                                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</span>
                                   <p className="mt-0.5">
-                                    {u.department ? (
+                                    {u.department && u.department !== 'College of Engineering and Information Technology' ? (
                                       <span className="px-2 py-1 inline-block text-[11px] font-bold rounded-lg bg-green-100 text-green-800 leading-tight max-w-[200px] break-words">
-                                        {u.department === 'College of Engineering and Information Technology' ? 'CEIT' : u.department}
+                                        {u.department}
                                       </span>
                                     ) : (
-                                      <span className="text-gray-400 italic">Not assigned</span>
+                                      <span className="text-gray-400 font-medium">-</span>
                                     )}
                                   </p>
                                 </div>
