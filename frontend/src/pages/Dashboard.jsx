@@ -303,44 +303,34 @@ export default function Dashboard() {
               </button>
             )}
 
-            {/* Role-based Event Creation Buttons */}
-            {(() => {
-              const canCreate = user && [
-                'Admin', 'Dean', 'Chairperson',
-                'Department Research Coordinator', 'Department Extension Coordinator',
-                'CEIT Official', 'Faculty Member',
-              ].includes(user.role);
-
-              if (!canCreate) return null;
-
-              return (
-                <>
-                  <button
-                    onClick={() => {
-                      setEditingPersonalEvent(null);
-                      setPersonalEventSelectedDate(selectedDate);
-                      setIsPersonalEventModalOpen(true);
-                    }}
-                    className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
-                  >
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                    Personal
-                  </button>
-                  <button
-                    onClick={() => navigate('/add-event', { state: { selectedDate } })}
-                    className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
-                  >
-                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                    </svg>
-                    <span className="hidden sm:inline">Add Event</span>
-                    <span className="sm:hidden">Add</span>
-                  </button>
-                </>
-              );
-            })()}
+            {/* Event Creation Buttons — available to all validated users */}
+            {user && (
+              <>
+                <button
+                  onClick={() => {
+                    setEditingPersonalEvent(null);
+                    setPersonalEventSelectedDate(selectedDate);
+                    setIsPersonalEventModalOpen(true);
+                  }}
+                  className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                >
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Personal
+                </button>
+                <button
+                  onClick={() => navigate('/add-event', { state: { selectedDate } })}
+                  className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
+                >
+                  <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span className="hidden sm:inline">Add Event</span>
+                  <span className="sm:hidden">Add</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 

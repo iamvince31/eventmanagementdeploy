@@ -580,7 +580,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   {!editingEvent && (
                     <button
                       type="button"
+                      disabled={dateEntries.length >= 3}
                       onClick={() => {
+                        if (dateEntries.length >= 3) return;
                         const last = dateEntries[dateEntries.length - 1];
                         const usedDates = new Set(dateEntries.map(e => e.date).filter(Boolean));
                         // Start from last date (or today if empty), find next available non-Sunday
@@ -593,12 +595,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                         const next = cursor.toISOString().split('T')[0];
                         setDateEntries(prev => [...prev, { date: next, startTime: last.startTime, endTime: last.endTime }]);
                       }}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900 transition-colors"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
                       </svg>
-                      Add date
+                      {dateEntries.length >= 3 ? 'Max 3 dates' : 'Add date'}
                     </button>
                   )}
                 </div>
