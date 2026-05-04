@@ -243,8 +243,10 @@ class EventController extends Controller
                     ], 400);
                 }
 
-                // Upload to Supabase Storage
-                $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
+                // Upload to Supabase Storage — sanitize filename to avoid URL issues
+                $originalName = $image->getClientOriginalName();
+                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+                $filename = 'events/' . uniqid() . '_' . $safeName;
                 try {
                     Storage::disk('supabase')->put($filename, $image->get(), 'public');
                 } catch (\Exception $e) {
@@ -261,7 +263,7 @@ class EventController extends Controller
                 $event->images()->create([
                     'image_path' => $filename,
                     'cloudinary_url' => $publicUrl,
-                    'original_filename' => $image->getClientOriginalName(),
+                    'original_filename' => $originalName, // keep original name for display
                     'order' => $index,
                 ]);
             }
@@ -365,7 +367,9 @@ class EventController extends Controller
 
             // Add new images via Supabase Storage
             foreach ($request->file('images') as $index => $image) {
-                $filename = 'events/' . uniqid() . '_' . $image->getClientOriginalName();
+                $originalName = $image->getClientOriginalName();
+                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
+                $filename = 'events/' . uniqid() . '_' . $safeName;
                 try {
                     Storage::disk('supabase')->put($filename, $image->get(), 'public');
                 } catch (\Exception $e) {
@@ -382,7 +386,7 @@ class EventController extends Controller
                 $event->images()->create([
                     'image_path' => $filename,
                     'cloudinary_url' => $publicUrl,
-                    'original_filename' => $image->getClientOriginalName(),
+                    'original_filename' => $originalName, // keep original name for display
                     'order' => $index,
                 ]);
             }
@@ -547,30 +551,18 @@ class EventController extends Controller
     }
 
     /**
-     * Builds the correct Supabase public URL for a stored file.
-     * Derives the project URL from the S3 endpoint if SUPABASE_PUBLIC_URL is not set.
-     * Format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+     * Builds the Supabase public URL directly from SUPABASE_PUBLIC_URL env var.
+     * Format: {SUPABASE_PUBLIC_URL}/{bucket}/{encoded-path}
      */
     private function buildSupabasePublicUrl(string $filename): string
     {
-        $bucket = config('filesystems.disks.supabase.bucket', 'event-files');
+        $base   = rtrim(env('SUPABASE_PUBLIC_URL'), '/');
+        $bucket = env('SUPABASE_S3_BUCKET', 'event-files');
 
-        // Use explicit public URL if configured
-        $publicBase = config('filesystems.disks.supabase.public_url');
-        if ($publicBase) {
-            return rtrim($publicBase, '/') . '/' . $bucket . '/' . $filename;
-        }
+        // URL-encode each path segment so spaces/special chars don't break the URL
+        $encodedPath = implode('/', array_map('rawurlencode', explode('/', $filename)));
 
-        // Derive from S3 endpoint: https://[project].storage.supabase.co/storage/v1/s3
-        // → https://[project].supabase.co/storage/v1/object/public
-        $endpoint = config('filesystems.disks.supabase.endpoint', '');
-        if (preg_match('#https://([^.]+)\.storage\.supabase\.co#', $endpoint, $m)) {
-            $projectId = $m[1];
-            return "https://{$projectId}.supabase.co/storage/v1/object/public/{$bucket}/{$filename}";
-        }
-
-        // Last resort fallback
-        return "https://swqmdrstziimdcybbffq.supabase.co/storage/v1/object/public/{$bucket}/{$filename}";
+        return "{$base}/{$bucket}/{$encodedPath}";
     }
 
     /**
