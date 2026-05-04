@@ -42,7 +42,7 @@ export default function Dashboard() {
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
-  // Helper — works whether server returns 'role' or 'designation'
+  // Helper ï¿½ works whether server returns 'role' or 'designation'
   const isAdmin = user?.role === 'Admin' || user?.designation === 'Admin';
 
   useEffect(() => {
@@ -325,8 +325,75 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <main className={`flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 flex flex-col gap-4 ${isAdmin ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+
+        {/* Section Header with buttons â€” always visible */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 flex-shrink-0">
+          {loading ? (
+            <>
+              <div className="animate-pulse">
+                <div className="h-7 bg-gray-200 rounded w-40 mb-2"></div>
+                <div className="h-3 bg-gray-100 rounded w-56"></div>
+              </div>
+              <div className="flex gap-1.5 sm:gap-2 animate-pulse">
+                <div className="h-9 bg-gray-200 rounded w-24"></div>
+                <div className="h-9 bg-gray-200 rounded w-24"></div>
+                <div className="h-9 bg-gray-200 rounded w-28"></div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Calendar View</h2>
+                <p className="text-xs text-gray-600 mt-0.5 sm:mt-1 font-medium">Click a date to view or manage your events</p>
+              </div>
+              <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
+                {/* Academic Calendar - Admin Only */}
+                {isAdmin && (
+                  <button
+                    onClick={() => navigate('/default-events')}
+                    className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                  >
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Academic
+                  </button>
+                )}
+                {/* Event Creation Buttons â€” visible to all validated users */}
+                {user && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingPersonalEvent(null);
+                        setPersonalEventSelectedDate(selectedDate);
+                        setIsPersonalEventModalOpen(true);
+                      }}
+                      className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                    >
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Personal
+                    </button>
+                    <button
+                      onClick={() => navigate('/add-event', { state: { selectedDate } })}
+                      className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
+                    >
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span className="hidden sm:inline">Add Event</span>
+                      <span className="sm:hidden">Add</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
         {/* Analytics Dashboard Section - Admin Only */}
-        {isAdmin ? (
+        {isAdmin && (
           <>
             {analyticsLoading ? (
               // Analytics Loading Skeleton
@@ -469,7 +536,7 @@ export default function Dashboard() {
                   </button>
                 )}
                 
-                {/* Role-based Event Creation Buttons — visible to all validated users */}
+                {/* Role-based Event Creation Buttons ï¿½ visible to all validated users */}
                 {user && (
                   <>
                     <button
