@@ -18,7 +18,7 @@ Route::get('/reset-password/{token}', function (Request $request, string $token)
     return redirect()->away("{$frontendUrl}/reset-password?{$query}");
 })->name('password.reset');
 
-// Temporary cleanup route — remove after use
+// Cleanup route — removes broken/legacy event image records
 Route::get('/cleanup-broken-images', function () {
     $deleted = \Illuminate\Support\Facades\DB::table('event_images')
         ->where(function ($q) {
@@ -34,7 +34,7 @@ Route::get('/cleanup-broken-images', function () {
             $q->where('profile_picture', 'not like', 'http%')
               ->orWhere('profile_picture', 'like', '%onrender.com%');
         })
-        ->update(['profile_picture' => null, 'profile_picture_public_id' => null]);
+        ->update(['profile_picture' => null]);
 
     return response()->json([
         'deleted_broken_event_images' => $deleted,
@@ -43,7 +43,7 @@ Route::get('/cleanup-broken-images', function () {
     ]);
 });
 
-// Temporary debug route — remove after fixing
+// Debug route — check Supabase storage config
 Route::get('/debug-storage', function () {
     $output = [];
 
@@ -60,7 +60,7 @@ Route::get('/debug-storage', function () {
         $disk = \Illuminate\Support\Facades\Storage::disk('supabase');
         $testPath = 'test/debug-' . time() . '.txt';
         $result = $disk->put($testPath, 'hello-supabase', 'public');
-        $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $testPath;
+        $publicUrl = rtrim(env('SUPABASE_PUBLIC_URL'), '/') . '/' . env('SUPABASE_S3_BUCKET', 'event-files') . '/' . $testPath;
         $disk->delete($testPath);
         $output['upload_test'] = $result ? '✅ SUCCESS — URL would be: ' . $publicUrl : '❌ put() returned false';
     } catch (\Exception $e) {

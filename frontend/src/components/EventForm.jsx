@@ -149,7 +149,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       if (entry.endTime) formData.append('end_time', entry.endTime);
       formData.append('school_year', getSchoolYearFromDate(entry.date));
       formData.append('is_urgent', isUrgent ? '1' : '0');
-      images.forEach((image) => formData.append('images[]', image));
+      
+      // Append images with proper naming for Laravel
+      images.forEach((image, index) => {
+        formData.append('images[]', image);
+      });
+      
       selectedMembers.forEach(id => formData.append('member_ids[]', id));
       return formData;
     };
@@ -158,7 +163,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       if (editingEvent) {
         const formData = buildFormData(dateEntries[0]);
         await api.post(`/events/${editingEvent.id}`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
           params: { _method: 'PUT' }
         });
         setSuccess('Event updated successfully');
@@ -167,15 +171,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         for (const entry of validEntries) {
           const formData = buildFormData(entry);
           try {
-            await api.post('/events', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' }
-            });
+            await api.post('/events', formData);
           } catch (err) {
             if (err.response?.status === 409 && err.response?.data?.warning === 'schedule_conflict') {
               formData.append('ignore_conflicts', 'true');
-              await api.post('/events', formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-              });
+              await api.post('/events', formData);
             } else {
               throw err;
             }

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Image Upload Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 15px; margin: 5px; }
+        input { padding: 8px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Simple Image Upload Test</h1>
+    
+    <div class="test-section">
+        <h2>Login First</h2>
+        <input type="email" id="email" placeholder="Email" value="admin@cvsu.edu.ph">
+        <input type="password" id="password" placeholder="Password" value="11111111">
+        <button onclick="login()">Login</button>
+        <div id="login-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Upload Image</h2>
+        <input type="file" id="imageFile" accept="image/*,application/pdf">
+        <input type="text" id="eventTitle" placeholder="Event Title" value="Test Event">
+        <button onclick="uploadImage()">Upload Image</button>
+        <div id="upload-status"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        let authToken = null;
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('login-status');
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    authToken = result.token;
+                    statusDiv.innerHTML = '<p class="success">✅ Logged in successfully!</p>';
+                } else {
+                    statusDiv.innerHTML = `<p class="error">❌ Login failed: ${result.message}</p>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function uploadImage() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            const fileInput = document.getElementById('imageFile');
+            const title = document.getElementById('eventTitle').value;
+            const statusDiv = document.getElementById('upload-status');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', 'Test description');
+            formData.append('location', 'Test location');
+            formData.append('event_type', 'event');
+            formData.append('date', new Date().toISOString().split('T')[0]);
+            formData.append('time', '10:00');
+            formData.append('school_year', '2025-2026');
+            formData.append('is_urgent', '0');
+            formData.append('images[]', fileInput.files[0]);
+            
+            try {
+                statusDiv.innerHTML = '<p>Uploading...</p>';
+                
+                const response = await fetch(`${API_BASE}/events`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    statusDiv.innerHTML = `
+                        <p class="success">✅ Upload successful!</p>
+                        <p>Event ID: ${result.event.id}</p>
+                        <p>Images: ${result.event.images?.length || 0}</p>
+                        <pre>${JSON.stringify(result.event.images, null, 2)}</pre>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `<p class="error">❌ Upload failed: ${result.error || result.message}</p>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

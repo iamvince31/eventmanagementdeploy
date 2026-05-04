@@ -83,23 +83,30 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
     return () => window.removeEventListener('resize', compute);
   }, [isMembersDropdownOpen]);
 
-  const getFixedImageUrl = (url) => {
-    if (!url) return '';
-    // Fix localhost dev URLs missing port
-    if (url.startsWith('http://localhost/storage')) {
-      return url.replace('http://localhost/storage', 'http://localhost:8000/storage');
+  const getImageUrl = (image) => {
+    // If image is a string, it's already a URL
+    if (typeof image === 'string') {
+      return image;
     }
-    // Upgrade http:// → https:// for production (covers legacy backend storage URLs)
-    if (url.startsWith('http://') && !url.startsWith('http://localhost')) {
-      return url.replace('http://', 'https://');
+    
+    // If image has a url property, use it
+    if (image?.url) {
+      return image.url;
     }
-    // Relative path — prepend API base
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url.startsWith('/') ? url : '/' + url}`;
+    
+    // Fallback for legacy cloudinary_url
+    if (image?.cloudinary_url) {
+      return image.cloudinary_url;
     }
-    return url;
+    
+    // Last resort: construct URL from image_path
+    if (image?.image_path) {
+      const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:8000';
+      return `${baseUrl}/storage/${image.image_path}`;
+    }
+    
+    return '';
   };
-  const getImageUrl = (image) => getFixedImageUrl(typeof image === 'string' ? image : image?.url);
 
   const imageViewerRef = useRef(null);
 

@@ -37,11 +37,29 @@ Route::get('/test-brevo', function () {
     ]);
 });
 
+// DEBUG ROUTE TO TEST FILE UPLOAD CORS
+Route::post('/test-upload', function (Illuminate\Http\Request $request) {
+    return response()->json([
+        'message' => 'Test upload endpoint',
+        'has_files' => $request->hasFile('images'),
+        'file_count' => $request->hasFile('images') ? count($request->file('images')) : 0,
+        'headers_received' => $request->headers->all(),
+        'origin' => $request->header('Origin'),
+    ])->header('Content-Type', 'application/json; charset=utf-8')
+      ->header('Access-Control-Allow-Origin', $request->header('Origin', '*'))
+      ->header('Access-Control-Allow-Credentials', 'true')
+      ->header('Access-Control-Expose-Headers', 'Content-Type, Content-Length');
+});
+
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
     // Auth
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    // Events with special handling for file uploads
+    Route::post('/events', [EventController::class, 'store']);
+    Route::put('/events/{event}', [EventController::class, 'update']);
 
     // Events
     Route::get('/dashboard', [App\Http\Controllers\DashboardController::class , 'index']);
@@ -55,9 +73,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/events/all', [EventController::class, 'getAllEvents']);
 
     Route::get('/events', [EventController::class, 'index']);
-    Route::post('/events', [EventController::class, 'store']);
+    // POST and PUT routes for events are defined above with special middleware
 
-    Route::put('/events/{event}', [EventController::class, 'update']);
     Route::delete('/events/{event}', [EventController::class, 'destroy']);
     Route::post('/events/{event}/respond', [EventController::class, 'respondToInvitation']);
 

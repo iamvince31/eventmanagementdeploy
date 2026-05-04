@@ -60,14 +60,6 @@ return [
             'report' => false,
         ],
 
-        'cloudinary' => [
-            'driver' => 'cloudinary',
-            'cloud' => env('CLOUDINARY_CLOUD_NAME'),
-            'key' => env('CLOUDINARY_API_KEY'),
-            'secret' => env('CLOUDINARY_API_SECRET'),
-            'secure' => true,
-        ],
-
         'supabase' => [
             'driver' => 's3',
             'key' => env('SUPABASE_S3_ACCESS_KEY_ID'),
@@ -76,8 +68,8 @@ return [
             'bucket' => env('SUPABASE_S3_BUCKET', 'event-files'),
             'endpoint' => env('SUPABASE_S3_ENDPOINT'),
             'use_path_style_endpoint' => true,
-            'throw' => true,
-            'report' => true,
+            'throw' => false, // Don't throw exceptions, allow fallback
+            'report' => false,
             'public_url' => env('SUPABASE_PUBLIC_URL'),
         ],
 

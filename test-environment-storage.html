@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Environment Storage Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; }
+        input { padding: 8px; margin: 5px; }
+        .image-preview { max-width: 200px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Environment-Based Storage Test</h1>
+    
+    <div class="test-section">
+        <h2>Environment Check</h2>
+        <button onclick="checkEnvironment()">Check Storage Environment</button>
+        <div id="env-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Login</h2>
+        <input type="email" id="email" placeholder="Email" value="admin@cvsu.edu.ph">
+        <input type="password" id="password" placeholder="Password" value="11111111">
+        <button onclick="login()">Login</button>
+        <div id="login-status"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Upload & Test Storage</h2>
+        <input type="file" id="imageFile" accept="image/*,application/pdf">
+        <input type="text" id="eventTitle" placeholder="Event Title" value="Storage Test Event">
+        <button onclick="uploadAndTest()">Upload & Test</button>
+        <div id="upload-status"></div>
+        <div id="image-display"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000/api' 
+            : 'https://eventmanagement-backend-z7ek.onrender.com/api';
+        
+        let authToken = null;
+        
+        async function checkEnvironment() {
+            const statusDiv = document.getElementById('env-status');
+            
+            try {
+                const response = await fetch(`${API_BASE}/test-brevo`);
+                const result = await response.json();
+                
+                const isLocal = window.location.hostname === 'localhost';
+                
+                statusDiv.innerHTML = `
+                    <div class="info">
+                        <p><strong>Frontend Environment:</strong> ${isLocal ? 'Localhost' : 'Deployed'}</p>
+                        <p><strong>API Base:</strong> ${API_BASE}</p>
+                        <p><strong>Expected Storage:</strong> ${isLocal ? 'Laravel Local Storage' : 'Supabase Buckets'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Error checking environment: ${error.message}</p>`;
+            }
+        }
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('login-status');
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    authToken = result.token;
+                    statusDiv.innerHTML = '<p class="success">✅ Logged in successfully!</p>';
+                } else {
+                    statusDiv.innerHTML = `<p class="error">❌ Login failed: ${result.message}</p>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function uploadAndTest() {
+            if (!authToken) {
+                alert('Please login first');
+                return;
+            }
+            
+            const fileInput = document.getElementById('imageFile');
+            const title = document.getElementById('eventTitle').value;
+            const statusDiv = document.getElementById('upload-status');
+            const imageDiv = document.getElementById('image-display');
+            
+            if (!fileInput.files[0]) {
+                alert('Please select a file');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('description', 'Environment storage test');
+            formData.append('location', 'Test location');
+            formData.append('event_type', 'event');
+            formData.append('date', new Date().toISOString().split('T')[0]);
+            formData.append('time', '10:00');
+            formData.append('school_year', '2025-2026');
+            formData.append('is_urgent', '0');
+            formData.append('images[]', fileInput.files[0]);
+            
+            try {
+                statusDiv.innerHTML = '<p class="info">Uploading...</p>';
+                
+                const response = await fetch(`${API_BASE}/events`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.event.images && result.event.images.length > 0) {
+                    const image = result.event.images[0];
+                    const imageUrl = image.url || image.cloudinary_url;
+                    
+                    statusDiv.innerHTML = `
+                        <div class="success">
+                            <p>✅ Upload successful!</p>
+                            <p><strong>Event ID:</strong> ${result.event.id}</p>
+                            <p><strong>Image URL:</strong> <a href="${imageUrl}" target="_blank">${imageUrl}</a></p>
+                            <p><strong>Storage Type:</strong> ${imageUrl.includes('supabase.co') ? 'Supabase' : 'Local Laravel'}</p>
+                            <p><strong>Original Filename:</strong> ${image.original_filename}</p>
+                        </div>
+                    `;
+                    
+                    // Test if image is accessible
+                    const img = new Image();
+                    img.onload = function() {
+                        imageDiv.innerHTML = `
+                            <div class="success">
+                                <p>✅ Image is accessible and loads correctly!</p>
+                                <img src="${imageUrl}" class="image-preview" alt="Uploaded image">
+                            </div>
+                        `;
+                    };
+                    img.onerror = function() {
+                        imageDiv.innerHTML = `
+                            <div class="error">
+                                <p>❌ Image uploaded but not accessible via URL</p>
+                                <p>This might be a CORS or storage configuration issue</p>
+                            </div>
+                        `;
+                    };
+                    img.src = imageUrl;
+                    
+                } else {
+                    statusDiv.innerHTML = `<p class="error">❌ Upload failed: ${result.error || result.message}</p>`;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Auto-check environment on load
+        window.addEventListener('load', checkEnvironment);
+    </script>
+</body>
+</html>

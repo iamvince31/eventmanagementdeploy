@@ -39,6 +39,22 @@ class Event extends Model
 
     public function images()
     {
-        return $this->hasMany(EventImage::class);
+        return $this->hasMany(EventImage::class)->orderBy('order');
+    }
+
+    /**
+     * Get images with their URLs for API responses
+     */
+    public function getImagesWithUrlsAttribute()
+    {
+        return $this->images->map(function ($image) {
+            return [
+                'id' => $image->id,
+                'url' => $image->url, // Uses the accessor from EventImage model
+                'original_filename' => $image->original_filename,
+                'is_pdf' => $image->is_pdf,
+                'order' => $image->order,
+            ];
+        });
     }
 }

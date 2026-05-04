@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; }
+        input { padding: 8px; margin: 5px; width: 200px; }
+        textarea { width: 100%; height: 150px; }
+    </style>
+</head>
+<body>
+    <h1>Login & CORS Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Login Functionality</h2>
+        <input type="email" id="email" placeholder="Email" value="admin@cvsu.edu.ph">
+        <input type="password" id="password" placeholder="Password" value="11111111">
+        <button onclick="testLogin()">Test Login</button>
+        <div id="login-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: API Endpoints</h2>
+        <button onclick="testAPI()">Test API Endpoints</button>
+        <div id="api-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <textarea id="console-output" readonly></textarea>
+        <button onclick="clearConsole()">Clear</button>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        function log(message, type = 'info') {
+            const output = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            output.value += `[${timestamp}] ${message}\n`;
+            output.scrollTop = output.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearConsole() {
+            document.getElementById('console-output').value = '';
+        }
+        
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            resultDiv.innerHTML = '<p class="info">Testing login...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const result = await response.json();
+                
+                log(`Login Status: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`Login Response: ${JSON.stringify(result, null, 2)}`);
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✅ Login successful!</p>
+                        <p>User: ${result.user?.username}</p>
+                        <p>Email: ${result.user?.email}</p>
+                        <p>Token received: ${result.token ? 'Yes' : 'No'}</p>
+                    `;
+                    
+                    // Store token for further tests
+                    window.testToken = result.token;
+                } else {
+                    resultDiv.innerHTML = `
+                        <p class="error">❌ Login failed</p>
+                        <p>Error: ${result.message || 'Unknown error'}</p>
+                    `;
+                }
+                
+            } catch (error) {
+                log(`Login Error: ${error.message}`, 'error');
+                resultDiv.innerHTML = `<p class="error">❌ Network Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<p class="info">Testing API endpoints...</p>';
+            
+            const tests = [
+                { name: 'Test Brevo', url: `${API_BASE}/test-brevo`, method: 'GET' },
+                { name: 'Test Upload', url: `${API_BASE}/test-upload`, method: 'POST' }
+            ];
+            
+            let results = [];
+            
+            for (const test of tests) {
+                try {
+                    const options = {
+                        method: test.method,
+                        headers: {
+                            'Accept': 'application/json',
+                            'Origin': window.location.origin
+                        }
+                    };
+                    
+                    if (window.testToken) {
+                        options.headers['Authorization'] = `Bearer ${window.testToken}`;
+                    }
+                    
+                    if (test.method === 'POST') {
+                        const formData = new FormData();
+                        formData.append('test', 'data');
+                        options.body = formData;
+                    }
+                    
+                    const response = await fetch(test.url, options);
+                    const result = await response.json();
+                    
+                    log(`${test.name} Status: ${response.status}`, response.ok ? 'success' : 'error');
+                    
+                    results.push({
+                        name: test.name,
+                        status: response.status,
+                        ok: response.ok,
+                        result: result
+                    });
+                    
+                } catch (error) {
+                    log(`${test.name} Error: ${error.message}`, 'error');
+                    results.push({
+                        name: test.name,
+                        status: 'ERROR',
+                        ok: false,
+                        error: error.message
+                    });
+                }
+            }
+            
+            resultDiv.innerHTML = results.map(r => `
+                <div class="${r.ok ? 'success' : 'error'}">
+                    <strong>${r.name}:</strong> ${r.status} ${r.ok ? '✅' : '❌'}
+                    ${r.error ? `<br>Error: ${r.error}` : ''}
+                </div>
+            `).join('');
+        }
+        
+        // Auto-run basic tests on load
+        window.addEventListener('load', () => {
+            log('Login & CORS Test Suite Loaded');
+            log(`API Base URL: ${API_BASE}`);
+            log(`Current Origin: ${window.location.origin}`);
+        });
+    </script>
+</body>
+</html>

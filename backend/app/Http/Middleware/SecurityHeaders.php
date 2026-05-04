@@ -17,8 +17,17 @@ class SecurityHeaders
     {
         $response = $next($request);
         
-        // Prevent MIME type sniffing
-        $response->headers->set('X-Content-Type-Options', 'nosniff');
+        // Skip security headers for file uploads and API responses that serve files
+        $isFileUpload = $request->hasFile('images') || 
+                       str_contains($request->header('Content-Type', ''), 'multipart/form-data') ||
+                       $request->is('api/events/*/images/*') ||
+                       str_contains($response->headers->get('Content-Type', ''), 'image/') ||
+                       str_contains($response->headers->get('Content-Type', ''), 'application/pdf');
+        
+        if (!$isFileUpload) {
+            // Prevent MIME type sniffing (but allow for file uploads)
+            $response->headers->set('X-Content-Type-Options', 'nosniff');
+        }
         
         // Prevent clickjacking
         $response->headers->set('X-Frame-Options', 'DENY');
@@ -32,8 +41,19 @@ class SecurityHeaders
         // Restrict browser features
         $response->headers->set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
         
-        // Content Security Policy (adjust as needed)
-        $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';");
+        // More permissive CSP for file uploads and Supabase storage
+        $supabaseUrl = env('SUPABASE_PUBLIC_URL', '');
+        $supabaseDomain = $supabaseUrl ? parse_url($supabaseUrl, PHP_URL_HOST) : '';
+        
+        $csp = "default-src 'self'; " .
+               "script-src 'self' 'unsafe-inline'; " .
+               "style-src 'self' 'unsafe-inline'; " .
+               "img-src 'self' data: blob: " . ($supabaseDomain ? "https://{$supabaseDomain}" : '') . "; " .
+               "media-src 'self' " . ($supabaseDomain ? "https://{$supabaseDomain}" : '') . "; " .
+               "object-src 'none'; " .
+               "connect-src 'self' " . ($supabaseDomain ? "https://{$supabaseDomain}" : '');
+        
+        $response->headers->set('Content-Security-Policy', $csp);
         
         return $response;
     }

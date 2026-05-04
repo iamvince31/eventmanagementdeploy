@@ -228,44 +228,20 @@ class EventController extends Controller
         // Handle multiple images/files
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
-                // Additional MIME type validation
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-                if (!in_array($image->getMimeType(), $allowedMimes)) {
-                    return response()->json([
-                        'error' => 'Invalid file type. Only JPG, PNG, GIF, WebP, and PDF files are allowed.'
-                    ], 400);
-                }
-
-                // Check file size (25MB)
-                if ($image->getSize() > 25600 * 1024) {
-                    return response()->json([
-                        'error' => 'File size must not exceed 25MB.'
-                    ], 400);
-                }
-
-                // Upload to Supabase Storage — sanitize filename to avoid URL issues
-                $originalName = $image->getClientOriginalName();
-                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
-                $filename = 'events/' . uniqid() . '_' . $safeName;
                 try {
-                    Storage::disk('supabase')->put($filename, $image->get(), 'public');
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Supabase upload failed', [
-                        'error' => $e->getMessage(),
-                        'filename' => $filename,
+                    $imageData = \App\Services\ImageService::uploadImage($image);
+                    
+                    $event->images()->create([
+                        'image_path' => $imageData['path'],
+                        'cloudinary_url' => $imageData['storage'] === 'supabase' ? $imageData['url'] : null,
+                        'original_filename' => $imageData['original_name'],
+                        'order' => $index,
                     ]);
+                } catch (\Exception $e) {
                     return response()->json([
                         'error' => 'File upload failed: ' . $e->getMessage()
                     ], 500);
                 }
-                $publicUrl = $this->buildSupabasePublicUrl($filename);
-
-                $event->images()->create([
-                    'image_path' => $filename,
-                    'cloudinary_url' => $publicUrl,
-                    'original_filename' => $originalName, // keep original name for display
-                    'order' => $index,
-                ]);
             }
         }
 
@@ -333,62 +309,28 @@ class EventController extends Controller
 
         // Handle new images/files
         if ($request->hasFile('images')) {
-            // Validate MIME types
-            foreach ($request->file('images') as $image) {
-                $allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
-                if (!in_array($image->getMimeType(), $allowedMimes)) {
-                    return response()->json([
-                        'error' => 'Invalid file type. Only JPG, PNG, GIF, WebP, and PDF files are allowed.'
-                    ], 400);
-                }
-
-                if ($image->getSize() > 25600 * 1024) {
-                    return response()->json([
-                        'error' => 'File size must not exceed 25MB.'
-                    ], 400);
-                }
-            }
-
-            // Delete old images from Supabase (or local fallback)
+            // Delete old images first
             foreach ($event->images as $oldImage) {
-                if ($oldImage->cloudinary_url && $oldImage->image_path) {
-                    // Supabase — delete by path
-                    try {
-                        Storage::disk('supabase')->delete($oldImage->image_path);
-                    } catch (\Exception $e) {
-                        \Illuminate\Support\Facades\Log::warning('Supabase delete failed', ['path' => $oldImage->image_path, 'error' => $e->getMessage()]);
-                    }
-                } else {
-                    // Legacy local storage fallback
-                    Storage::disk('public')->delete($oldImage->image_path);
-                }
+                \App\Services\ImageService::deleteImage($oldImage->image_path, $oldImage->cloudinary_url);
                 $oldImage->delete();
             }
 
-            // Add new images via Supabase Storage
+            // Add new images
             foreach ($request->file('images') as $index => $image) {
-                $originalName = $image->getClientOriginalName();
-                $safeName = preg_replace('/[^a-zA-Z0-9._-]/', '_', $originalName);
-                $filename = 'events/' . uniqid() . '_' . $safeName;
                 try {
-                    Storage::disk('supabase')->put($filename, $image->get(), 'public');
-                } catch (\Exception $e) {
-                    \Illuminate\Support\Facades\Log::error('Supabase upload failed', [
-                        'error' => $e->getMessage(),
-                        'filename' => $filename,
+                    $imageData = \App\Services\ImageService::uploadImage($image);
+                    
+                    $event->images()->create([
+                        'image_path' => $imageData['path'],
+                        'cloudinary_url' => $imageData['storage'] === 'supabase' ? $imageData['url'] : null,
+                        'original_filename' => $imageData['original_name'],
+                        'order' => $index,
                     ]);
+                } catch (\Exception $e) {
                     return response()->json([
                         'error' => 'File upload failed: ' . $e->getMessage()
                     ], 500);
                 }
-                $publicUrl = $this->buildSupabasePublicUrl($filename);
-
-                $event->images()->create([
-                    'image_path' => $filename,
-                    'cloudinary_url' => $publicUrl,
-                    'original_filename' => $originalName, // keep original name for display
-                    'order' => $index,
-                ]);
             }
         }
 
@@ -567,15 +509,28 @@ class EventController extends Controller
 
     /**
      * Returns a safe image URL for display.
-     * - Uses cloudinary_url (Supabase) if set.
-     * - Returns null for legacy local-storage records (no cloudinary_url) —
-     *   those files no longer exist on the ephemeral Render filesystem.
+     * - Uses cloudinary_url (Supabase) if set and points to Supabase.
+     * - Returns null for legacy records pointing to the backend server
+     *   (those files no longer exist on Render's ephemeral filesystem).
      * - Forces https:// to prevent mixed content.
      */
     private function safeImageUrl(?string $cloudinaryUrl, ?string $imagePath): ?string
     {
-        // Legacy record with no Supabase URL — file is gone, don't return a broken URL
         if (!$cloudinaryUrl) {
+            return null;
+        }
+
+        // Reject URLs pointing to the backend server itself — those files are gone
+        $appUrl = rtrim(env('APP_URL', ''), '/');
+        if ($appUrl && str_starts_with($cloudinaryUrl, $appUrl)) {
+            return null;
+        }
+        // Also reject any onrender.com backend URLs regardless of APP_URL setting
+        if (str_contains($cloudinaryUrl, 'onrender.com/storage')) {
+            return null;
+        }
+        // Reject localhost storage URLs (local dev legacy records)
+        if (str_contains($cloudinaryUrl, 'localhost') && str_contains($cloudinaryUrl, '/storage/')) {
             return null;
         }
 
@@ -587,4 +542,5 @@ class EventController extends Controller
         return $cloudinaryUrl;
     }
 }
+
 

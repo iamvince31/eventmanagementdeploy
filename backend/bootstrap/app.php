@@ -19,7 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'throttle.login' => \App\Http\Middleware\ThrottleLoginAttempts::class,
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
+            'file.upload.cors' => \App\Http\Middleware\FileUploadCors::class,
         ]);
+        
+        // Apply security headers globally but with exceptions for file uploads
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
         
         // Disable CSRF for API routes (using token-based auth)
         $middleware->validateCsrfTokens(except: [
