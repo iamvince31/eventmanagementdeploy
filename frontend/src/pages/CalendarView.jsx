@@ -268,7 +268,7 @@ export default function CalendarView() {
       {/* Main Content */}
       <main className="flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 overflow-hidden flex flex-col gap-4">
         {/* Section Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-2 sm:mb-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 flex-shrink-0">
           {loading ? (
             // Section Header Skeleton
             <>
@@ -290,7 +290,7 @@ export default function CalendarView() {
               </div>
               <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
                 {/* Academic Calendar - Admin Only */}
-                {user?.role === 'Admin' && (
+                {(user?.role === 'Admin' || user?.designation === 'Admin') && (
                   <button
                     onClick={() => navigate('/default-events')}
                     className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
@@ -301,45 +301,35 @@ export default function CalendarView() {
                     Academic
                   </button>
                 )}
-                
-                {/* Role-based Event Creation Buttons */}
-                {(() => {
-                  const canCreate = user && [
-                    'Admin', 'Dean', 'Chairperson',
-                    'Research Coordinator', 'Extension Coordinator',
-                    'CEIT Official', 'Faculty Member', 'Staff'
-                  ].includes(user.role);
 
-                  if (!canCreate) return null;
-
-                  return (
-                    <>
-                      <button
-                        onClick={() => {
-                          setEditingPersonalEvent(null);
-                          setPersonalEventSelectedDate(selectedDate);
-                          setIsPersonalEventModalOpen(true);
-                        }}
-                        className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
-                      >
-                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                        Personal
-                      </button>
-                      <button
-                        onClick={() => navigate('/add-event', { state: { selectedDate } })}
-                        className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
-                      >
-                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                        <span className="hidden sm:inline">Add Event</span>
-                        <span className="sm:hidden">Add</span>
-                      </button>
-                    </>
-                  );
-                })()}
+                {/* Personal Event Button — visible to all validated users */}
+                {user && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingPersonalEvent(null);
+                        setPersonalEventSelectedDate(selectedDate);
+                        setIsPersonalEventModalOpen(true);
+                      }}
+                      className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                    >
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Personal
+                    </button>
+                    <button
+                      onClick={() => navigate('/add-event', { state: { selectedDate } })}
+                      className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
+                    >
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span className="hidden sm:inline">Add Event</span>
+                      <span className="sm:hidden">Add</span>
+                    </button>
+                  </>
+                )}
               </div>
             </>
           )}

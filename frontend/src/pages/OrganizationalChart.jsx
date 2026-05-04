@@ -7,12 +7,14 @@ export default function OrganizationalChart() {
   const { user } = useAuth();
   const [hierarchy, setHierarchy] = useState({ dean: null, ceitStaff: [], ceitCoordinators: [], facultyMembers: [], chairpersons: [], departments: [] });
   const [departments, setDepartments] = useState([]);
+  const [designations, setDesignations] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   
-  const canEdit = user?.role === 'Admin' || user?.role === 'Dean';
+  const canEdit = (user?.role === 'Admin' || user?.designation === 'Admin') ||
+                  (user?.role === 'Dean'  || user?.designation === 'Dean');
   
   // Format department name for dropdown display only
   const formatDepartmentForDropdown = (dept) => {
@@ -31,10 +33,8 @@ export default function OrganizationalChart() {
     try {
       const response = await api.get('/settings');
       const allDesig = new Set(['Admin', ...(response.data.ceit_roles || []), ...(response.data.department_roles || [])]);
-      setSettings({
-        departments: response.data.departments || [],
-        designations: Array.from(allDesig)
-      });
+      setDepartments(response.data.departments || []);
+      setDesignations(Array.from(allDesig));
     } catch (error) {
       console.error('Error fetching settings:', error);
     }
@@ -436,7 +436,7 @@ export default function OrganizationalChart() {
                     required
                   >
                     <option value="">Select Department</option>
-                    {settings.departments.filter(d => d !== 'College of Engineering and Information Technology' && d !== 'CEIT').map((dept) => (
+                    {departments.filter(d => d !== 'College of Engineering and Information Technology' && d !== 'CEIT').map((dept) => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
@@ -451,7 +451,7 @@ export default function OrganizationalChart() {
                   required
                 >
                   <option value="">Select Designation</option>
-                  {settings.designations.map(desig => (
+                  {designations.map(desig => (
                     <option key={desig} value={desig}>{desig}</option>
                   ))}
                 </select>
