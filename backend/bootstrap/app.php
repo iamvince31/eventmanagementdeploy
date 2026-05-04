@@ -27,5 +27,14 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // Ensure CORS headers are present even on unhandled exceptions
+        // so the browser doesn't show a misleading CORS error instead of the real one
+        $exceptions->respond(function (\Illuminate\Http\Response|\Symfony\Component\HttpFoundation\Response $response) {
+            $origin = request()->header('Origin', '');
+            if ($origin) {
+                $response->headers->set('Access-Control-Allow-Origin', $origin);
+                $response->headers->set('Access-Control-Allow-Credentials', 'true');
+            }
+            return $response;
+        });
     })->create();
