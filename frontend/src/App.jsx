@@ -162,9 +162,9 @@ function App() {
             </ProtectedRoute>
           } />
           <Route path="/calendar" element={
-            <ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['Admin']}>
               <CalendarView />
-            </ProtectedRoute>
+            </RoleProtectedRoute>
           } />
           <Route path="/account" element={
             <AccountRoute>
