@@ -10,7 +10,7 @@ $app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
 echo "=== Analytics API Test ===\n\n";
 
 // Get an admin user token
-$admin = \App\Models\User::where('role', 'Admin')->first();
+$admin = \App\Models\User::where('designation', 'Admin')->first();
 
 if (!$admin) {
     echo "❌ No admin user found\n";

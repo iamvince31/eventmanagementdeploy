@@ -145,7 +145,7 @@ export default function Navbar({
               )}
 
               {/* Admin Panel Icon - Only for Admin users */}
-              {user?.role === 'Admin' && (
+              {user?.designation === 'Admin' && (
                 <>
                   <button
                     onClick={() => navigate('/analytics')}

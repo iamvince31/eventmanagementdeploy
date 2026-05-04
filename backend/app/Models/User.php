@@ -64,18 +64,6 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-    // Accessor: Map 'designation' to 'role' for backward compatibility
-    public function getDesignationAttribute()
-    {
-        return $this->attributes['role'] ?? null;
-    }
-
-    // Mutator: Map 'designation' to 'role' for backward compatibility
-    public function setDesignationAttribute($value)
-    {
-        $this->attributes['role'] = $value;
-    }
-
     // Automatically validate admins when created/updated
     protected static function boot()
     {

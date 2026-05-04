@@ -123,12 +123,12 @@ class AnalyticsController extends Controller
         
         foreach ($departments as $dept) {
             // Get meetings where members from this department responded
-            // Exclude Admin role users
+            // Exclude Admin designation users
             $accepted = DB::table('event_user')
                 ->join('events', 'event_user.event_id', '=', 'events.id')
                 ->join('users', 'event_user.user_id', '=', 'users.id')
                 ->where('users.department', $dept)
-                ->where('users.role', '!=', 'Admin')
+                ->where('users.designation', '!=', 'Admin')
                 ->where('event_user.status', 'accepted')
                 ->where('events.date', '>=', $semesterDates['start'])
                 ->where('events.date', '<=', $semesterDates['end'])
@@ -137,12 +137,12 @@ class AnalyticsController extends Controller
                 ->count();
                 
             // Check for both 'rejected' and 'declined' status
-            // Exclude Admin role users
+            // Exclude Admin designation users
             $rejected = DB::table('event_user')
                 ->join('events', 'event_user.event_id', '=', 'events.id')
                 ->join('users', 'event_user.user_id', '=', 'users.id')
                 ->where('users.department', $dept)
-                ->where('users.role', '!=', 'Admin')
+                ->where('users.designation', '!=', 'Admin')
                 ->whereIn('event_user.status', ['rejected', 'declined'])
                 ->where('events.date', '>=', $semesterDates['start'])
                 ->where('events.date', '<=', $semesterDates['end'])
@@ -165,7 +165,7 @@ class AnalyticsController extends Controller
                     ->join('events', 'event_user.event_id', '=', 'events.id')
                     ->join('users', 'event_user.user_id', '=', 'users.id')
                     ->where('users.department', $dept)
-                    ->where('users.role', '!=', 'Admin')
+                    ->where('users.designation', '!=', 'Admin')
                     ->where('event_user.status', 'accepted')
                     ->where('events.date', '>=', $yearStartDate)
                     ->where('events.date', '<=', $yearEndDate)
@@ -177,7 +177,7 @@ class AnalyticsController extends Controller
                     ->join('events', 'event_user.event_id', '=', 'events.id')
                     ->join('users', 'event_user.user_id', '=', 'users.id')
                     ->where('users.department', $dept)
-                    ->where('users.role', '!=', 'Admin')
+                    ->where('users.designation', '!=', 'Admin')
                     ->whereIn('event_user.status', ['rejected', 'declined'])
                     ->where('events.date', '>=', $yearStartDate)
                     ->where('events.date', '<=', $yearEndDate)

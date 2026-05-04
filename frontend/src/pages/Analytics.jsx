@@ -16,7 +16,7 @@ export default function Analytics() {
 
   useEffect(() => {
     // Only admins can access analytics
-    if (user?.role !== 'Admin') {
+    if (user?.designation !== 'Admin') {
       navigate('/dashboard');
       return;
     }
