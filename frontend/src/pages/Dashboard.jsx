@@ -392,8 +392,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Analytics Dashboard Section - Admin Only */}
-        {isAdmin && (
+        {/* Analytics Dashboard Section - Admin Only / Calendar for Non-Admin */}
+        {isAdmin ? (
           <>
             {analyticsLoading ? (
               // Analytics Loading Skeleton
