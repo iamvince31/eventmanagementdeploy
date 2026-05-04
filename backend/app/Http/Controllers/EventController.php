@@ -54,7 +54,7 @@ class EventController extends Controller
                 'location' => $event->location,
                 'event_type' => $event->event_type ?? 'event',
                 'images' => $event->images->map(fn($img) => [
-                    'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+                    'url' => $this->safeImageUrl($img->cloudinary_url, $img->image_path),
                     'original_filename' => $img->original_filename,
                 ]),
                 'date' => $event->date,
@@ -116,7 +116,7 @@ class EventController extends Controller
                 'location' => $event->location,
                 'event_type' => $event->event_type ?? 'event',
                 'images' => $event->images->map(fn($img) => [
-                    'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+                    'url' => $this->safeImageUrl($img->cloudinary_url, $img->image_path),
                     'original_filename' => $img->original_filename,
                 ]),
                 'date' => $event->date,
@@ -350,8 +350,12 @@ class EventController extends Controller
             // Delete old images from Supabase (or local fallback)
             foreach ($event->images as $oldImage) {
                 if ($oldImage->cloudinary_url && $oldImage->image_path) {
-                    // Cloudinary — destroy by public_id
-                    cloudinary()->uploadApi()->destroy($oldImage->image_path);
+                    // Supabase — delete by path
+                    try {
+                        Storage::disk('supabase')->delete($oldImage->image_path);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::warning('Supabase delete failed', ['path' => $oldImage->image_path, 'error' => $e->getMessage()]);
+                    }
                 } else {
                     // Legacy local storage fallback
                     Storage::disk('public')->delete($oldImage->image_path);
@@ -541,4 +545,20 @@ class EventController extends Controller
 
         return $conflicts;
     }
+
+    /**
+     * Returns a safe HTTPS image URL.
+     * Uses cloudinary_url (Supabase) if set, otherwise falls back to local storage URL.
+     * Forces https:// in both cases to prevent mixed content on production.
+     */
+    private function safeImageUrl(?string $cloudinaryUrl, ?string $imagePath): string
+    {
+        $url = $cloudinaryUrl ?: asset('storage/' . $imagePath);
+        // Force HTTPS — prevents mixed content when APP_URL is http://
+        if (str_starts_with($url, 'http://')) {
+            $url = 'https://' . substr($url, 7);
+        }
+        return $url;
+    }
 }
+

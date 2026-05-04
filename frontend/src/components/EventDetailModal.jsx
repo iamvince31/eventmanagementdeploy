@@ -85,8 +85,19 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
 
   const getFixedImageUrl = (url) => {
     if (!url) return '';
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url.startsWith('/') ? url : '/' + url}`;
+    // Fix localhost dev URLs missing port
+    if (url.startsWith('http://localhost/storage')) {
+      return url.replace('http://localhost/storage', 'http://localhost:8000/storage');
+    }
+    // Upgrade http:// → https:// for production (covers legacy backend storage URLs)
+    if (url.startsWith('http://') && !url.startsWith('http://localhost')) {
+      return url.replace('http://', 'https://');
+    }
+    // Relative path — prepend API base
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url.startsWith('/') ? url : '/' + url}`;
+    }
+    return url;
   };
   const getImageUrl = (image) => getFixedImageUrl(typeof image === 'string' ? image : image?.url);
 
