@@ -101,15 +101,26 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
   };
   const getImageUrl = (image) => getFixedImageUrl(typeof image === 'string' ? image : image?.url);
 
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.25 : 0.25;
-    setZoom(z => {
-      const next = Math.min(5, Math.max(1, z + delta));
-      if (next <= 1) setPan({ x: 0, y: 0 });
-      return next;
-    });
-  };
+  const imageViewerRef = useRef(null);
+
+  // Attach wheel listener as non-passive so preventDefault works
+  useEffect(() => {
+    const el = imageViewerRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.25 : 0.25;
+      setZoom(z => {
+        const next = Math.min(5, Math.max(1, z + delta));
+        if (next <= 1) setPan({ x: 0, y: 0 });
+        return next;
+      });
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, [imageViewerRef.current]);
+
+  const handleWheel = undefined; // replaced by useEffect above
 
   const handleMouseDown = (e) => {
     if (zoom <= 1) return;
@@ -650,9 +661,9 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
                   </div>
                 ) : (
                   <div
+                    ref={imageViewerRef}
                     className="w-full h-full overflow-hidden"
                     style={{ cursor: zoom > 1 ? (isDragging ? 'grabbing' : 'grab') : 'zoom-in' }}
-                    onWheel={handleWheel}
                     onMouseDown={handleMouseDown}
                     onMouseMove={handleMouseMove}
                     onMouseUp={handleMouseUp}

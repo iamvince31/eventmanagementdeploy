@@ -256,7 +256,7 @@ class EventController extends Controller
                         'error' => 'File upload failed: ' . $e->getMessage()
                     ], 500);
                 }
-                $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $filename;
+                $publicUrl = $this->buildSupabasePublicUrl($filename);
 
                 $event->images()->create([
                     'image_path' => $filename,
@@ -377,7 +377,7 @@ class EventController extends Controller
                         'error' => 'File upload failed: ' . $e->getMessage()
                     ], 500);
                 }
-                $publicUrl = rtrim(config('filesystems.disks.supabase.public_url'), '/') . '/' . config('filesystems.disks.supabase.bucket') . '/' . $filename;
+                $publicUrl = $this->buildSupabasePublicUrl($filename);
 
                 $event->images()->create([
                     'image_path' => $filename,
@@ -544,6 +544,33 @@ class EventController extends Controller
         }
 
         return $conflicts;
+    }
+
+    /**
+     * Builds the correct Supabase public URL for a stored file.
+     * Derives the project URL from the S3 endpoint if SUPABASE_PUBLIC_URL is not set.
+     * Format: https://[project].supabase.co/storage/v1/object/public/[bucket]/[path]
+     */
+    private function buildSupabasePublicUrl(string $filename): string
+    {
+        $bucket = config('filesystems.disks.supabase.bucket', 'event-files');
+
+        // Use explicit public URL if configured
+        $publicBase = config('filesystems.disks.supabase.public_url');
+        if ($publicBase) {
+            return rtrim($publicBase, '/') . '/' . $bucket . '/' . $filename;
+        }
+
+        // Derive from S3 endpoint: https://[project].storage.supabase.co/storage/v1/s3
+        // → https://[project].supabase.co/storage/v1/object/public
+        $endpoint = config('filesystems.disks.supabase.endpoint', '');
+        if (preg_match('#https://([^.]+)\.storage\.supabase\.co#', $endpoint, $m)) {
+            $projectId = $m[1];
+            return "https://{$projectId}.supabase.co/storage/v1/object/public/{$bucket}/{$filename}";
+        }
+
+        // Last resort fallback
+        return "https://swqmdrstziimdcybbffq.supabase.co/storage/v1/object/public/{$bucket}/{$filename}";
     }
 
     /**
