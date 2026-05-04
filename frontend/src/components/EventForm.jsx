@@ -366,9 +366,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     // Exclude current user (host)
     if (member.id === currentUser?.id) return false;
 
-    // When urgent is on and host is not Admin/Dean, hide Dean members
-    const hostCanInviteDean = ['Admin', 'Dean'].includes(currentUser?.role || currentUser?.designation);
-    if (isUrgent && eventType === 'meeting' && !hostCanInviteDean && (member.role === 'Dean' || member.designation === 'Dean')) return false;
+    // When urgent is on and host is not Admin/Dean, hide Dean/Admin members
+    const hostCanInvitePrivileged = ['Admin', 'Dean'].includes(currentUser?.role || currentUser?.designation);
+    if (isUrgent && eventType === 'meeting' && !hostCanInvitePrivileged && ['Dean', 'Admin'].includes(member.role || member.designation)) return false;
 
     // Always show selected members regardless of filters
     if (selectedMembers.includes(member.id)) return true;
