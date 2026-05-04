@@ -11,10 +11,17 @@ export default function OrganizationalChart() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [settings, setSettings] = useState({ departments: [], designations: [] });
-
-  const canEdit = (user?.designation === 'Admin' || user?.role === 'Admin') || (user?.designation === 'Dean' || user?.role === 'Dean');
-
+  
+  const canEdit = user?.role === 'Admin' || user?.role === 'Dean';
+  
+  // Format department name for dropdown display only
+  const formatDepartmentForDropdown = (dept) => {
+    if (dept === 'College of Engineering and Information Technology') {
+      return 'College Department';
+    }
+    return dept;
+  };
+  
   useEffect(() => {
     fetchDepartments();
     fetchSettings();
@@ -253,7 +260,7 @@ export default function OrganizationalChart() {
               className="w-full sm:flex-1 md:w-auto px-3 md:px-4 py-2 text-xs sm:text-sm md:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent bg-white"
             >
               {departments.map((dept) => (
-                <option key={dept} value={dept}>{dept}</option>
+                <option key={dept} value={dept}>{formatDepartmentForDropdown(dept)}</option>
               ))}
             </select>
           </div>

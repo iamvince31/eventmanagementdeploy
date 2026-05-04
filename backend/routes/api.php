@@ -44,7 +44,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
 
     // Events
-    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index']);
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class , 'index']);
+    
+    // Analytics - Admin Only
+    Route::middleware('admin')->group(function () {
+        Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class , 'index']);
+    });
 
     // Admin and Dean comprehensive event fetching
     Route::get('/events/all', [EventController::class, 'getAllEvents']);

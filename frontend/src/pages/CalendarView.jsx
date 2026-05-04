@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
@@ -8,14 +8,11 @@ import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import PersonalEventModal from '../components/PersonalEventModal';
 import EventDetailModal from '../components/EventDetailModal';
-import MetricCard from '../components/MetricCard';
-import DepartmentPieChart from '../components/DepartmentPieChart';
-import AcceptanceLineChart from '../components/AcceptanceLineChart';
 
-export default function Dashboard() {
+export default function CalendarView() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [events, setEvents] = useState([]);
   const [defaultEvents, setDefaultEvents] = useState([]);
   const [userSchedules, setUserSchedules] = useState([]);
@@ -24,24 +21,16 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
   const [highlightedDate, setHighlightedDate] = useState(null);
-  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
 
   // Modal States
   const [isEventDetailOpen, setIsEventDetailOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [navRefreshTrigger, setNavRefreshTrigger] = useState(0);
-
+  
   // Personal Event Modal States
   const [isPersonalEventModalOpen, setIsPersonalEventModalOpen] = useState(false);
   const [editingPersonalEvent, setEditingPersonalEvent] = useState(null);
   const [personalEventSelectedDate, setPersonalEventSelectedDate] = useState('');
-  const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
-  const [hasSchedule, setHasSchedule] = useState(true);
-  
-  // Analytics States
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
-
 
   useEffect(() => {
     // Check if user is validated
@@ -49,13 +38,8 @@ export default function Dashboard() {
       navigate('/account');
       return;
     }
-
-    fetchData();
     
-    // Only fetch analytics for admin users
-    if (user?.role === 'Admin') {
-      fetchAnalytics();
-    }
+    fetchData();
     
     // Auto-select today's date
     const today = new Date();
@@ -67,12 +51,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (location.state?.refresh) {
       fetchData();
-      
-      // Only fetch analytics for admin users
-      if (user?.role === 'Admin') {
-        fetchAnalytics();
-      }
-      
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);
@@ -82,11 +60,6 @@ export default function Dashboard() {
     const handleScheduleChanged = () => {
       invalidateCache(`dashboard:${user?.id}`);
       fetchData();
-      
-      // Only fetch analytics for admin users
-      if (user?.role === 'Admin') {
-        fetchAnalytics();
-      }
     };
     window.addEventListener('scheduleChanged', handleScheduleChanged);
     window.addEventListener('scheduleUpdated', handleScheduleChanged);
@@ -95,18 +68,6 @@ export default function Dashboard() {
       window.removeEventListener('scheduleUpdated', handleScheduleChanged);
     };
   }, [user?.id]);
-
-  // Close account dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (isAccountDropdownOpen && !event.target.closest('.account-dropdown-container')) {
-        setIsAccountDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isAccountDropdownOpen]);
 
   const applyDashboardData = (data, isBackground = false) => {
     const { events: fetchedEvents, defaultEvents: fetchedDefaultEvents, members: fetchedMembers, userSchedules: fetchedSchedules } = data;
@@ -178,23 +139,6 @@ export default function Dashboard() {
     }
   };
 
-  const fetchAnalytics = async () => {
-    // Only fetch analytics for admin users
-    if (user?.role !== 'Admin') {
-      setAnalyticsLoading(false);
-      return;
-    }
-    
-    try {
-      const response = await api.get('/analytics');
-      setAnalyticsData(response.data);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setAnalyticsLoading(false);
-    }
-  };
-
   const handleEdit = (event) => {
     if (!event) {
       console.error('No event provided to handleEdit');
@@ -230,19 +174,19 @@ export default function Dashboard() {
 
   const handleDateSelect = (date, events) => {
     setSelectedDate(date);
-
+    
     // Get default events that fall within their date ranges for this date
     const defaultEventsForDate = defaultEvents.filter(defEvent => {
       if (!defEvent.date) return false;
-
+      
       const eventStartDate = new Date(defEvent.date);
       const checkDate = new Date(date);
-
+      
       // If no end_date, check if it's the same day
       if (!defEvent.end_date) {
         return eventStartDate.toDateString() === checkDate.toDateString();
       }
-
+      
       // If end_date exists, check if date is within range
       const eventEndDate = new Date(defEvent.end_date);
       return checkDate >= eventStartDate && checkDate <= eventEndDate;
@@ -266,7 +210,7 @@ export default function Dashboard() {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
     let currentSemester;
-
+    
     if (currentMonth >= 9 || currentMonth <= 1) {
       currentSemester = 'first';
     } else if (currentMonth >= 2 && currentMonth <= 6) {
@@ -278,7 +222,7 @@ export default function Dashboard() {
     // Check if the specific date falls within the current semester
     const dateMonth = checkDate.getMonth() + 1;
     let dateInCurrentSemester = false;
-
+    
     if (currentSemester === 'first' && (dateMonth >= 9 || dateMonth <= 1)) {
       dateInCurrentSemester = true;
     } else if (currentSemester === 'second' && (dateMonth >= 2 && dateMonth <= 6)) {
@@ -291,7 +235,7 @@ export default function Dashboard() {
       if (schedule.day !== dayName) {
         return false;
       }
-
+      
       // Only show schedules during the current semester period
       // This ensures Tuesday classes only show on Tuesdays within the current semester
       return dateInCurrentSemester;
@@ -302,12 +246,11 @@ export default function Dashboard() {
       members: [],
       images: []
     }));
-
+    
     // Combine regular events with default events and schedule events
     const allEvents = [...events, ...defaultEventsForDate, ...scheduleEventsForDate];
     setSelectedDateEvents(allEvents);
   };
-
 
   return (
     <div className="h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col overflow-hidden">
@@ -315,6 +258,7 @@ export default function Dashboard() {
         isLoading={loading}
         refreshTrigger={navRefreshTrigger}
         events={events}
+        pageTitle="Calendar View"
         onNotificationClick={(event) => {
           setSelectedEvent(event);
           setIsEventDetailOpen(true);
@@ -322,118 +266,9 @@ export default function Dashboard() {
       />
 
       {/* Main Content */}
-      <main className={`flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 flex flex-col gap-4 ${user?.role === 'Admin' ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-        {/* Analytics Dashboard Section - Admin Only */}
-        {user?.role === 'Admin' ? (
-          <>
-            {analyticsLoading ? (
-              // Analytics Loading Skeleton
-              <div className="flex-shrink-0 animate-pulse">
-                {/* Skeleton Header */}
-                <div className="mb-4">
-                  <div className="h-7 bg-gray-200 rounded w-48 mb-3"></div>
-                  
-                  {/* Skeleton Metric Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                        <div className="h-4 bg-gray-200 rounded w-32 mb-3"></div>
-                        <div className="h-8 bg-gray-300 rounded w-20 mb-3"></div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-5 w-5 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded w-16"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Skeleton Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                  {/* Pie Chart Skeleton */}
-                  <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="h-5 bg-gray-200 rounded w-40"></div>
-                      <div className="h-8 bg-gray-200 rounded w-24"></div>
-                    </div>
-                    <div className="flex flex-col lg:flex-row items-center gap-6">
-                      <div className="w-[200px] h-[200px] bg-gray-100 rounded-full"></div>
-                      <div className="flex-1 w-full space-y-2">
-                        {[...Array(4)].map((_, i) => (
-                          <div key={i} className="flex items-center justify-between p-2">
-                            <div className="flex items-center gap-2 flex-1">
-                              <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-                              <div className="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div className="h-4 bg-gray-200 rounded w-16"></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Line Chart Skeleton */}
-                  <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="h-5 bg-gray-200 rounded w-40"></div>
-                      <div className="h-8 bg-gray-200 rounded w-32"></div>
-                    </div>
-                    <div className="h-[200px] bg-gray-100 rounded mb-4"></div>
-                    <div className="flex justify-center gap-6">
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : analyticsData && (
-              // Analytics Content
-              <div className="flex-shrink-0 pb-6">
-                {/* Metric Summary Cards */}
-                <div className="mb-4">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Analytics Overview</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <MetricCard
-                      label="Registered Accounts"
-                      count={analyticsData.metrics.registeredAccounts.count}
-                      change={analyticsData.metrics.registeredAccounts.change}
-                    />
-                    <MetricCard
-                      label="Number of Events"
-                      count={analyticsData.metrics.numberOfEvents.count}
-                      change={analyticsData.metrics.numberOfEvents.change}
-                    />
-                    <MetricCard
-                      label="Number of Meetings"
-                      count={analyticsData.metrics.numberOfMeetings.count}
-                      change={analyticsData.metrics.numberOfMeetings.change}
-                    />
-                    <MetricCard
-                      label="Users with Personal Events"
-                      count={analyticsData.metrics.usersWithPersonalEvents.count}
-                      change={analyticsData.metrics.usersWithPersonalEvents.change}
-                    />
-                  </div>
-                </div>
-
-                {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                  <DepartmentPieChart
-                    eventsData={analyticsData.charts.eventsByDepartment}
-                    meetingsData={analyticsData.charts.meetingsByDepartment}
-                  />
-                  <AcceptanceLineChart
-                    data={analyticsData.charts.acceptedRejectedByDepartment}
-                  />
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          // Non-Admin Users - Show Calendar View
-          <>
-            {/* Section Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-2 sm:mb-4 flex-shrink-0">
+      <main className="flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 overflow-hidden flex flex-col gap-4">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-2 sm:mb-4 flex-shrink-0">
           {loading ? (
             // Section Header Skeleton
             <>
@@ -583,8 +418,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-          </>
-        )}
       </main>
 
       {/* Event Details Modal */}
@@ -616,81 +449,6 @@ export default function Dashboard() {
         userSchedules={userSchedules}
         allEvents={events}
       />
-
-      {/* Schedule Required Modal */}
-      <Modal
-        isOpen={isScheduleRequiredModalOpen}
-        onClose={() => {
-          if (hasSchedule) {
-            setIsScheduleRequiredModalOpen(false);
-          }
-        }}
-        title="Class Schedule Required"
-        showCloseButton={false}
-        closeOnBackdrop={false}
-      >
-        <div className="space-y-6">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mb-4">
-              <svg className="w-10 h-10 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">Set Up Your Class Schedule First</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Before using the dashboard, you need to set up your class schedule. This helps prevent scheduling conflicts and ensures better event planning.
-            </p>
-          </div>
-
-          <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-            <h4 className="text-sm font-semibold text-green-900 mb-3">Why set up your schedule?</h4>
-            <ul className="space-y-2">
-              <li className="flex items-start text-sm text-green-800">
-                <svg className="w-5 h-5 mr-2 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Automatically detect scheduling conflicts</span>
-              </li>
-              <li className="flex items-start text-sm text-green-800">
-                <svg className="w-5 h-5 mr-2 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Better event planning and coordination</span>
-              </li>
-              <li className="flex items-start text-sm text-green-800">
-                <svg className="w-5 h-5 mr-2 flex-shrink-0 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Avoid double-booking yourself</span>
-              </li>
-            </ul>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={() => navigate('/account')}
-              className="flex-1 inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Set Up Schedule Now
-            </button>
-          </div>
-
-          {!hasSchedule && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
-              <p className="text-xs text-amber-800 text-center">
-                <svg className="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                You must set up your schedule to access the dashboard
-              </p>
-            </div>
-          )}
-        </div>
-      </Modal>
-
     </div>
   );
 }

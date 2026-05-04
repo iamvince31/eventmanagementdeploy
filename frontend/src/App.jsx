@@ -7,6 +7,7 @@ import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import EmailVerification from './pages/EmailVerification';
 import Dashboard from './pages/Dashboard';
+import CalendarView from './pages/CalendarView';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
 import PersonalEvent from './pages/PersonalEvent';
@@ -157,6 +158,11 @@ function App() {
           <Route path="/dashboard" element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          } />
+          <Route path="/calendar" element={
+            <ProtectedRoute>
+              <CalendarView />
             </ProtectedRoute>
           } />
           <Route path="/account" element={
