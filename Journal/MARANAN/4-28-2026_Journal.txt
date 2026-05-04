@@ -1,4 +1,36 @@
-Time in - 7:00 4/28/2026
+CEIT Officers isasama na ang Coordinator
+nagcreate si user ng account pede edit ung designation
+Fixing crashes and redeploying SQL on railway
+Choosable departments on register
+The Coordinator will be removed as well as role on all implementations 
+dynamically show on the /account interface the set registered department role on all implementations
+Corrected Department names on all implementation
+Added new feature where dates can be setted on multiple dates 
+Fixed fetching date inconsistently on academic year set on admin side
+Improved usability on setting dates on Academic year
+Fixed inconistency on the academic year pillbox UI display on dashboard
+Fixing UI on the Date picker on add event
+untracked/hide md files from every commit / fixing deployments
+Fix the Event details separated in the /add-event
+Fixing dead codes
+Fixed UI again on /Add-event and fixing inconsistencies
+improving ui of the multiple dates in add event
+fixing add event multiple date bug
+adding a time end on add event
+updating restrictions on the time end when setting on add event
+Events inform only, while meeting will have the feature of accept/decline only
+testing implementations on all features 
+testing implementations on all features
+Tested decline features on meetings, added an urgent button as well for untoggleable event
+updated the notification bell to the urgent features and the event pending issue
+added new roles department ext coord and research coord
+urgent feature must only be visible to only dean, ceit officers, admin, department chairperson only
+DCE changed to DCEA 
+Rerunning Migrations and restoring third party application runs
+Updating Seeders to our current implementations
+
+**UI of Members List
+**need to update pending events on event vs meeting
 
 7:00 - 8:00 : CEIT Officers must include the Coordinator (removed the coordinator role)
               nagcreate si user ng account pede edit ung designation

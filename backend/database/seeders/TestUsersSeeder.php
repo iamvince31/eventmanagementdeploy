@@ -35,7 +35,7 @@ class TestUsersSeeder extends Seeder
     private function generateSchedule(string $pattern, int $seed): array
     {
         $offsets = [0, 30, 60];
-        $offset  = $offsets[$seed % count($offsets)];
+        $offset = $offsets[$seed % count($offsets)];
 
         $add = function (string $time, int $mins): string {
             [$h, $m] = explode(':', $time);
@@ -43,16 +43,16 @@ class TestUsersSeeder extends Seeder
             return sprintf('%02d:%02d', intdiv($total, 60), $total % 60);
         };
 
-        $lecture  = ['Class - Lecture', 'Class - Discussion', 'Class - Recitation', 'Class - Review', 'Class - Seminar'];
-        $lab      = ['Class - Lab', 'Class - Workshop', 'Class - Practicum', 'Class - Studio', 'Class - Simulation'];
-        $consult  = ['Consultation Hours', 'Student Advising', 'Office Consultation', 'Academic Advising', 'Student Mentoring'];
-        $research = ['Research / Prep', 'Research Work', 'Module Preparation', 'Curriculum Dev', 'Academic Research'];
-        $admin    = ['Administrative Meeting', 'Admin Coordination', 'Staff Meeting', 'Admin Review', 'Planning Session'];
-        $office   = ['Office Hours', 'Open Office Hours', 'Faculty Office Hours', 'Student Drop-in', 'Office Consultation'];
-        $dept     = ['Department Meeting', 'Dept. Coordination', 'Dept. Review', 'Dept. Planning', 'Dept. Assembly'];
-        $coord    = ['Program Coordination', 'Program Review', 'Coordination Meeting', 'Program Planning', 'Coord. Session'];
-        $curr     = ['Curriculum Review', 'Curriculum Planning', 'Accreditation Tasks', 'Program Assessment', 'Curriculum Dev'];
-        $weekly   = ['Weekly Review', 'Weekly Wrap-up', 'End-of-Week Meeting', 'Weekly Summary', 'Weekly Planning'];
+        $lectureLabels  = ['Class - Lecture', 'Class - Discussion', 'Class - Recitation', 'Class - Review', 'Class - Seminar'];
+        $labLabels      = ['Class - Lab', 'Class - Workshop', 'Class - Practicum', 'Class - Studio', 'Class - Simulation'];
+        $consultLabels  = ['Consultation Hours', 'Student Advising', 'Office Consultation', 'Academic Advising', 'Student Mentoring'];
+        $researchLabels = ['Research / Prep', 'Research Work', 'Module Preparation', 'Curriculum Dev', 'Academic Research'];
+        $adminLabels    = ['Administrative Meeting', 'Admin Coordination', 'Staff Meeting', 'Admin Review', 'Planning Session'];
+        $officeLabels   = ['Office Hours', 'Open Office Hours', 'Faculty Office Hours', 'Student Drop-in', 'Office Consultation'];
+        $deptLabels     = ['Department Meeting', 'Dept. Coordination', 'Dept. Review', 'Dept. Planning', 'Dept. Assembly'];
+        $coordLabels    = ['Program Coordination', 'Program Review', 'Coordination Meeting', 'Program Planning', 'Coord. Session'];
+        $currLabels     = ['Curriculum Review', 'Curriculum Planning', 'Accreditation Tasks', 'Program Assessment', 'Curriculum Dev'];
+        $weeklyLabels   = ['Weekly Review', 'Weekly Wrap-up', 'End-of-Week Meeting', 'Weekly Summary', 'Weekly Planning'];
 
         $pick = fn(array $arr) => $arr[$seed % count($arr)];
 
@@ -109,9 +109,17 @@ class TestUsersSeeder extends Seeder
 
     public function run(): void
     {
+        $departments = [
+            'DAFE'  => 'Department of Agriculture and Food Engineering',
+            'DCEEA' => 'Department of Civil Engineering and Architecture',
+            'DCEEE' => 'Department of Computer, Electronics, and Electrical Engineering',
+            'DIET'  => 'Department of Industrial Engineering and Technology',
+            'DIT'   => 'Department of Information Technology',
+        ];
+
         $testUsers = [];
 
-        // ── 1. ADMIN (random dept) ────────────────────────────────────────────
+        // ── 1. ADMIN ──────────────────────────────────────────────────────────
         $testUsers[] = [
             'name' => 'System Administrator',
             'first_name' => 'System', 'middle_name' => 'Root', 'last_name' => 'Administrator',

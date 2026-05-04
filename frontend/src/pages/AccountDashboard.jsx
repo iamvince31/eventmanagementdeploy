@@ -145,7 +145,7 @@ function TimePickerInput({ value, onChange }) {
 const ROLE_DESCRIPTIONS = {
   'Admin': 'System administrator with full access to manage users, roles, and all system settings.',
   'Dean': 'College Dean responsible for overseeing all academic and administrative operations of the college.',
-  'CEIT Official': 'CEIT official with administrative responsibilities.',
+  'CEIT Official': 'College of Engineering and Information Technology official with administrative responsibilities.',
   'Chairperson': 'Department Chairperson who manages department-level academic programs and faculty.',
   'Department Research Coordinator': 'Coordinates research activities and projects at the department level.',
   'Department Extension Coordinator': 'Manages community extension programs and outreach activities at the department level.',

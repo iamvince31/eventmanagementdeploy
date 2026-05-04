@@ -18,15 +18,6 @@ export default function Register() {
   const [DEPARTMENTS, setDEPARTMENTS] = useState([]);
   const [ALL_ROLES, setALL_ROLES] = useState([]);
 
-  useEffect(() => {
-    api.get('/settings').then(res => {
-      setDEPARTMENTS(res.data.departments || []);
-      const ceit = res.data.ceit_roles || [];
-      const dept = res.data.department_roles || [];
-      setALL_ROLES([...new Set([...ceit, ...dept])]);
-    }).catch(console.error);
-  }, []);
-
   const getRolesForDepartment = () => ALL_ROLES;
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -59,31 +50,19 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  // Generate preview of full name
-  const generateFullName = () => {
-    if (!formData.first_name && !formData.last_name) return '';
-
-    let middleInitial = '';
-    if (formData.middle_initial) {
-      const middleWords = formData.middle_initial.split(' ').filter(word => word.trim());
-      const initials = middleWords.map(word => word.trim().charAt(0).toUpperCase() + '.');
-      middleInitial = ' ' + initials.join(' ');
-    }
-
-    // Capitalize first letter of each word
-    const capitalizeWords = (text) => {
-      return text.split(' ')
-        .map(word => word.trim())
-        .filter(word => word.length > 0)
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
-    };
-
-    const firstName = capitalizeWords(formData.first_name);
-    const lastName = capitalizeWords(formData.last_name);
-
-    return (firstName + middleInitial + ' ' + lastName).trim();
-  };
+  // Fetch departments and roles from settings API
+  useEffect(() => {
+    api.get('/settings').then(res => {
+      setDEPARTMENTS(res.data.departments || []);
+      const allRoles = [
+        ...(res.data.ceit_roles || []),
+        ...(res.data.department_roles || []),
+      ];
+      setALL_ROLES(allRoles);
+    }).catch(() => {
+      // fallback — leave arrays empty, user will see no options
+    });
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -129,7 +108,7 @@ export default function Register() {
     }
 
     try {
-      const response = await api.post('/register', {
+      await api.post('/register', {
         ...formData,
         email: formData.email.trim()
       });

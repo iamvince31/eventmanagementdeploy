@@ -116,13 +116,10 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isCoordinator()
     {
-        $designations = $this->getDesignationsArray();
-        foreach ($designations as $desig) {
-            if (str_contains(strtolower($desig), 'coordinator')) {
-                return true;
-            }
-        }
-        return false;
+        return in_array($this->role, [
+            'Department Research Coordinator',
+            'Department Extension Coordinator',
+        ]);
     }
 
     public function isFaculty()
@@ -137,11 +134,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canCreateEvents()
     {
-        // By default, everyone with a designation can create events unless they are just empty
-        // For security, maybe explicitly block specific low-level roles if any, but in this system
-        // basically all designations (Dean, Chairperson, Coordinator, Faculty, Staff) can create events.
-        $designations = $this->getDesignationsArray();
-        return !empty($designations);
+        return in_array($this->role, [
+            'Admin', 'Dean', 'Chairperson',
+            'Department Research Coordinator', 'Department Extension Coordinator',
+            'CEIT Official', 'Faculty Member',
+        ]);
     }
 
     public function needsApprovalForEvents()
