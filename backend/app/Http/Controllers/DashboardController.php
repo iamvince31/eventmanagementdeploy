@@ -79,7 +79,7 @@ class DashboardController extends Controller
 
         // ── Members list (cached) ──────────────────────────────────────────
         $members = Cache::remember('users_list', 600, function () {
-            return User::select('id', 'name', 'email', 'designation', 'department')
+            return User::select('id', 'name', 'email', 'role as designation', 'department')
                 ->where('is_validated', true)
                 ->orderBy('name')
                 ->limit(500)
