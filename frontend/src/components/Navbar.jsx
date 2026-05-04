@@ -158,7 +158,7 @@ export default function Navbar({
                     </svg>
                   </button>
                   <button
-                    onClick={() => navigate('/calendar')}
+                    onClick={() => navigate('/dashboard')}
                     disabled={isLoading}
                     className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Calendar View"
@@ -284,7 +284,7 @@ export default function Navbar({
                     </button>
                   )}
                   <button
-                    onClick={() => navigate('/calendar')}
+                    onClick={() => navigate('/dashboard')}
                     disabled={isLoading}
                     className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Calendar View"

@@ -7,7 +7,6 @@ import ResetPassword from './pages/ResetPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import EmailVerification from './pages/EmailVerification';
 import Dashboard from './pages/Dashboard';
-import CalendarView from './pages/CalendarView';
 import AccountDashboard from './pages/AccountDashboard';
 import AddEvent from './pages/AddEvent';
 import PersonalEvent from './pages/PersonalEvent';
@@ -119,12 +118,14 @@ const PublicRoute = ({ children }) => {
     );
   }
 
-  // If user is logged in, check if they need to set up schedule
+  // If user is logged in, redirect based on role
   if (user) {
     if (!user.schedule_initialized) {
       return <Navigate to="/account" />;
     }
-    return <Navigate to="/dashboard" />;
+    // Admin lands on analytics, everyone else on dashboard
+    const isAdmin = user.designation === 'Admin' || user.role === 'Admin';
+    return <Navigate to={isAdmin ? '/analytics' : '/dashboard'} />;
   }
 
   return children;
@@ -160,11 +161,6 @@ function App() {
             <ProtectedRoute>
               <Dashboard />
             </ProtectedRoute>
-          } />
-          <Route path="/calendar" element={
-            <RoleProtectedRoute allowedRoles={['Admin']}>
-              <CalendarView />
-            </RoleProtectedRoute>
           } />
           <Route path="/account" element={
             <AccountRoute>
@@ -215,8 +211,7 @@ function App() {
             <RoleProtectedRoute allowedRoles={['Admin']}>
               <Analytics />
             </RoleProtectedRoute>
-          } />
-          <Route path="/" element={<Navigate to="/account" />} />
+          } />          <Route path="/" element={<Navigate to="/account" />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

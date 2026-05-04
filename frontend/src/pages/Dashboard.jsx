@@ -8,9 +8,6 @@ import Navbar from '../components/Navbar';
 import Modal from '../components/Modal';
 import PersonalEventModal from '../components/PersonalEventModal';
 import EventDetailModal from '../components/EventDetailModal';
-import MetricCard from '../components/MetricCard';
-import DepartmentPieChart from '../components/DepartmentPieChart';
-import AcceptanceLineChart from '../components/AcceptanceLineChart';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -31,18 +28,13 @@ export default function Dashboard() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [navRefreshTrigger, setNavRefreshTrigger] = useState(0);
 
-  // Personal Event Modal States
   const [isPersonalEventModalOpen, setIsPersonalEventModalOpen] = useState(false);
   const [editingPersonalEvent, setEditingPersonalEvent] = useState(null);
   const [personalEventSelectedDate, setPersonalEventSelectedDate] = useState('');
   const [isScheduleRequiredModalOpen, setIsScheduleRequiredModalOpen] = useState(false);
   const [hasSchedule, setHasSchedule] = useState(true);
-  
-  // Analytics States
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
-  // Helper � works whether server returns 'role' or 'designation'
+  // Helper — works whether server returns 'role' or 'designation'
   const isAdmin = user?.role === 'Admin' || user?.designation === 'Admin';
 
   useEffect(() => {
@@ -53,12 +45,7 @@ export default function Dashboard() {
     }
 
     fetchData();
-    
-    // Only fetch analytics for admin users
-    if (isAdmin) {
-      fetchAnalytics();
-    }
-    
+
     // Auto-select today's date
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
@@ -69,12 +56,6 @@ export default function Dashboard() {
   useEffect(() => {
     if (location.state?.refresh) {
       fetchData();
-      
-      // Only fetch analytics for admin users
-      if (isAdmin) {
-        fetchAnalytics();
-      }
-      
       navigate(location.pathname, { replace: true, state: {} });
     }
   }, [location.state]);
@@ -84,11 +65,6 @@ export default function Dashboard() {
     const handleScheduleChanged = () => {
       invalidateCache(`dashboard:${user?.id}`);
       fetchData();
-      
-      // Only fetch analytics for admin users
-      if (isAdmin) {
-        fetchAnalytics();
-      }
     };
     window.addEventListener('scheduleChanged', handleScheduleChanged);
     window.addEventListener('scheduleUpdated', handleScheduleChanged);
@@ -177,23 +153,6 @@ export default function Dashboard() {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchAnalytics = async () => {
-    // Only fetch analytics for admin users
-    if (!isAdmin) {
-      setAnalyticsLoading(false);
-      return;
-    }
-    
-    try {
-      const response = await api.get('/analytics');
-      setAnalyticsData(response.data);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    } finally {
-      setAnalyticsLoading(false);
     }
   };
 
@@ -324,177 +283,79 @@ export default function Dashboard() {
       />
 
       {/* Main Content */}
-      <main className={`flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 flex flex-col gap-4 ${isAdmin ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+      <main className="flex-1 w-full py-2 sm:py-4 px-2 sm:px-4 lg:px-8 overflow-hidden flex flex-col gap-4">
 
-        {/* Analytics (admin) / Calendar with buttons (non-admin) */}
-        {isAdmin ? (
-          <>
-            {analyticsLoading ? (
-              // Analytics Loading Skeleton
-              <div className="flex-shrink-0 animate-pulse">
-                {/* Skeleton Header */}
-                <div className="mb-4">
-                  <div className="h-7 bg-gray-200 rounded w-48 mb-3"></div>
-                  
-                  {/* Skeleton Metric Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {[...Array(4)].map((_, i) => (
-                      <div key={i} className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                        <div className="h-4 bg-gray-200 rounded w-32 mb-3"></div>
-                        <div className="h-8 bg-gray-300 rounded w-20 mb-3"></div>
-                        <div className="flex items-center gap-2">
-                          <div className="h-5 w-5 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded w-16"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Skeleton Charts */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                  {/* Pie Chart Skeleton */}
-                  <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="h-5 bg-gray-200 rounded w-40"></div>
-                      <div className="h-8 bg-gray-200 rounded w-24"></div>
-                    </div>
-                    <div className="flex flex-col lg:flex-row items-center gap-6">
-                      <div className="w-[200px] h-[200px] bg-gray-100 rounded-full"></div>
-                      <div className="flex-1 w-full space-y-2">
-                        {[...Array(4)].map((_, i) => (
-                          <div key={i} className="flex items-center justify-between p-2">
-                            <div className="flex items-center gap-2 flex-1">
-                              <div className="w-4 h-4 bg-gray-200 rounded-full"></div>
-                              <div className="h-4 bg-gray-200 rounded w-32"></div>
-                            </div>
-                            <div className="h-4 bg-gray-200 rounded w-16"></div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Line Chart Skeleton */}
-                  <div className="bg-white rounded-xl shadow-md border border-gray-100 p-4 sm:p-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="h-5 bg-gray-200 rounded w-40"></div>
-                      <div className="h-8 bg-gray-200 rounded w-32"></div>
-                    </div>
-                    <div className="h-[200px] bg-gray-100 rounded mb-4"></div>
-                    <div className="flex justify-center gap-6">
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                      <div className="h-4 bg-gray-200 rounded w-20"></div>
-                    </div>
-                  </div>
-                </div>
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 flex-shrink-0">
+          {loading ? (
+            <>
+              <div className="animate-pulse">
+                <div className="h-7 bg-gray-200 rounded w-40 mb-2"></div>
+                <div className="h-3 bg-gray-100 rounded w-56"></div>
               </div>
-            ) : analyticsData && (
-              // Analytics Content
-              <div className="flex-shrink-0 pb-6">
-                {/* Metric Summary Cards */}
-                <div className="mb-4">
-                  <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">Analytics Overview</h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <MetricCard
-                      label="Registered Accounts"
-                      count={analyticsData.metrics.registeredAccounts.count}
-                      change={analyticsData.metrics.registeredAccounts.change}
-                    />
-                    <MetricCard
-                      label="Number of Events"
-                      count={analyticsData.metrics.numberOfEvents.count}
-                      change={analyticsData.metrics.numberOfEvents.change}
-                    />
-                    <MetricCard
-                      label="Number of Meetings"
-                      count={analyticsData.metrics.numberOfMeetings.count}
-                      change={analyticsData.metrics.numberOfMeetings.change}
-                    />
-                    <MetricCard
-                      label="Users with Personal Events"
-                      count={analyticsData.metrics.usersWithPersonalEvents.count}
-                      change={analyticsData.metrics.usersWithPersonalEvents.change}
-                    />
-                  </div>
-                </div>
-
-                {/* Charts Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-                  <DepartmentPieChart
-                    eventsData={analyticsData.charts.eventsByDepartment}
-                    meetingsData={analyticsData.charts.meetingsByDepartment}
-                  />
-                  <AcceptanceLineChart
-                    data={analyticsData.charts.acceptedRejectedByDepartment}
-                  />
-                </div>
+              <div className="flex gap-1.5 sm:gap-2 animate-pulse">
+                <div className="h-9 bg-gray-200 rounded w-24"></div>
+                <div className="h-9 bg-gray-200 rounded w-24"></div>
+                <div className="h-9 bg-gray-200 rounded w-28"></div>
               </div>
-            )}
-          </>
-        ) : (
-          // Non-Admin Users - Calendar View
-          <>
-            {/* Section Header */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 flex-shrink-0">
-              {loading ? (
-                <>
-                  <div className="animate-pulse">
-                    <div className="h-7 bg-gray-200 rounded w-40 mb-2"></div>
-                    <div className="h-3 bg-gray-100 rounded w-56"></div>
-                  </div>
-                  <div className="flex gap-1.5 sm:gap-2 animate-pulse">
-                    <div className="h-9 bg-gray-200 rounded w-24"></div>
-                    <div className="h-9 bg-gray-200 rounded w-24"></div>
-                    <div className="h-9 bg-gray-200 rounded w-28"></div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Calendar View</h2>
-                    <p className="text-xs text-gray-600 mt-0.5 sm:mt-1 font-medium">Click a date to view or manage your events</p>
-                  </div>
-                  <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
-                    {user && (
-                      <>
-                        <button
-                          onClick={() => {
-                            setEditingPersonalEvent(null);
-                            setPersonalEventSelectedDate(selectedDate);
-                            setIsPersonalEventModalOpen(true);
-                          }}
-                          className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
-                        >
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                          </svg>
-                          Personal
-                        </button>
-                        <button
-                          onClick={() => navigate('/add-event', { state: { selectedDate } })}
-                          className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
-                        >
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                          </svg>
-                          <span className="hidden sm:inline">Add Event</span>
-                          <span className="sm:hidden">Add</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Calendar View</h2>
+                <p className="text-xs text-gray-600 mt-0.5 sm:mt-1 font-medium">Click a date to view or manage your events</p>
+              </div>
+              <div className="flex gap-1.5 sm:gap-2 flex-wrap w-full sm:w-auto">
+                {/* Academic Calendar - Admin Only */}
+                {isAdmin && (
+                  <button
+                    onClick={() => navigate('/default-events')}
+                    className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                  >
+                    <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    Academic
+                  </button>
+                )}
+                {/* Personal + Add Event — all users */}
+                {user && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setEditingPersonalEvent(null);
+                        setPersonalEventSelectedDate(selectedDate);
+                        setIsPersonalEventModalOpen(true);
+                      }}
+                      className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-white text-green-700 border-2 border-green-700 hover:bg-green-50 focus:ring-green-600"
+                    >
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      Personal
+                    </button>
+                    <button
+                      onClick={() => navigate('/add-event', { state: { selectedDate } })}
+                      className="inline-flex items-center px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold rounded-lg shadow hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 group bg-gradient-to-r from-green-700 to-green-800 text-white hover:from-green-800 hover:to-green-900 focus:ring-green-600"
+                    >
+                      <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4 mr-1 sm:mr-1.5 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span className="hidden sm:inline">Add Event</span>
+                      <span className="sm:hidden">Add</span>
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
 
         {/* Calendar */}
         <div className="flex-1 min-h-0 flex-shrink-0">
           <div className="bg-white rounded-lg sm:rounded-xl shadow-lg border border-gray-100 p-2 sm:p-3 lg:p-4 hover:shadow-xl transition-shadow duration-200 h-full flex flex-col">
             {loading ? (
-              // Enhanced Calendar Skeleton
               <div className="animate-pulse h-full flex flex-col">
-                {/* Month/Year Header Skeleton */}
                 <div className="flex items-center justify-between mb-3 sm:mb-4 flex-shrink-0">
                   <div className="h-6 sm:h-7 bg-gray-200 rounded w-32 sm:w-40"></div>
                   <div className="flex gap-2">
@@ -502,8 +363,6 @@ export default function Dashboard() {
                     <div className="h-8 w-8 bg-gray-200 rounded"></div>
                   </div>
                 </div>
-
-                {/* Day Names Header Skeleton */}
                 <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-2 sm:mb-3 flex-shrink-0">
                   {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
                     <div key={i} className="text-center">
@@ -511,18 +370,10 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-
-                {/* Calendar Grid Skeleton */}
                 <div className="grid grid-cols-7 gap-0.5 sm:gap-1 flex-1">
                   {[...Array(42)].map((_, i) => (
-                    <div 
-                      key={i} 
-                      className="bg-white border border-gray-200 rounded p-1 sm:p-2 flex flex-col"
-                    >
-                      {/* Date number skeleton */}
+                    <div key={i} className="bg-white border border-gray-200 rounded p-1 sm:p-2 flex flex-col">
                       <div className="h-4 sm:h-5 bg-gray-200 rounded w-6 sm:w-7 mb-1"></div>
-                      
-                      {/* Event indicators skeleton (random pattern) */}
                       {i % 3 === 0 && (
                         <div className="space-y-0.5">
                           <div className="h-1.5 bg-gray-100 rounded"></div>
@@ -532,8 +383,6 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
-
-                {/* Legend Skeleton */}
                 <div className="flex flex-wrap gap-3 sm:gap-4 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-200 flex-shrink-0">
                   {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center gap-1.5">
@@ -561,8 +410,6 @@ export default function Dashboard() {
             )}
           </div>
         </div>
-          </>
-        )}
       </main>
 
       {/* Event Details Modal */}
