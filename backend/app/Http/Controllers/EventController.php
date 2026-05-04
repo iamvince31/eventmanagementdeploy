@@ -56,7 +56,7 @@ class EventController extends Controller
                 'images' => $event->images->map(fn($img) => [
                     'url' => $this->safeImageUrl($img->cloudinary_url, $img->image_path),
                     'original_filename' => $img->original_filename,
-                ]),
+                ])->filter(fn($img) => $img['url'] !== null)->values(),
                 'date' => $event->date,
                 'time' => $event->time,
                 'end_time' => $event->end_time,
@@ -118,7 +118,7 @@ class EventController extends Controller
                 'images' => $event->images->map(fn($img) => [
                     'url' => $this->safeImageUrl($img->cloudinary_url, $img->image_path),
                     'original_filename' => $img->original_filename,
-                ]),
+                ])->filter(fn($img) => $img['url'] !== null)->values(),
                 'date' => $event->date,
                 'time' => $event->time,
                 'end_time' => $event->end_time,
@@ -566,18 +566,25 @@ class EventController extends Controller
     }
 
     /**
-     * Returns a safe HTTPS image URL.
-     * Uses cloudinary_url (Supabase) if set, otherwise falls back to local storage URL.
-     * Forces https:// in both cases to prevent mixed content on production.
+     * Returns a safe image URL for display.
+     * - Uses cloudinary_url (Supabase) if set.
+     * - Returns null for legacy local-storage records (no cloudinary_url) —
+     *   those files no longer exist on the ephemeral Render filesystem.
+     * - Forces https:// to prevent mixed content.
      */
-    private function safeImageUrl(?string $cloudinaryUrl, ?string $imagePath): string
+    private function safeImageUrl(?string $cloudinaryUrl, ?string $imagePath): ?string
     {
-        $url = $cloudinaryUrl ?: asset('storage/' . $imagePath);
-        // Force HTTPS — prevents mixed content when APP_URL is http://
-        if (str_starts_with($url, 'http://')) {
-            $url = 'https://' . substr($url, 7);
+        // Legacy record with no Supabase URL — file is gone, don't return a broken URL
+        if (!$cloudinaryUrl) {
+            return null;
         }
-        return $url;
+
+        // Force HTTPS — prevents mixed content when APP_URL is http://
+        if (str_starts_with($cloudinaryUrl, 'http://')) {
+            return 'https://' . substr($cloudinaryUrl, 7);
+        }
+
+        return $cloudinaryUrl;
     }
 }
 
