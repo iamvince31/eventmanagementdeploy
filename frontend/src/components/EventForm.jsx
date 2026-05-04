@@ -849,11 +849,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               </div>
 
               {/* Department and Designation Filters with Select All */}
-              <div className="mb-3 flex gap-2">
+              <div className="mb-3 flex flex-col md:flex-row gap-2">
                 <select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                  className="flex-1 min-w-0 md:min-w-[120px] px-2 md:px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                 >
                   <option value="all">All Departments</option>
                   {availableDepartments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
@@ -862,7 +862,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 <select
                   value={filterDesignation}
                   onChange={(e) => setFilterDesignation(e.target.value)}
-                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                  className="flex-1 min-w-0 md:min-w-[120px] px-2 md:px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                 >
                   <option value="all">All Designations</option>
                   {availableDesignations
@@ -876,12 +876,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   type="button"
                   onClick={handleSelectAll}
                   disabled={searchFilteredMembers.length === 0}
-                  className="px-4 py-2.5 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  className="shrink-0 flex justify-center items-center px-3 py-2.5 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {searchFilteredMembers.length > 0 && searchFilteredMembers.every(m => selectedMembers.includes(m.id)) ? (
-                    <span className="flex items-center"><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>Deselect All</span>
+                    <><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>Deselect All</>
                   ) : (
-                    <span className="flex items-center"><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Select All</span>
+                    <><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Select All</>
                   )}
                 </button>
               </div>

@@ -19,6 +19,7 @@ class Event extends Model
         'personal_color',
         'event_type',
         'is_urgent',
+        'is_archived',
     ];
 
     protected $casts = [
