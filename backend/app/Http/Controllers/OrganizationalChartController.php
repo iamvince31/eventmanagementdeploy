@@ -21,25 +21,18 @@ class OrganizationalChartController extends Controller
                 ->select('id', 'name', 'first_name', 'last_name', 'email', 'department', 'designation', 'profile_picture')
                 ->first();
 
-            // Check if viewing college level
-            $isCollegeLevel = ($department === 'CEIT');
-
             // Get other users filtered by department
             $query = User::where('is_validated', true)
                 ->where('designation', '!=', 'Admin')
                 ->where('designation', '!=', 'Dean'); // Exclude Dean from this query since we got it separately
 
-            if ($department && !$isCollegeLevel) {
+            if ($department) {
                 // For specific department, show everything including Faculty
                 $query->where('department', $department);
-            } elseif ($isCollegeLevel) {
-                // For college level, get CEIT Official, Coordinator, and Faculty Members from college
-                $query->where('department', 'CEIT')
-                    ->whereIn('designation', ['CEIT Official', 'Coordinator', 'Faculty Member']);
             }
 
             $users = $query->select('id', 'name', 'first_name', 'last_name', 'email', 'department', 'designation', 'profile_picture')
-                ->orderByRaw("FIELD(designation, 'CEIT Official', 'Chairperson', 'Program Coordinator', 'Research Coordinator', 'Extension Coordinator', 'GAD Coordinator', 'Faculty Member')")
+                ->orderByRaw("FIELD(designation, 'CEIT Official', 'Chairperson', 'Program Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator', 'GAD Coordinator', 'Faculty Member')")
                 ->orderBy('name', 'asc')
                 ->get();
 
@@ -59,14 +52,8 @@ class OrganizationalChartController extends Controller
         $hierarchy = [
             'dean' => null,
             'ceitStaff' => [],
-            'ceitCoordinators' => [],
-            'facultyMembers' => [],
-            'chairpersons' => [],
             'departments' => []
         ];
-
-        // Check if we're viewing the college level
-        $isCollegeLevel = ($department === 'CEIT');
 
         // Group users by department
         $departmentGroups = [];
@@ -86,50 +73,30 @@ class OrganizationalChartController extends Controller
             if ($user->designation === 'Dean') {
                 $hierarchy['dean'] = $userData;
             } elseif ($user->designation === 'CEIT Official') {
-                // CEIT Officials are always shown at college level (in ceitStaff array)
+                // CEIT Officials are shown at college level
                 $hierarchy['ceitStaff'][] = $userData;
-            } elseif ($user->designation === 'Faculty Member' && $isCollegeLevel) {
-                // For college level view, show Faculty Members at college level
-                $hierarchy['facultyMembers'][] = $userData;
-            } elseif ($user->designation === 'Coordinator' && $isCollegeLevel) {
-                // For college level view, show Coordinators below CEIT Official
-                $hierarchy['ceitCoordinators'][] = $userData;
-            } elseif ($user->designation === 'Chairperson') {
-                // If viewing college level, show all chairpersons at college level
-                // Otherwise, show chairperson within their department
-                if ($isCollegeLevel) {
-                    $hierarchy['chairpersons'][] = $userData;
-                } else {
-                    $dept = $user->department;
-                    if (!isset($departmentGroups[$dept])) {
-                        $departmentGroups[$dept] = [
-                            'chairperson' => null,
-                            'programCoordinators' => [],
-                            'coordinators' => [],
-                            'faculty' => []
-                        ];
-                    }
-                    $departmentGroups[$dept]['chairperson'] = $userData;
-                }
             } else {
+                // All other users are grouped by department
                 $dept = $user->department;
                 if (!isset($departmentGroups[$dept])) {
                     $departmentGroups[$dept] = [
-                        'ceitStaff' => [],
                         'chairperson' => null,
                         'programCoordinators' => [],
-                        'coordinators' => [],
+                        'departmentCoordinators' => [], // Research and Extension coordinators
                         'faculty' => []
                     ];
                 }
 
                 switch ($user->designation) {
+                    case 'Chairperson':
+                        $departmentGroups[$dept]['chairperson'] = $userData;
+                        break;
                     case 'Program Coordinator':
                         $departmentGroups[$dept]['programCoordinators'][] = $userData;
                         break;
-                    case 'Research Coordinator':
-                    case 'Extension Coordinator':
-                        $departmentGroups[$dept]['coordinators'][] = $userData;
+                    case 'Department Research Coordinator':
+                    case 'Department Extension Coordinator':
+                        $departmentGroups[$dept]['departmentCoordinators'][] = $userData;
                         break;
                     case 'Faculty Member':
                         $departmentGroups[$dept]['faculty'][] = $userData;
@@ -144,7 +111,7 @@ class OrganizationalChartController extends Controller
                 'name' => $deptName,
                 'chairperson' => $deptData['chairperson'] ?? null,
                 'programCoordinators' => $deptData['programCoordinators'] ?? [],
-                'coordinators' => $deptData['coordinators'] ?? [],
+                'departmentCoordinators' => $deptData['departmentCoordinators'] ?? [],
                 'faculty' => $deptData['faculty'] ?? []
             ];
         }
@@ -165,7 +132,7 @@ class OrganizationalChartController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'department' => 'sometimes|string|max:255',
-            'designation' => 'sometimes|in:Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
+            'designation' => 'sometimes|in:Dean,CEIT Official,Chairperson,Program Coordinator,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
         ]);
 
         $user = User::findOrFail($id);
@@ -210,24 +177,16 @@ class OrganizationalChartController extends Controller
     public function departments()
     {
         $departments = Cache::remember('org_chart_departments', 600, function () {
-            // Get all department names including the college-level department
+            // Get all department names excluding CEIT (college-level)
             $depts = User::where('is_validated', true)
                 ->where('designation', '!=', 'Admin')
                 ->where('designation', '!=', 'Dean')
                 ->whereNotNull('department')
+                ->where('department', '!=', 'CEIT') // Exclude CEIT college-level department
                 ->distinct()
                 ->pluck('department')
                 ->sort()
                 ->values();
-
-            // Ensure "CEIT" is at the top
-            $depts = $depts->filter(
-                function ($dept) {
-                    return $dept !== 'CEIT';
-                }
-            )->values();
-
-            $depts->prepend('CEIT');
 
             return $depts;
         });

@@ -5,7 +5,7 @@ import api from '../services/api';
 
 export default function OrganizationalChart() {
   const { user } = useAuth();
-  const [hierarchy, setHierarchy] = useState({ dean: null, ceitStaff: [], ceitCoordinators: [], facultyMembers: [], chairpersons: [], departments: [] });
+  const [hierarchy, setHierarchy] = useState({ dean: null, ceitStaff: [], departments: [] });
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -18,9 +18,6 @@ export default function OrganizationalChart() {
   
   // Format department name for dropdown display only
   const formatDepartmentForDropdown = (dept) => {
-    if (dept === 'College of Engineering and Information Technology') {
-      return 'College Department';
-    }
     return dept;
   };
   
@@ -294,32 +291,6 @@ export default function OrganizationalChart() {
               </div>
             )}
 
-            {/* CEIT Coordinators Level (Below CEIT Official) - Medium - 1 on mobile, 2 on tablet, 3 on desktop */}
-            {hierarchy.ceitCoordinators && hierarchy.ceitCoordinators.length > 0 && (
-              <div className="flex flex-col items-center mb-10 md:mb-14">
-                <div className="flex flex-wrap justify-center gap-x-4 md:gap-x-5 gap-y-10 md:gap-y-12 w-full max-w-[840px] px-4">
-                  {hierarchy.ceitCoordinators.map((coordinator) => (
-                    <div key={coordinator.id} className="w-full max-w-[280px] sm:w-[calc(50%-0.5rem)] sm:max-w-xs md:w-56">
-                      <MemberCard member={coordinator} size="medium" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Faculty Members Level (Below CEIT Official/Coordinator) - Medium - 1 on mobile, 2 on tablet, 3 on desktop */}
-            {hierarchy.facultyMembers && hierarchy.facultyMembers.length > 0 && (
-              <div className="flex flex-col items-center mb-10 md:mb-14">
-                <div className="flex flex-wrap justify-center gap-x-4 md:gap-x-5 gap-y-10 md:gap-y-12 w-full max-w-[840px] px-4">
-                  {hierarchy.facultyMembers.map((faculty) => (
-                    <div key={faculty.id} className="w-full max-w-[280px] sm:w-[calc(50%-0.5rem)] sm:max-w-xs md:w-56">
-                      <MemberCard member={faculty} size="medium" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Department Branches */}
             {hierarchy.departments.length > 0 && (
               <div className="flex justify-center gap-6 md:gap-8 lg:gap-12 px-3 md:px-4 flex-wrap">
@@ -332,10 +303,10 @@ export default function OrganizationalChart() {
                       </div>
                     )}
 
-                    {/* Program Coordinators - Small - 1 on mobile, 2 on tablet, 3 on desktop */}
-                    {dept.programCoordinators && dept.programCoordinators.length > 0 && (
+                    {/* Department Coordinators (Research & Extension) - Small - Below Chairperson */}
+                    {dept.departmentCoordinators && dept.departmentCoordinators.length > 0 && (
                       <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-8 md:gap-y-10 mb-10 md:mb-12 w-full max-w-[660px] px-4 md:px-0">
-                        {dept.programCoordinators.map((coordinator) => (
+                        {dept.departmentCoordinators.map((coordinator) => (
                           <div key={coordinator.id} className="w-full max-w-[280px] sm:w-[calc(50%-0.375rem)] sm:max-w-[200px] md:w-48">
                             <MemberCard member={coordinator} size="small" />
                           </div>
@@ -343,10 +314,10 @@ export default function OrganizationalChart() {
                       </div>
                     )}
 
-                    {/* Other Coordinators (Research/Extension/GAD) - Small - 1 on mobile, 2 on tablet, 3 on desktop */}
-                    {dept.coordinators.length > 0 && (
+                    {/* Program Coordinators - Small - 1 on mobile, 2 on tablet, 3 on desktop */}
+                    {dept.programCoordinators && dept.programCoordinators.length > 0 && (
                       <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-8 md:gap-y-10 mb-10 md:mb-12 w-full max-w-[660px] px-4 md:px-0">
-                        {dept.coordinators.map((coordinator) => (
+                        {dept.programCoordinators.map((coordinator) => (
                           <div key={coordinator.id} className="w-full max-w-[280px] sm:w-[calc(50%-0.375rem)] sm:max-w-[200px] md:w-48">
                             <MemberCard member={coordinator} size="small" />
                           </div>
@@ -436,7 +407,7 @@ export default function OrganizationalChart() {
                     required
                   >
                     <option value="">Select Department</option>
-                    {departments.filter(d => d !== 'College of Engineering and Information Technology' && d !== 'CEIT').map((dept) => (
+                    {departments.filter(d => d !== 'CEIT').map((dept) => (
                       <option key={dept} value={dept}>{dept}</option>
                     ))}
                   </select>
