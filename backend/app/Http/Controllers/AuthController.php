@@ -17,22 +17,49 @@ class AuthController extends Controller
 {
     public function register(Request $request)
     {
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'middle_initial' => 'nullable|string|max:255',
-            'email' => [
-                'required',
-                'string',
-                'email',
-                'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
-            ],
-            'password' => 'required|string|min:6',
-            'department' => 'required|string|max:255',
-        ], [
-            'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
-            'department.required' => 'Please select your department.',
-        ]);
+        try {
+            Log::info('Registration attempt', [
+                'email' => $request->email,
+                'has_password_confirmation' => $request->has('password_confirmation'),
+                'department' => $request->department,
+                'request_data' => $request->except(['password', 'password_confirmation'])
+            ]);
+
+            $request->validate([
+                'first_name' => 'required|string|max:255',
+                'last_name' => 'required|string|max:255',
+                'middle_initial' => 'nullable|string|max:255',
+                'email' => [
+                    'required',
+                    'string',
+                    'email',
+                    'regex:/^[a-zA-Z0-9._%+-]+@cvsu\.edu\.ph$/i'
+                ],
+                'password' => 'required|string|min:6|confirmed',
+                'password_confirmation' => 'required|string|min:6',
+                'department' => 'required|string|max:255',
+            ], [
+                'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
+                'department.required' => 'Please select your department.',
+                'password.confirmed' => 'Password confirmation does not match.',
+            ]);
+
+            Log::info('Validation passed for registration', ['email' => $request->email]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Registration validation failed', [
+                'email' => $request->email,
+                'errors' => $e->errors()
+            ]);
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('Registration error', [
+                'email' => $request->email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
 
         $email = strtolower(trim($request->email));
 
@@ -73,18 +100,43 @@ class AuthController extends Controller
 
         // Create user with default role (Faculty Member)
         // Admin can change the role later after validation
-        $user = User::create([
-            'name' => $fullName,
-            'first_name' => $firstName,
-            'middle_name' => $middleInitial,
-            'last_name' => $lastName,
-            'email' => $email,
-            'password' => Hash::make($request->password),
-            'department' => $request->department,
-            'designation' => 'Faculty Member', // Default role for all new registrations
-            'is_validated' => false,
-            'email_verified_at' => null,
-        ]);
+        try {
+            Log::info('Creating user', [
+                'email' => $email,
+                'full_name' => $fullName,
+                'department' => $request->department
+            ]);
+
+            $user = User::create([
+                'name' => $fullName,
+                'first_name' => $firstName,
+                'middle_name' => $middleInitial,
+                'last_name' => $lastName,
+                'email' => $email,
+                'password' => Hash::make($request->password),
+                'department' => $request->department,
+                'designation' => 'Faculty Member', // Default role for all new registrations
+                'is_validated' => false,
+                'email_verified_at' => null,
+            ]);
+
+            Log::info('User created successfully', [
+                'user_id' => $user->id,
+                'email' => $email
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('User creation failed', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'message' => 'Registration failed. Please try again.',
+                'error' => 'User creation error'
+            ], 500);
+        }
 
         // Generate 6-digit OTP and store it
         $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);

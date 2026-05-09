@@ -106,11 +106,25 @@ export default function Register() {
       });
 
     } catch (err) {
+      console.error('Registration error:', err);
+      
       if (err.response?.data?.errors) {
+        // Handle validation errors
         setErrors(err.response.data.errors);
-      } else {
+      } else if (err.response?.data?.message) {
+        // Handle general error message
         setErrors({
-          general: err.response?.data?.message || 'Registration failed. Please try again.'
+          general: err.response.data.message
+        });
+      } else if (err.response?.status === 422) {
+        // Handle 422 without specific error details
+        setErrors({
+          general: 'Registration failed due to validation errors. Please check all fields and try again.'
+        });
+      } else {
+        // Handle network or other errors
+        setErrors({
+          general: 'Registration failed. Please check your internet connection and try again.'
         });
       }
     } finally {
