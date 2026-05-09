@@ -153,7 +153,7 @@ const ROLE_DESCRIPTIONS = {
 };
 
 const getRoleDescription = (role) =>
-  ROLE_DESCRIPTIONS[role] || 'CEIT member.';
+  ROLE_DESCRIPTIONS[role] || '';
 
 export default function AccountDashboard() {
   const navigate = useNavigate();
@@ -1231,7 +1231,9 @@ export default function AccountDashboard() {
                             )}
                             <p className="text-base sm:text-lg font-bold text-gray-900 mt-3 sm:mt-4">{user?.username}</p>
                             <p className="text-xs sm:text-sm text-gray-500">{user?.designation}</p>
-                            <p className="text-[10px] sm:text-xs text-gray-400 mt-1 text-center px-2">{getRoleDescription(user?.designation)}</p>
+                            {getRoleDescription(user?.designation) && (
+                              <p className="text-[10px] sm:text-xs text-gray-400 mt-1 text-center px-2">{getRoleDescription(user?.designation)}</p>
+                            )}
                           </div>
                           <div className="pb-4 sm:pb-6 border-b border-gray-200">
                             <p className="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wide mb-1">Member Since</p>
@@ -1284,10 +1286,16 @@ export default function AccountDashboard() {
                         <span className="font-medium text-gray-900">{user?.email}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Role:</span>
-                        <span className="font-medium text-green-700">{user?.role || 'Not specified'}</span>
+                        <span className="text-gray-600">Department:</span>
+                        <span className="font-medium text-gray-900">{user?.department || 'Not specified'}</span>
                       </div>
-                      <div className="text-xs text-gray-400 mt-1">{getRoleDescription(user?.role)}</div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-600">Role:</span>
+                        <span className="font-medium text-green-700">{user?.designation || 'Not specified'}</span>
+                      </div>
+                      {getRoleDescription(user?.designation) && (
+                        <div className="text-xs text-gray-400 mt-1">{getRoleDescription(user?.designation)}</div>
+                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Status:</span>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
