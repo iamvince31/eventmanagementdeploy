@@ -29,12 +29,9 @@ class AuthController extends Controller
             ],
             'password' => 'required|string|min:6',
             'department' => 'required|string|max:255',
-            'role' => 'required|in:Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
         ], [
             'email.regex' => 'Only @cvsu.edu.ph email addresses are allowed.',
             'department.required' => 'Please select your department.',
-            'role.required' => 'Please select your position/role.',
-            'role.in' => 'Invalid role selected.',
         ]);
 
         $email = strtolower(trim($request->email));
@@ -74,7 +71,8 @@ class AuthController extends Controller
         }
         $fullName = trim($firstName . $middleInitialFormatted . ' ' . $lastName);
 
-        // Create user without verifying email yet
+        // Create user with default role (Faculty Member)
+        // Admin can change the role later after validation
         $user = User::create([
             'name' => $fullName,
             'first_name' => $firstName,
@@ -83,7 +81,7 @@ class AuthController extends Controller
             'email' => $email,
             'password' => Hash::make($request->password),
             'department' => $request->department,
-            'designation' => $request->role,
+            'designation' => 'Faculty Member', // Default role for all new registrations
             'is_validated' => false,
             'email_verified_at' => null,
         ]);
@@ -114,7 +112,7 @@ class AuthController extends Controller
             'message' => 'Registration successful! Please check your email for a verification code.',
             'email' => $email,
             'requires_verification' => true,
-            'message_note' => 'Enter the 6-digit code sent to your email to activate your account.',
+            'message_note' => 'Enter the 6-digit code sent to your email to activate your account. Your role will be set to Faculty Member by default and can be updated by an administrator after validation.',
         ], 201);
     }
 

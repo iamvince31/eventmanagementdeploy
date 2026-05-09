@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registration Fix Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        button { padding: 10px 15px; margin: 5px; }
+        input, select { padding: 8px; margin: 5px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>Registration Fix Test</h1>
+    
+    <div class="test-section">
+        <h2>Test Registration (No Role Required)</h2>
+        <input type="text" id="firstName" placeholder="First Name" value="Test">
+        <input type="text" id="lastName" placeholder="Last Name" value="User">
+        <input type="text" id="middleName" placeholder="Middle Name" value="">
+        <input type="email" id="email" placeholder="Email" value="test.user@cvsu.edu.ph">
+        <input type="password" id="password" placeholder="Password" value="TestPassword123!">
+        <input type="password" id="confirmPassword" placeholder="Confirm Password" value="TestPassword123!">
+        <select id="department">
+            <option value="">Select Department</option>
+            <option value="Department of Information Technology">Department of Information Technology</option>
+            <option value="Department of Industrial Engineering and Technology">Department of Industrial Engineering and Technology</option>
+            <option value="Department of Computer, Electronics, and Electrical Engineering">Department of Computer, Electronics, and Electrical Engineering</option>
+            <option value="Department of Civil Engineering and Architecture">Department of Civil Engineering and Architecture</option>
+            <option value="Department of Agriculture and Food Engineering">Department of Agriculture and Food Engineering</option>
+        </select>
+        <button onclick="testRegistration()">Test Registration</button>
+        <div id="registration-result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        async function testRegistration() {
+            const resultDiv = document.getElementById('registration-result');
+            
+            const formData = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                middle_initial: document.getElementById('middleName').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                password_confirmation: document.getElementById('confirmPassword').value,
+                department: document.getElementById('department').value
+            };
+            
+            if (!formData.department) {
+                resultDiv.innerHTML = '<p class="error">Please select a department</p>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<p>Testing registration...</p>';
+                
+                const response = await fetch(`${API_BASE}/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <p>✅ Registration successful!</p>
+                            <p><strong>Message:</strong> ${result.message}</p>
+                            <p><strong>Email:</strong> ${result.email}</p>
+                            <p><strong>Note:</strong> ${result.message_note}</p>
+                        </div>
+                    `;
+                } else {
+                    let errorMsg = result.message || 'Registration failed';
+                    if (result.errors) {
+                        const errors = Object.entries(result.errors)
+                            .map(([field, messages]) => `${field}: ${messages.join(', ')}`)
+                            .join('<br>');
+                        errorMsg += '<br><br>Validation errors:<br>' + errors;
+                    }
+                    
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <p>❌ Registration failed</p>
+                            <p>${errorMsg}</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Network Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

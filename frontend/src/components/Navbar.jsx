@@ -13,13 +13,16 @@ export default function Navbar({
   events: eventsProp = null,  // optional — Dashboard passes its already-loaded events
 }) {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, logout, logoutLoading } = useAuth();
   const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [fetchedEvents, setFetchedEvents] = useState([]);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Use prop events if provided, otherwise use internally fetched events
   const events = eventsProp !== null ? eventsProp : fetchedEvents;
+
+  // Combine loading states - disable navbar when logging out or when page is loading
+  const isNavbarDisabled = isLoading || logoutLoading;
 
   useEffect(() => {
     fetchEvents();
@@ -62,8 +65,8 @@ export default function Navbar({
             <div className="flex items-center space-x-2 sm:space-x-3 flex-shrink-0 min-w-0">
               <button
                 onClick={() => navigate('/dashboard')}
-                disabled={isLoading}
-                className={`focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all flex-shrink-0 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:opacity-80'}`}
+                disabled={isNavbarDisabled}
+                className={`focus:outline-none focus:ring-2 focus:ring-white/50 rounded-lg transition-all flex-shrink-0 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:opacity-80'}`}
                 aria-label="Go to dashboard"
               >
                 <img
@@ -74,8 +77,8 @@ export default function Navbar({
               </button>
               <button
                 onClick={() => navigate('/admin/events')}
-                disabled={isLoading}
-                className={`min-w-0 text-left focus:outline-none ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:opacity-80'}`}
+                disabled={isNavbarDisabled}
+                className={`min-w-0 text-left focus:outline-none ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:opacity-80'}`}
               >
                 <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">Event Management</h1>
                 <p className="text-xs text-green-200 font-medium hidden sm:block">{pageTitle}</p>
@@ -87,8 +90,8 @@ export default function Navbar({
               {/* Home Icon - Desktop */}
               <button
                 onClick={() => navigate('/dashboard')}
-                disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                disabled={isNavbarDisabled}
+                className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                 aria-label="Go to dashboard"
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,8 +102,8 @@ export default function Navbar({
               {/* Organizational Chart Icon */}
               <button
                 onClick={() => navigate('/organizational-chart')}
-                disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                disabled={isNavbarDisabled}
+                className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                 aria-label="View organizational chart"
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,8 +114,8 @@ export default function Navbar({
               {/* History Icon - Desktop */}
               <button
                 onClick={() => navigate('/history')}
-                disabled={isLoading}
-                className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                disabled={isNavbarDisabled}
+                className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                 aria-label="View history"
               >
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,7 +129,7 @@ export default function Navbar({
                   events={events}
                   user={user}
                   onNotificationClick={onNotificationClick || ((event) => navigate('/dashboard', { state: { viewEvent: event } }))}
-                  isDisabled={isLoading}
+                  isDisabled={isNavbarDisabled}
                 />
               </div>
 
@@ -134,8 +137,8 @@ export default function Navbar({
               {['Admin', 'Dean'].includes(user?.designation) && (
                 <button
                   onClick={() => navigate('/admin/events')}
-                  disabled={isLoading}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                  disabled={isNavbarDisabled}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                   aria-label="Events Management Dashboard"
                 >
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,8 +152,8 @@ export default function Navbar({
                 <>
                   <button
                     onClick={() => navigate('/analytics')}
-                    disabled={isLoading}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                    disabled={isNavbarDisabled}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Analytics Dashboard"
                   >
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,8 +162,8 @@ export default function Navbar({
                   </button>
                   <button
                     onClick={() => navigate('/admin/events')}
-                    disabled={isLoading}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                    disabled={isNavbarDisabled}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Events Management Dashboard"
                   >
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,8 +172,8 @@ export default function Navbar({
                   </button>
                   <button
                     onClick={() => navigate('/admin')}
-                    disabled={isLoading}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                    disabled={isNavbarDisabled}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Admin panel"
                   >
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -183,9 +186,9 @@ export default function Navbar({
               {/* Account Dropdown - Desktop */}
               <div className="relative account-dropdown-container">
                 <button
-                  onClick={() => !isLoading && setIsAccountDropdownOpen(!isAccountDropdownOpen)}
-                  disabled={isLoading}
-                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                  onClick={() => !isNavbarDisabled && setIsAccountDropdownOpen(!isAccountDropdownOpen)}
+                  disabled={isNavbarDisabled}
+                  className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                   aria-label="Account menu"
                 >
                   {user?.profile_picture ? (
@@ -201,7 +204,7 @@ export default function Navbar({
                   </svg>
                 </button>
 
-                {isAccountDropdownOpen && !isLoading && (
+                {isAccountDropdownOpen && !isNavbarDisabled && (
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
                     <div className="py-1">
                       <button
@@ -233,12 +236,20 @@ export default function Navbar({
                       <div className="border-t border-gray-100"></div>
                       <button
                         onClick={async () => { setIsAccountDropdownOpen(false); await logout(); }}
-                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
+                        disabled={logoutLoading}
+                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span className="font-medium">Logout</span>
+                        {logoutLoading ? (
+                          <svg className="animate-spin w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                        )}
+                        <span className="font-medium">{logoutLoading ? 'Logging out...' : 'Logout'}</span>
                       </button>
                     </div>
                   </div>
@@ -254,7 +265,7 @@ export default function Navbar({
                   events={events}
                   user={user}
                   onNotificationClick={onNotificationClick || ((event) => navigate('/dashboard', { state: { viewEvent: event } }))}
-                  isDisabled={isLoading}
+                  isDisabled={isNavbarDisabled}
                 />
               </div>
 
@@ -264,8 +275,8 @@ export default function Navbar({
                   {user?.designation === 'Admin' && (
                     <button
                       onClick={() => navigate('/analytics')}
-                      disabled={isLoading}
-                      className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                      disabled={isNavbarDisabled}
+                      className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                       aria-label="Analytics Dashboard"
                     >
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -275,8 +286,8 @@ export default function Navbar({
                   )}
                   <button
                     onClick={() => navigate('/dashboard')}
-                    disabled={isLoading}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                    disabled={isNavbarDisabled}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Calendar View"
                   >
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,8 +296,8 @@ export default function Navbar({
                   </button>
                   <button
                     onClick={() => navigate('/admin/events')}
-                    disabled={isLoading}
-                    className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                    disabled={isNavbarDisabled}
+                    className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                     aria-label="Events Management Dashboard"
                   >
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,8 +308,8 @@ export default function Navbar({
                   {user?.designation === 'Admin' && (
                     <button
                       onClick={() => navigate('/admin')}
-                      disabled={isLoading}
-                      className={`p-2 rounded-lg transition-colors duration-200 ${isLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                      disabled={isNavbarDisabled}
+                      className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
                       aria-label="Admin panel"
                     >
                       <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -312,14 +323,14 @@ export default function Navbar({
               {/* Hamburger Menu */}
               <div className="relative mobile-menu-container">
                 <button
-                  onClick={() => !isLoading && setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  disabled={isLoading}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${isLoading
+                  onClick={() => !isNavbarDisabled && setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  disabled={isNavbarDisabled}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled
                     ? 'opacity-50 cursor-not-allowed pointer-events-none'
                     : 'hover:bg-white/10'
                     }`}
                   aria-label="Menu"
-                  aria-disabled={isLoading}
+                  aria-disabled={isNavbarDisabled}
                 >
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
@@ -327,7 +338,7 @@ export default function Navbar({
                 </button>
 
                 {/* Mobile Menu Dropdown */}
-                {isMobileMenuOpen && !isLoading && (
+                {isMobileMenuOpen && !isNavbarDisabled && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
                     <div className="py-1">
                       {/* Home */}
@@ -413,12 +424,20 @@ export default function Navbar({
                           setIsMobileMenuOpen(false);
                           await logout();
                         }}
-                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3"
+                        disabled={logoutLoading}
+                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center space-x-3 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        <span className="font-medium">Logout</span>
+                        {logoutLoading ? (
+                          <svg className="animate-spin w-5 h-5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                        )}
+                        <span className="font-medium">{logoutLoading ? 'Logging out...' : 'Logout'}</span>
                       </button>
                     </div>
                   </div>

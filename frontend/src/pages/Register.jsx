@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import AuthBackground from '../components/AuthBackground';
@@ -12,13 +12,17 @@ export default function Register() {
     password: '',
     password_confirmation: '',
     department: '',
-    role: '',
   });
 
-  const [DEPARTMENTS, setDEPARTMENTS] = useState([]);
-  const [ALL_ROLES, setALL_ROLES] = useState([]);
+  // Hardcoded departments - no need to fetch from API
+  const DEPARTMENTS = [
+    'Department of Information Technology',
+    'Department of Industrial Engineering and Technology', 
+    'Department of Computer, Electronics, and Electrical Engineering',
+    'Department of Civil Engineering and Architecture',
+    'Department of Agriculture and Food Engineering',
+  ];
 
-  const getRolesForDepartment = () => ALL_ROLES;
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
@@ -50,27 +54,11 @@ export default function Register() {
 
   const navigate = useNavigate();
 
-  // Fetch departments and roles from settings API
-  useEffect(() => {
-    api.get('/settings').then(res => {
-      setDEPARTMENTS(res.data.departments || []);
-      const allRoles = [
-        ...(res.data.ceit_roles || []),
-        ...(res.data.department_roles || []),
-      ];
-      setALL_ROLES(allRoles);
-    }).catch(() => {
-      // fallback — leave arrays empty, user will see no options
-    });
-  }, []);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value,
-      // Reset role when department changes
-      ...(name === 'department' ? { role: '' } : {}),
     }));
 
     if (errors[name]) {
@@ -279,30 +267,6 @@ export default function Register() {
                 </select>
                 {errors.department && (
                   <p className="mt-1 text-sm text-red-600">{errors.department[0]}</p>
-                )}
-              </div>
-
-              {/* Role / Position */}
-              <div>
-                <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                  Position / Role
-                </label>
-                <select
-                  id="role"
-                  name="role"
-                  required
-                  value={formData.role}
-                  onChange={handleChange}
-                  disabled={!formData.department}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 bg-white text-gray-900 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed"
-                >
-                  <option value="">{formData.department ? 'Select your position' : 'Select a department first'}</option>
-                  {formData.department && getRolesForDepartment().map(r => (
-                    <option key={r} value={r}>{r}</option>
-                  ))}
-                </select>
-                {errors.role && (
-                  <p className="mt-1 text-sm text-red-600">{errors.role[0]}</p>
                 )}
               </div>
 

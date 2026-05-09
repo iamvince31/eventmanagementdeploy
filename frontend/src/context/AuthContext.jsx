@@ -68,6 +68,7 @@ const initAuthState = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => initAuthState().user);
   const [loading, setLoading] = useState(false); // No longer needed for initial auth
+  const [logoutLoading, setLogoutLoading] = useState(false); // Loading state for logout
   const sessionTimerRef = useRef(null);
 
   const clearSessionTimer = () => {
@@ -78,6 +79,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const performLogout = useCallback(async () => {
+    setLogoutLoading(true);
     clearSessionTimer();
     try {
       await api.post('/logout');
@@ -92,6 +94,7 @@ export const AuthProvider = ({ children }) => {
       sessionStorage.removeItem('user');
       sessionStorage.removeItem('sessionExpiry');
       setUser(null);
+      setLogoutLoading(false);
     }
   }, []);
 
@@ -226,7 +229,7 @@ export const AuthProvider = ({ children }) => {
   }, [refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, updateUser, refreshUser, forgotPassword, resetPassword, loading }}>
+    <AuthContext.Provider value={{ user, login, register, logout, updateUser, refreshUser, forgotPassword, resetPassword, loading, logoutLoading }}>
       {children}
     </AuthContext.Provider>
   );
