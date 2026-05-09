@@ -128,7 +128,10 @@ export default function Admin() {
 
   const handleDesignationChange = async (userId, newDesignation) => {
     try {
-      await api.put(`/users/${userId}/role`, { role: newDesignation });
+      await api.put(`/users/${userId}/designation`, { 
+        designations: [newDesignation],
+        department: users.find(u => u.id === userId)?.department || ''
+      });
       invalidateCache('admin-users');
       await fetchUsers();
       setEditingUserId(null);
@@ -199,6 +202,7 @@ export default function Admin() {
     setEditingUser({
       ...user,
       designation: user.designation || 'Faculty Member',
+      designations: user.designations && user.designations.length > 0 ? user.designations : [user.designation || 'Faculty Member'],
       department: user.department || '',
       ceit_officer_type: Array.isArray(user.ceit_officer_type) ? user.ceit_officer_type : (user.ceit_officer_type ? [user.ceit_officer_type] : []),
     });
@@ -207,8 +211,8 @@ export default function Admin() {
 
   const handleUpdateUser = async () => {
     try {
-      await api.put(`/users/${editingUser.id}/role`, {
-        role: editingUser.designation,
+      await api.put(`/users/${editingUser.id}/designation`, {
+        designations: editingUser.designations || [editingUser.designation],
         department: editingUser.department,
         ceit_officer_type: editingUser.designation === 'CEIT Official' ? (editingUser.ceit_officer_type || []) : [],
       });
@@ -787,9 +791,13 @@ export default function Admin() {
                         onChange={(e) => {
                           setEditingUser(prev => {
                             const newDesig = e.target.checked
-                              ? [...prev.designations, designation]
-                              : prev.designations.filter(d => d !== designation);
-                            return { ...prev, designations: newDesig, ceit_officer_type: newDesig.includes('CEIT Official') ? prev.ceit_officer_type : '' };
+                              ? [...(prev.designations || []), designation]
+                              : (prev.designations || []).filter(d => d !== designation);
+                            return { 
+                              ...prev, 
+                              designations: newDesig, 
+                              ceit_officer_type: newDesig.includes('CEIT Official') ? prev.ceit_officer_type : []
+                            };
                           });
                         }}
                         className="rounded text-green-600 focus:ring-green-500"
@@ -801,7 +809,7 @@ export default function Admin() {
               </div>
 
               {/* CEIT Officer Type — only when CEIT Official */}
-              {editingUser.designation === 'CEIT Official' && (
+              {editingUser.designations?.includes('CEIT Official') && (
                 <CeitOfficerTypePicker
                   selected={Array.isArray(editingUser.ceit_officer_type) ? editingUser.ceit_officer_type : []}
                   onChange={(types) => setEditingUser(prev => ({ ...prev, ceit_officer_type: types }))}

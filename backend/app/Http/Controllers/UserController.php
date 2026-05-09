@@ -206,7 +206,8 @@ class UserController extends Controller
             'designations' => 'required|array|min:1|max:5',
             'designations.*' => 'string|max:255',
             'department' => 'nullable|string|max:255',
-            'ceit_officer_type' => 'nullable|string|max:255',
+            'ceit_officer_type' => 'nullable|array',
+            'ceit_officer_type.*' => 'string|max:255',
         ]);
 
         // Treat empty string as null
@@ -259,9 +260,10 @@ class UserController extends Controller
         if (array_key_exists('department', $validated)) {
             $updateData['department'] = $validated['department']; // can be null
         }
-        // Only store ceit_officer_type when designation is CEIT Official
-        $updateData['ceit_officer_type'] = $validated['designation'] === 'CEIT Official'
-            ? (is_array($request->ceit_officer_type) ? $request->ceit_officer_type : ($request->ceit_officer_type ? [$request->ceit_officer_type] : null))
+        
+        // Only store ceit_officer_type when designation includes CEIT Official
+        $updateData['ceit_officer_type'] = in_array('CEIT Official', $designations)
+            ? ($validated['ceit_officer_type'] ?? [])
             : null;
 
         $user->update($updateData);
@@ -456,6 +458,7 @@ class UserController extends Controller
             'department' => $user->department,
             'designation' => $user->designation,
             'designations' => $user->getDesignationsArray(),
+            'ceit_officer_type' => $user->ceit_officer_type,
             'is_validated' => $user->is_validated,
             'profile_picture' => $user->profile_picture ?? null,
             'schedule_initialized' => $user->schedule_initialized ?? false,

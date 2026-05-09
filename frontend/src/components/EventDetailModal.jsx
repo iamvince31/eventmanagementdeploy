@@ -377,7 +377,7 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
               <span className="break-words">
                 {event.end_date
                   ? `${new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} – ${new Date(event.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-                  : `${event.date} at ${event.time}`}
+                  : `${event.date} at ${event.time}${event.end_time ? ` – ${event.end_time}` : ''}`}
               </span>
             </p>
             {/* Event/Meeting type badge */}

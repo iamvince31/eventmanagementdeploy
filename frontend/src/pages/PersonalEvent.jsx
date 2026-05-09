@@ -20,7 +20,8 @@ export default function PersonalEvent() {
     title: editingEvent?.title || '',
     description: editingEvent?.description || '',
     date: editingEvent?.date || selectedDate || today,
-    time: editingEvent?.time || ''
+    time: editingEvent?.time || '',
+    end_time: editingEvent?.end_time || ''
   });
 
   useEffect(() => {
@@ -68,6 +69,21 @@ export default function PersonalEvent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate end time is after start time if both are provided
+    if (formData.time && formData.end_time) {
+      const startMinutes = parseMin(formData.time);
+      const endMinutes = parseMin(formData.end_time);
+      if (endMinutes <= startMinutes) {
+        setMessage({ 
+          type: 'error', 
+          text: 'End time must be after start time.' 
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -77,7 +93,8 @@ export default function PersonalEvent() {
           title: formData.title,
           description: formData.description,
           date: formData.date,
-          time: formData.time
+          time: formData.time,
+          end_time: formData.end_time
         });
 
         setMessage({ 
@@ -90,7 +107,8 @@ export default function PersonalEvent() {
           title: formData.title,
           description: formData.description,
           date: formData.date,
-          time: formData.time
+          time: formData.time,
+          end_time: formData.end_time
         });
 
         setMessage({ 
@@ -242,7 +260,7 @@ export default function PersonalEvent() {
 
                 <div>
                   <label htmlFor="time" className="block text-sm font-semibold text-gray-900 mb-2">
-                    Time *
+                    Start Time *
                   </label>
                   <input
                     type="time"
@@ -254,6 +272,20 @@ export default function PersonalEvent() {
                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label htmlFor="end_time" className="block text-sm font-semibold text-gray-900 mb-2">
+                  End Time <span className="text-gray-400 font-normal text-xs">(optional)</span>
+                </label>
+                <input
+                  type="time"
+                  id="end_time"
+                  name="end_time"
+                  value={formData.end_time}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 focus:border-green-600 transition-all duration-300"
+                />
               </div>
 
               <div className="flex gap-4 pt-6 border-t border-gray-200">

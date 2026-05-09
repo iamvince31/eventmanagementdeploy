@@ -38,6 +38,7 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     
+    // Clear error message when user starts typing
     if (message.type === 'error') {
       setMessage({ type: '', text: '' });
     }
@@ -53,6 +54,19 @@ export default function PersonalEventModal({ isOpen, onClose, onSuccess, editing
         text: 'Please select a date for the event.' 
       });
       return;
+    }
+
+    // Validate end time is after start time if both are provided
+    if (formData.time && formData.end_time) {
+      const startMinutes = parseMin(formData.time);
+      const endMinutes = parseMin(formData.end_time);
+      if (endMinutes <= startMinutes) {
+        setMessage({ 
+          type: 'error', 
+          text: 'End time must be after start time.' 
+        });
+        return;
+      }
     }
     
     setLoading(true);

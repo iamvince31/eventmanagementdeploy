@@ -592,14 +592,14 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                         const last = dateEntries[dateEntries.length - 1];
                         const usedDates = new Set(dateEntries.map(e => e.date).filter(Boolean));
                         // Start from last date (or today if empty), find next available non-Sunday
-                        const base = last.date || new Date().toISOString().split('T')[0];
+                        const base = last?.date || new Date().toISOString().split('T')[0];
                         let cursor = new Date(base + 'T00:00:00');
                         do {
                           cursor.setDate(cursor.getDate() + 1);
                           if (cursor.getDay() === 0) cursor.setDate(cursor.getDate() + 1); // skip Sunday
                         } while (usedDates.has(cursor.toISOString().split('T')[0]));
                         const next = cursor.toISOString().split('T')[0];
-                        setDateEntries(prev => [...prev, { date: next, startTime: last.startTime, endTime: last.endTime }]);
+                        setDateEntries(prev => [...prev, { date: next, startTime: last?.startTime || '', endTime: last?.endTime || '' }]);
                       }}
                       className="inline-flex items-center gap-1 text-xs font-semibold text-green-700 hover:text-green-900 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                     >
