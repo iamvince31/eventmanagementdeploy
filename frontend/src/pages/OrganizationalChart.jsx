@@ -5,7 +5,7 @@ import api from '../services/api';
 
 export default function OrganizationalChart() {
   const { user } = useAuth();
-  const [hierarchy, setHierarchy] = useState({ dean: null, ceitStaff: [], departments: [] });
+  const [hierarchy, setHierarchy] = useState({ dean: null, departments: [] });
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -30,7 +30,6 @@ export default function OrganizationalChart() {
     try {
       const response = await api.get('/settings');
       const allDesig = new Set(['Admin', ...(response.data.ceit_roles || []), ...(response.data.department_roles || [])]);
-      setDepartments(response.data.departments || []);
       setDesignations(Array.from(allDesig));
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -278,19 +277,6 @@ export default function OrganizationalChart() {
               </div>
             )}
 
-            {/* CEIT Official Level (Below Dean) - Large - 1 on mobile, 2 on tablet+ */}
-            {hierarchy.ceitStaff && hierarchy.ceitStaff.length > 0 && (
-              <div className="flex flex-col items-center mb-10 md:mb-14">
-                <div className="flex flex-wrap justify-center gap-x-4 md:gap-x-6 gap-y-10 md:gap-y-12 w-full max-w-[700px] px-4">
-                  {hierarchy.ceitStaff.map((staff) => (
-                    <div key={staff.id} className="w-full max-w-[280px] sm:max-w-xs md:w-64">
-                      <MemberCard member={staff} size="large" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Department Branches */}
             {hierarchy.departments.length > 0 && (
               <div className="flex justify-center gap-6 md:gap-8 lg:gap-12 px-3 md:px-4 flex-wrap">
@@ -303,7 +289,18 @@ export default function OrganizationalChart() {
                       </div>
                     )}
 
-                    {/* Department Coordinators (Research & Extension) - Small - Below Chairperson */}
+                    {/* CEIT Officials - Small - Below Chairperson, Above Dept Coordinators */}
+                    {dept.ceitOfficials && dept.ceitOfficials.length > 0 && (
+                      <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-8 md:gap-y-10 mb-10 md:mb-12 w-full max-w-[660px] px-4 md:px-0">
+                        {dept.ceitOfficials.map((official) => (
+                          <div key={official.id} className="w-full max-w-[280px] sm:w-[calc(50%-0.375rem)] sm:max-w-[200px] md:w-48">
+                            <MemberCard member={official} size="small" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Department Coordinators (Research & Extension) - Small - Below CEIT Officials */}
                     {dept.departmentCoordinators && dept.departmentCoordinators.length > 0 && (
                       <div className="flex flex-wrap justify-center gap-x-3 md:gap-x-4 gap-y-8 md:gap-y-10 mb-10 md:mb-12 w-full max-w-[660px] px-4 md:px-0">
                         {dept.departmentCoordinators.map((coordinator) => (

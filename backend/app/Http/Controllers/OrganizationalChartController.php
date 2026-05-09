@@ -32,7 +32,7 @@ class OrganizationalChartController extends Controller
             }
 
             $users = $query->select('id', 'name', 'first_name', 'last_name', 'email', 'department', 'designation', 'profile_picture')
-                ->orderByRaw("FIELD(designation, 'CEIT Official', 'Chairperson', 'Program Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator', 'GAD Coordinator', 'Faculty Member')")
+                ->orderByRaw("FIELD(designation, 'Chairperson', 'CEIT Official', 'Program Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator', 'GAD Coordinator', 'Faculty Member')")
                 ->orderBy('name', 'asc')
                 ->get();
 
@@ -51,7 +51,6 @@ class OrganizationalChartController extends Controller
     {
         $hierarchy = [
             'dean' => null,
-            'ceitStaff' => [],
             'departments' => []
         ];
 
@@ -72,15 +71,13 @@ class OrganizationalChartController extends Controller
 
             if ($user->designation === 'Dean') {
                 $hierarchy['dean'] = $userData;
-            } elseif ($user->designation === 'CEIT Official') {
-                // CEIT Officials are shown at college level
-                $hierarchy['ceitStaff'][] = $userData;
             } else {
-                // All other users are grouped by department
+                // All users are grouped by department
                 $dept = $user->department;
                 if (!isset($departmentGroups[$dept])) {
                     $departmentGroups[$dept] = [
                         'chairperson' => null,
+                        'ceitOfficials' => [], // CEIT Officials within department
                         'programCoordinators' => [],
                         'departmentCoordinators' => [], // Research and Extension coordinators
                         'faculty' => []
@@ -90,6 +87,9 @@ class OrganizationalChartController extends Controller
                 switch ($user->designation) {
                     case 'Chairperson':
                         $departmentGroups[$dept]['chairperson'] = $userData;
+                        break;
+                    case 'CEIT Official':
+                        $departmentGroups[$dept]['ceitOfficials'][] = $userData;
                         break;
                     case 'Program Coordinator':
                         $departmentGroups[$dept]['programCoordinators'][] = $userData;
@@ -110,6 +110,7 @@ class OrganizationalChartController extends Controller
             $hierarchy['departments'][] = [
                 'name' => $deptName,
                 'chairperson' => $deptData['chairperson'] ?? null,
+                'ceitOfficials' => $deptData['ceitOfficials'] ?? [],
                 'programCoordinators' => $deptData['programCoordinators'] ?? [],
                 'departmentCoordinators' => $deptData['departmentCoordinators'] ?? [],
                 'faculty' => $deptData['faculty'] ?? []
@@ -148,7 +149,12 @@ class OrganizationalChartController extends Controller
 
         // Clear cache
         Cache::forget('org_chart_all');
-        Cache::forget("org_chart_{$user->department}");
+        Cache::forget('org_chart_departments');
+        // Clear all department-specific caches
+        $departments = ['Department of Information Technology', 'Department of Industrial Engineering and Technology', 'Department of Computer, Electronics, and Electrical Engineering', 'Department of Civil Engineering and Architecture', 'Department of Agriculture and Food Engineering'];
+        foreach ($departments as $dept) {
+            Cache::forget("org_chart_{$dept}");
+        }
 
         return response()->json([
             'message' => 'User updated successfully',
@@ -169,7 +175,12 @@ class OrganizationalChartController extends Controller
 
         // Clear cache
         Cache::forget('org_chart_all');
-        Cache::forget("org_chart_{$department}");
+        Cache::forget('org_chart_departments');
+        // Clear all department-specific caches
+        $departments = ['Department of Information Technology', 'Department of Industrial Engineering and Technology', 'Department of Computer, Electronics, and Electrical Engineering', 'Department of Civil Engineering and Architecture', 'Department of Agriculture and Food Engineering'];
+        foreach ($departments as $dept) {
+            Cache::forget("org_chart_{$dept}");
+        }
 
         return response()->json(['message' => 'User deleted successfully']);
     }
@@ -177,14 +188,16 @@ class OrganizationalChartController extends Controller
     public function departments()
     {
         $departments = Cache::remember('org_chart_departments', 600, function () {
-            // Get all department names excluding CEIT (college-level)
+            // Get all department names excluding CEIT (college-level) and Admin
             $depts = User::where('is_validated', true)
                 ->where('designation', '!=', 'Admin')
                 ->where('designation', '!=', 'Dean')
                 ->whereNotNull('department')
                 ->where('department', '!=', 'CEIT') // Exclude CEIT college-level department
+                ->where('department', '!=', '') // Exclude empty departments
                 ->distinct()
                 ->pluck('department')
+                ->filter() // Remove any null/empty values
                 ->sort()
                 ->values();
 
