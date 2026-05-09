@@ -19,7 +19,7 @@ export default function PersonalEvent() {
   const [formData, setFormData] = useState({
     title: editingEvent?.title || '',
     description: editingEvent?.description || '',
-    date: editingEvent?.date || selectedDate || today,
+    date: editingEvent?.date || (selectedDate && selectedDate >= today ? selectedDate : today),
     time: editingEvent?.time || '',
     end_time: editingEvent?.end_time || ''
   });
@@ -53,8 +53,35 @@ export default function PersonalEvent() {
     const { name, value } = e.target;
     
     if (name === 'date' && value) {
+      // If setting a past date, show error immediately
+      const today = new Date().toISOString().split('T')[0];
+      if (value < today) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Cannot select a date in the past.' 
+        });
+        return; // Don't update the state with past date
+      }
       setFormData(prev => ({ ...prev, [name]: value }));
+      
+      // Clear error if date is valid
+      if (message.type === 'error') {
+        setMessage({ type: '', text: '' });
+      }
       return;
+    }
+    
+    if (name === 'time' && value && formData.date) {
+      // Check if the datetime combination is in the past
+      const selectedDateTime = new Date(`${formData.date}T${value}`);
+      const now = new Date();
+      if (selectedDateTime < now) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Cannot set event time in the past.' 
+        });
+        return; // Don't update the state with past time
+      }
     }
     
     setFormData(prev => ({
@@ -62,6 +89,7 @@ export default function PersonalEvent() {
       [name]: value
     }));
     
+    // Clear error message when user starts typing
     if (message.type === 'error') {
       setMessage({ type: '', text: '' });
     }
@@ -69,6 +97,20 @@ export default function PersonalEvent() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate that the date/time is not in the past
+    if (formData.date && formData.time) {
+      const now = new Date();
+      const selectedDateTime = new Date(`${formData.date}T${formData.time}`);
+      if (selectedDateTime < now) {
+        setMessage({ 
+          type: 'error', 
+          text: 'Cannot set event date/time in the past.' 
+        });
+        setLoading(false);
+        return;
+      }
+    }
 
     // Validate end time is after start time if both are provided
     if (formData.time && formData.end_time) {

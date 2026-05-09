@@ -17,7 +17,7 @@ class PersonalEventController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'required|date',
+            'date' => 'required|date|after_or_equal:today',
             'time' => 'required',
             'end_time' => 'nullable|date_format:H:i',
         ]);
@@ -27,6 +27,25 @@ class PersonalEventController extends Controller
                 'error' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
+        }
+
+        // Additional validation: check if datetime is not in the past
+        $selectedDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time);
+        if ($selectedDateTime->isPast()) {
+            return response()->json([
+                'error' => 'Cannot set event date/time in the past'
+            ], 422);
+        }
+
+        // Validate end time is after start time if provided
+        if ($request->end_time) {
+            $startTime = \Carbon\Carbon::createFromFormat('H:i', $request->time);
+            $endTime = \Carbon\Carbon::createFromFormat('H:i', $request->end_time);
+            if ($endTime->lte($startTime)) {
+                return response()->json([
+                    'error' => 'End time must be after start time'
+                ], 422);
+            }
         }
 
         $user = Auth::user();
@@ -68,7 +87,7 @@ class PersonalEventController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'description' => 'nullable|string',
-            'date' => 'sometimes|required|date',
+            'date' => 'sometimes|required|date|after_or_equal:today',
             'time' => 'sometimes|required',
             'end_time' => 'nullable|date_format:H:i',
         ]);
@@ -78,6 +97,29 @@ class PersonalEventController extends Controller
                 'error' => 'Validation failed',
                 'errors' => $validator->errors()
             ], 422);
+        }
+
+        // Additional validation: check if datetime is not in the past (only if date/time are being updated)
+        if ($request->has('date') && $request->has('time')) {
+            $selectedDateTime = \Carbon\Carbon::createFromFormat('Y-m-d H:i', $request->date . ' ' . $request->time);
+            if ($selectedDateTime->isPast()) {
+                return response()->json([
+                    'error' => 'Cannot set event date/time in the past'
+                ], 422);
+            }
+        }
+
+        // Validate end time is after start time if both are provided
+        $timeToCheck = $request->time ?? $event->time;
+        $endTimeToCheck = $request->end_time;
+        if ($timeToCheck && $endTimeToCheck) {
+            $startTime = \Carbon\Carbon::createFromFormat('H:i', $timeToCheck);
+            $endTime = \Carbon\Carbon::createFromFormat('H:i', $endTimeToCheck);
+            if ($endTime->lte($startTime)) {
+                return response()->json([
+                    'error' => 'End time must be after start time'
+                ], 422);
+            }
         }
 
         $event->update($request->only(['title', 'description', 'date', 'time', 'end_time']));
