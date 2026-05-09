@@ -1291,11 +1291,8 @@ export default function AccountDashboard() {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Role:</span>
-                        <span className="font-medium text-green-700">{user?.designation || 'Not specified'}</span>
+                        <span className="font-medium text-green-700">{'Not specified'}</span>
                       </div>
-                      {getRoleDescription(user?.designation) && (
-                        <div className="text-xs text-gray-400 mt-1">{getRoleDescription(user?.designation)}</div>
-                      )}
                       <div className="flex justify-between">
                         <span className="text-gray-600">Status:</span>
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
