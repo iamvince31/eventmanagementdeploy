@@ -106,13 +106,19 @@ export default function AdminEvents() {
 
     // Format date for display
     const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-            weekday: 'short'
-        });
+        if (!dateStr) return 'Date not set';
+        try {
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return 'Invalid date';
+            return date.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                weekday: 'short'
+            });
+        } catch (error) {
+            return 'Invalid date';
+        }
     };
 
     // Format time for display
@@ -326,8 +332,12 @@ export default function AdminEvents() {
                                                                 </svg>
                                                             </button>
                                                             <div className="min-w-0">
-                                                                <div className="text-sm font-semibold text-gray-900 truncate">{event.title}</div>
-                                                                <div className="text-xs text-gray-500 truncate mt-1">{event.description?.substring(0, 60)}...</div>
+                                                                <div className="text-sm font-semibold text-gray-900 truncate">
+                                                                    {event.title || event.name || 'Untitled Event'}
+                                                                </div>
+                                                                {event.description && (
+                                                                    <div className="text-xs text-gray-500 truncate mt-1">{event.description.substring(0, 60)}...</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     </td>
