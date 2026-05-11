@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
             AdminSeeder::class,
             UsersSeeder::class,
             EventArchiveSeeder::class,
+            DefaultEventSeeder::class,
         ]);
     }
 }

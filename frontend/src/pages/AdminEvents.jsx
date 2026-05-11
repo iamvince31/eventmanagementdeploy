@@ -44,8 +44,8 @@ export default function AdminEvents() {
                 ? `${currentYear}-${currentYear + 1}` 
                 : `${currentYear - 1}-${currentYear}`;
             
-            // Use /default-events endpoint which already has specific dates implemented
-            const response = await api.get(`/default-events?school_year=${schoolYear}`);
+            // Use /default-events with only_edited=true to only show events with dates set
+            const response = await api.get(`/default-events?school_year=${schoolYear}&only_edited=true`);
             setAcademicCalendarEvents(response.data.events || []);
         } catch (error) {
             console.error('Error fetching academic calendar events:', error);

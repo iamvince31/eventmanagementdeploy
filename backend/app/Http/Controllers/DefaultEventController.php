@@ -19,6 +19,7 @@ class DefaultEventController extends Controller
     public function index(Request $request): JsonResponse
     {
         $schoolYear = $request->query('school_year');
+        $onlyEdited = filter_var($request->query('only_edited', false), FILTER_VALIDATE_BOOLEAN);
         
         if (!$schoolYear) {
             return response()->json([
@@ -82,8 +83,17 @@ class DefaultEventController extends Controller
             ['order', 'asc'],
         ])->values();
 
+        // Filter to only show events with dates if only_edited=true
+        if ($onlyEdited) {
+            $allEvents = $allEvents->filter(function ($event) {
+                return $event['has_date_set'] === true;
+            })->values();
+        }
+
         return response()->json([
-            'events' => $allEvents
+            'events' => $allEvents,
+            'school_year' => $schoolYear,
+            'only_edited' => $onlyEdited
         ]);
     }
 
