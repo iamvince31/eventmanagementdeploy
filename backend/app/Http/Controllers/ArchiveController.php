@@ -65,15 +65,13 @@ class ArchiveController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        // Find all events that are not yet archived, their date is in the past,
-        // and they are NOT from the current year.
+        // Find all events that are not yet archived and their date is in the past
+        // Include events from current year as well
         $today = new \DateTime();
         $today->setTime(0, 0, 0);
-        $currentYear = $today->format('Y');
 
         $eventsToArchive = Event::where('is_archived', false)
             ->where('date', '<', $today->format('Y-m-d'))
-            ->whereYear('date', '<', $currentYear)
             ->get();
 
         $count = 0;

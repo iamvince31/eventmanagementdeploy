@@ -19,6 +19,7 @@ class EventController extends Controller
             'members:id,name,email',
             'images:id,event_id,image_path,original_filename,order,cloudinary_url'
         ])
+            ->where('is_archived', false) // Exclude archived events from regular calendar
             ->where(function ($query) use ($user) {
                 // User is the host
                 $query->where('host_id', $user->id)

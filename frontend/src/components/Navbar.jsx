@@ -75,14 +75,6 @@ export default function Navbar({
                   className="h-10 w-auto cursor-pointer"
                 />
               </button>
-              <button
-                onClick={() => navigate('/admin/events')}
-                disabled={isNavbarDisabled}
-                className={`min-w-0 text-left focus:outline-none ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:opacity-80'}`}
-              >
-                <h1 className="text-lg sm:text-2xl font-bold text-white tracking-tight truncate">Event Management</h1>
-                <p className="text-xs text-green-200 font-medium hidden sm:block">{pageTitle}</p>
-              </button>
             </div>
 
             {/* Right corner - Desktop Icons (hidden on mobile) */}

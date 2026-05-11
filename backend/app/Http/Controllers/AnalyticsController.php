@@ -97,6 +97,7 @@ class AnalyticsController extends Controller
             ->whereNotNull('users.department')
             ->whereNotIn('users.department', $excludedDepartments)
             ->groupBy('users.department')
+            ->orderBy('count', 'desc')
             ->get();
             
         $meetingsByDepartment = Event::join('users', 'events.host_id', '=', 'users.id')
@@ -108,7 +109,17 @@ class AnalyticsController extends Controller
             ->whereNotNull('users.department')
             ->whereNotIn('users.department', $excludedDepartments)
             ->groupBy('users.department')
+            ->orderBy('count', 'desc')
             ->get();
+        
+        // If no data found, return empty arrays with proper structure
+        if ($eventsByDepartment->isEmpty()) {
+            $eventsByDepartment = collect([]);
+        }
+        
+        if ($meetingsByDepartment->isEmpty()) {
+            $meetingsByDepartment = collect([]);
+        }
         
         // 6. Accepted/Rejected Events by Department (Line Chart Data)
         // Exclude Administration and System Administration

@@ -54,15 +54,55 @@ export default function Admin() {
   const fetchSettings = async () => {
     try {
       const response = await api.get('/settings');
-      setDepartments(response.data.departments || []);
-      setCeitRoles(response.data.ceit_roles || []);
-      setDeptRoles(response.data.department_roles || []);
+      const apiDepartments = response.data.departments || [];
+      const apiCeitRoles = response.data.ceit_roles || [];
+      const apiDeptRoles = response.data.department_roles || [];
+      
+      // Use default values if API returns empty
+      const defaultDepartments = [
+        'College of Engineering and Information Technology',
+        'Department of Information Technology',
+        'Department of Industrial Engineering and Technology',
+        'Department of Computer, Electronics, and Electrical Engineering',
+        'Department of Civil Engineering and Architecture',
+        'Department of Agriculture and Food Engineering',
+      ];
+      
+      const defaultCeitRoles = ['Dean', 'CEIT Official', 'Faculty Member'];
+      const defaultDeptRoles = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
+      
+      setDepartments(apiDepartments.length > 0 ? apiDepartments : defaultDepartments);
+      setCeitRoles(apiCeitRoles.length > 0 ? apiCeitRoles : defaultCeitRoles);
+      setDeptRoles(apiDeptRoles.length > 0 ? apiDeptRoles : defaultDeptRoles);
       
       // Combine for the "all designations" list
-      const allDesig = new Set(['Admin', ...((response.data.ceit_roles || [])), ...((response.data.department_roles || []))]);
+      const allDesig = new Set([
+        'Admin', 
+        ...(apiCeitRoles.length > 0 ? apiCeitRoles : defaultCeitRoles), 
+        ...(apiDeptRoles.length > 0 ? apiDeptRoles : defaultDeptRoles)
+      ]);
       setDesignations(Array.from(allDesig));
     } catch (error) {
       console.error('Error fetching settings:', error);
+      // Use default values if API fails
+      const defaultDepartments = [
+        'College of Engineering and Information Technology',
+        'Department of Information Technology',
+        'Department of Industrial Engineering and Technology',
+        'Department of Computer, Electronics, and Electrical Engineering',
+        'Department of Civil Engineering and Architecture',
+        'Department of Agriculture and Food Engineering',
+      ];
+      
+      const defaultCeitRoles = ['Dean', 'CEIT Official', 'Faculty Member'];
+      const defaultDeptRoles = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
+      
+      setDepartments(defaultDepartments);
+      setCeitRoles(defaultCeitRoles);
+      setDeptRoles(defaultDeptRoles);
+      
+      const allDesig = new Set(['Admin', ...defaultCeitRoles, ...defaultDeptRoles]);
+      setDesignations(Array.from(allDesig));
     }
   };
 
