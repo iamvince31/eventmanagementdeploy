@@ -125,20 +125,6 @@ export default function Navbar({
                 />
               </div>
 
-              {/* Events Management Icon - Admin and Dean */}
-              {['Admin', 'Dean'].includes(user?.designation) && (
-                <button
-                  onClick={() => navigate('/admin/events')}
-                  disabled={isNavbarDisabled}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
-                  aria-label="Events Management Dashboard"
-                >
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </button>
-              )}
-
               {/* Admin Panel Icon - Only for Admin users */}
               {user?.designation === 'Admin' && (
                 <>
@@ -173,6 +159,20 @@ export default function Navbar({
                     </svg>
                   </button>
                 </>
+              )}
+
+              {/* Events Management Icon - Dean only (Admin already has it above) */}
+              {user?.designation === 'Dean' && (
+                <button
+                  onClick={() => navigate('/admin/events')}
+                  disabled={isNavbarDisabled}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${isNavbarDisabled ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'hover:bg-white/10'}`}
+                  aria-label="Events Management Dashboard"
+                >
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
               )}
 
               {/* Account Dropdown - Desktop */}

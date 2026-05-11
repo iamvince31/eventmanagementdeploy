@@ -5,9 +5,6 @@ export default function AcceptanceLineChart({ data }) {
   
   // Map department names for display
   const formatDepartmentName = (dept) => {
-    if (dept === 'College of Engineering and Information Technology') {
-      return 'College Department';
-    }
     return dept;
   };
   

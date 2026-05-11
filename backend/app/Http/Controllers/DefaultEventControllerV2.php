@@ -21,10 +21,19 @@ class DefaultEventControllerV2 extends Controller
     {
         $schoolYear = $request->query('school_year');
         
+        // If no school_year provided, use current academic year
         if (!$schoolYear) {
-            return response()->json([
-                'error' => 'school_year parameter is required'
-            ], 422);
+            $currentYear = date('Y');
+            $currentMonth = date('m');
+            
+            // Academic year runs from September to August
+            if ($currentMonth >= 9) {
+                // September-December: current year to next year
+                $schoolYear = $currentYear . '-' . ($currentYear + 1);
+            } else {
+                // January-August: previous year to current year
+                $schoolYear = ($currentYear - 1) . '-' . $currentYear;
+            }
         }
 
         // Get all base default events (without school_year filter)
@@ -59,7 +68,8 @@ class DefaultEventControllerV2 extends Controller
         });
 
         return response()->json([
-            'events' => $events
+            'events' => $events,
+            'school_year' => $schoolYear
         ]);
     }
 
