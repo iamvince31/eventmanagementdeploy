@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
 
 export default function AdminEvents() {
-    const navigate = useNavigate();
     const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [activeView, setActiveView] = useState('meetings'); // 'meetings', 'events', 'academic-year'
@@ -46,10 +44,9 @@ export default function AdminEvents() {
                 ? `${currentYear}-${currentYear + 1}` 
                 : `${currentYear - 1}-${currentYear}`;
             
+            // Use /default-events endpoint which already has specific dates implemented
             const response = await api.get(`/default-events?school_year=${schoolYear}`);
-            // Only show events that have dates set (edited events)
-            const eventsWithDates = (response.data.events || []).filter(event => event.has_date_set);
-            setAcademicCalendarEvents(eventsWithDates);
+            setAcademicCalendarEvents(response.data.events || []);
         } catch (error) {
             console.error('Error fetching academic calendar events:', error);
         }
@@ -284,16 +281,22 @@ export default function AdminEvents() {
                                 <thead>
                                     <tr className="border-b border-gray-200">
                                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Title</th>
-                                        <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Host</th>
-                                        <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date & Time</th>
-                                        <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
+                                        {activeView !== 'academic-year' && (
+                                            <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Host</th>
+                                        )}
+                                        <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                            {activeView === 'academic-year' ? 'Date' : 'Date & Time'}
+                                        </th>
+                                        {activeView !== 'academic-year' && (
+                                            <th className="hidden sm:table-cell px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
+                                        )}
                                         <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Type</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {pagedEvents.length === 0 ? (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-12 text-center">
+                                            <td colSpan={activeView === 'academic-year' ? 3 : 5} className="px-6 py-12 text-center">
                                                 <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                 </svg>
@@ -329,21 +332,27 @@ export default function AdminEvents() {
                                                         </div>
                                                     </td>
 
-                                                    <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
-                                                        <div className="text-sm text-gray-900">{event.host?.username || 'Unknown'}</div>
-                                                        <div className="text-xs text-gray-500">{event.host?.email || ''}</div>
-                                                    </td>
+                                                    {activeView !== 'academic-year' && (
+                                                        <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
+                                                            <div className="text-sm text-gray-900">{event.host?.username || 'Unknown'}</div>
+                                                            <div className="text-xs text-gray-500">{event.host?.email || ''}</div>
+                                                        </td>
+                                                    )}
 
                                                     <td className="hidden sm:table-cell px-6 py-4 whitespace-nowrap">
                                                         <div className="text-sm text-gray-900">{formatDate(event.date)}</div>
-                                                        <div className="text-xs text-gray-500">
-                                                            {formatTime(event.time)} {event.end_time ? `- ${formatTime(event.end_time)}` : ''}
-                                                        </div>
+                                                        {activeView !== 'academic-year' && event.time && (
+                                                            <div className="text-xs text-gray-500">
+                                                                {formatTime(event.time)} {event.end_time ? `- ${formatTime(event.end_time)}` : ''}
+                                                            </div>
+                                                        )}
                                                     </td>
 
-                                                    <td className="hidden sm:table-cell px-6 py-4">
-                                                        <div className="text-sm text-gray-900 max-w-[200px] truncate">{event.location || 'Not specified'}</div>
-                                                    </td>
+                                                    {activeView !== 'academic-year' && (
+                                                        <td className="hidden sm:table-cell px-6 py-4">
+                                                            <div className="text-sm text-gray-900 max-w-[200px] truncate">{event.location || 'Not specified'}</div>
+                                                        </td>
+                                                    )}
 
                                                     <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                                         <span className={`px-2 py-1 inline-flex text-xs font-semibold rounded-full ${
@@ -359,24 +368,32 @@ export default function AdminEvents() {
 
                                                 {expandedRows.has(event.id) && (
                                                     <tr key={`${event.id}-expand`} className="sm:hidden bg-gray-50">
-                                                        <td colSpan="5" className="px-4 py-4">
+                                                        <td colSpan={activeView === 'academic-year' ? 3 : 5} className="px-4 py-4">
                                                             <div className="space-y-3 text-sm">
+                                                                {activeView !== 'academic-year' && (
+                                                                    <div>
+                                                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Host</span>
+                                                                        <p className="text-gray-800 mt-1">{event.host?.username || 'Unknown'}</p>
+                                                                        <p className="text-gray-600 text-xs">{event.host?.email || ''}</p>
+                                                                    </div>
+                                                                )}
                                                                 <div>
-                                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Host</span>
-                                                                    <p className="text-gray-800 mt-1">{event.host?.username || 'Unknown'}</p>
-                                                                    <p className="text-gray-600 text-xs">{event.host?.email || ''}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date & Time</span>
+                                                                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                                                        {activeView === 'academic-year' ? 'Date' : 'Date & Time'}
+                                                                    </span>
                                                                     <p className="text-gray-800 mt-1">{formatDate(event.date)}</p>
-                                                                    <p className="text-gray-600 text-xs">
-                                                                        {formatTime(event.time)} {event.end_time ? `- ${formatTime(event.end_time)}` : ''}
-                                                                    </p>
+                                                                    {activeView !== 'academic-year' && event.time && (
+                                                                        <p className="text-gray-600 text-xs">
+                                                                            {formatTime(event.time)} {event.end_time ? `- ${formatTime(event.end_time)}` : ''}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
-                                                                <div>
-                                                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</span>
-                                                                    <p className="text-gray-800 mt-1">{event.location || 'Not specified'}</p>
-                                                                </div>
+                                                                {activeView !== 'academic-year' && (
+                                                                    <div>
+                                                                        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</span>
+                                                                        <p className="text-gray-800 mt-1">{event.location || 'Not specified'}</p>
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         </td>
                                                     </tr>
