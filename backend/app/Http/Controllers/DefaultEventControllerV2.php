@@ -14,12 +14,14 @@ class DefaultEventControllerV2 extends Controller
     /**
      * Get all default events with their dates for a specific school year.
      * This version uses the default_event_dates table for cleaner separation.
+     * For event manager, only returns events that have been edited (have dates set).
      *
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
         $schoolYear = $request->query('school_year');
+        $onlyEdited = filter_var($request->query('only_edited', true), FILTER_VALIDATE_BOOLEAN); // Default to true for event manager
         
         // If no school_year provided, use current academic year
         if (!$schoolYear) {
@@ -36,40 +38,65 @@ class DefaultEventControllerV2 extends Controller
             }
         }
 
-        // Get all base default events (without school_year filter)
-        $baseEvents = DefaultEvent::whereNull('school_year')
-            ->orderBy('month')
-            ->orderBy('order')
-            ->get();
+        if ($onlyEdited) {
+            // Only get events that have dates set for this school year
+            $eventDates = DefaultEventDate::forSchoolYear($schoolYear)
+                ->with('defaultEvent')
+                ->orderBy('date')
+                ->get();
 
-        // Get all date assignments for this school year
-        $eventDates = DefaultEventDate::forSchoolYear($schoolYear)
-            ->with('defaultEvent')
-            ->get()
-            ->keyBy('default_event_id');
+            $events = $eventDates->map(function ($eventDate) use ($schoolYear) {
+                return [
+                    'id' => $eventDate->defaultEvent->id,
+                    'name' => $eventDate->defaultEvent->name,
+                    'month' => $eventDate->defaultEvent->month,
+                    'order' => $eventDate->defaultEvent->order,
+                    'date' => $eventDate->date?->format('Y-m-d'),
+                    'end_date' => $eventDate->end_date?->format('Y-m-d'),
+                    'school_year' => $schoolYear,
+                    'semester' => $eventDate->semester,
+                    'semester_name' => $eventDate->semester_name,
+                    'has_date_set' => true,
+                    'date_id' => $eventDate->id,
+                ];
+            });
+        } else {
+            // Get all base default events (without school_year filter)
+            $baseEvents = DefaultEvent::whereNull('school_year')
+                ->orderBy('month')
+                ->orderBy('order')
+                ->get();
 
-        // Merge base events with their assigned dates
-        $events = $baseEvents->map(function ($event) use ($eventDates, $schoolYear) {
-            $dateAssignment = $eventDates->get($event->id);
-            
-            return [
-                'id' => $event->id,
-                'name' => $event->name,
-                'month' => $event->month,
-                'order' => $event->order,
-                'date' => $dateAssignment?->date?->format('Y-m-d'),
-                'end_date' => $dateAssignment?->end_date?->format('Y-m-d'),
-                'school_year' => $schoolYear,
-                'semester' => $dateAssignment?->semester,
-                'semester_name' => $dateAssignment?->semester_name,
-                'has_date_set' => $dateAssignment !== null,
-                'date_id' => $dateAssignment?->id,
-            ];
-        });
+            // Get all date assignments for this school year
+            $eventDates = DefaultEventDate::forSchoolYear($schoolYear)
+                ->with('defaultEvent')
+                ->get()
+                ->keyBy('default_event_id');
+
+            // Merge base events with their assigned dates
+            $events = $baseEvents->map(function ($event) use ($eventDates, $schoolYear) {
+                $dateAssignment = $eventDates->get($event->id);
+                
+                return [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'month' => $event->month,
+                    'order' => $event->order,
+                    'date' => $dateAssignment?->date?->format('Y-m-d'),
+                    'end_date' => $dateAssignment?->end_date?->format('Y-m-d'),
+                    'school_year' => $schoolYear,
+                    'semester' => $dateAssignment?->semester,
+                    'semester_name' => $dateAssignment?->semester_name,
+                    'has_date_set' => $dateAssignment !== null,
+                    'date_id' => $dateAssignment?->id,
+                ];
+            });
+        }
 
         return response()->json([
             'events' => $events,
-            'school_year' => $schoolYear
+            'school_year' => $schoolYear,
+            'only_edited' => $onlyEdited
         ]);
     }
 

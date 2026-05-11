@@ -33,8 +33,6 @@ export default function Admin() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   const [departments, setDepartments] = useState([]);
-  const [ceitRoles, setCeitRoles] = useState([]);
-  const [deptRoles, setDeptRoles] = useState([]);
   const [designations, setDesignations] = useState([]);
 
   const toggleRow = (id) => setExpandedRows(prev => {
@@ -58,51 +56,16 @@ export default function Admin() {
       const apiCeitRoles = response.data.ceit_roles || [];
       const apiDeptRoles = response.data.department_roles || [];
       
-      // Use default values if API returns empty
-      const defaultDepartments = [
-        'College of Engineering and Information Technology',
-        'Department of Information Technology',
-        'Department of Industrial Engineering and Technology',
-        'Department of Computer, Electronics, and Electrical Engineering',
-        'Department of Civil Engineering and Architecture',
-        'Department of Agriculture and Food Engineering',
-      ];
+      setDepartments(apiDepartments);
       
-      const defaultCeitRoles = ['Dean', 'CEIT Official', 'Faculty Member'];
-      const defaultDeptRoles = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
-      
-      setDepartments(apiDepartments.length > 0 ? apiDepartments : defaultDepartments);
-      setCeitRoles(apiCeitRoles.length > 0 ? apiCeitRoles : defaultCeitRoles);
-      setDeptRoles(apiDeptRoles.length > 0 ? apiDeptRoles : defaultDeptRoles);
-      
-      // Combine for the "all designations" list
-      const allDesig = new Set([
-        'Admin', 
-        ...(apiCeitRoles.length > 0 ? apiCeitRoles : defaultCeitRoles), 
-        ...(apiDeptRoles.length > 0 ? apiDeptRoles : defaultDeptRoles)
-      ]);
+      // Combine for the "all designations" list (Admin is always included)
+      const allDesig = new Set(['Admin', ...apiCeitRoles, ...apiDeptRoles]);
       setDesignations(Array.from(allDesig));
     } catch (error) {
       console.error('Error fetching settings:', error);
-      // Use default values if API fails
-      const defaultDepartments = [
-        'College of Engineering and Information Technology',
-        'Department of Information Technology',
-        'Department of Industrial Engineering and Technology',
-        'Department of Computer, Electronics, and Electrical Engineering',
-        'Department of Civil Engineering and Architecture',
-        'Department of Agriculture and Food Engineering',
-      ];
-      
-      const defaultCeitRoles = ['Dean', 'CEIT Official', 'Faculty Member'];
-      const defaultDeptRoles = ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
-      
-      setDepartments(defaultDepartments);
-      setCeitRoles(defaultCeitRoles);
-      setDeptRoles(defaultDeptRoles);
-      
-      const allDesig = new Set(['Admin', ...defaultCeitRoles, ...defaultDeptRoles]);
-      setDesignations(Array.from(allDesig));
+      // If API fails, use empty arrays - the UI will handle empty states
+      setDepartments([]);
+      setDesignations(['Admin']); // At minimum, Admin should be available
     }
   };
 
@@ -162,9 +125,7 @@ export default function Admin() {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-  };
+
 
   const handleDesignationChange = async (userId, newDesignation) => {
     try {
@@ -215,10 +176,7 @@ export default function Admin() {
     }
   };
 
-  const startEditDesignation = (userId, currentDesignation) => {
-    setEditingUserId(userId);
-    setSelectedDesignation(currentDesignation);
-  };
+
 
   const cancelEditDesignation = () => {
     setEditingUserId(null);

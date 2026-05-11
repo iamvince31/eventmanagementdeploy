@@ -29,49 +29,25 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
         // Merge all roles, deduplicate, keep Admin out of self-service
         const merged = [...new Set([...ceitRoles, ...deptRoles])];
         
-        // If no departments from API, use default departments
-        const defaultDepartments = [
-          'College of Engineering and Information Technology',
-          'Department of Information Technology',
-          'Department of Industrial Engineering and Technology',
-          'Department of Computer, Electronics, and Electrical Engineering',
-          'Department of Civil Engineering and Architecture',
-          'Department of Agriculture and Food Engineering',
-        ];
-        
-        // If no roles from API, use default roles
-        const defaultRoles = ['Dean', 'CEIT Official', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
-        
-        setDepartments(depts.length > 0 ? depts : defaultDepartments);
-        setAllRoles(merged.length > 0 ? merged : defaultRoles);
+        setDepartments(depts);
+        setAllRoles(merged);
         
         // Set defaults once loaded
         setFormData(prev => ({
           ...prev,
-          department: prev.department || (depts.length > 0 ? depts[0] : defaultDepartments[0]) || '',
-          designation: prev.designation || (merged.length > 0 ? merged[0] : defaultRoles[0]) || '',
+          department: prev.department || (depts.length > 0 ? depts[0] : '') || '',
+          designation: prev.designation || (merged.length > 0 ? merged[0] : '') || '',
         }));
       }).catch(err => {
         console.error('Error fetching settings:', err);
-        // Use default values if API fails
-        const defaultDepartments = [
-          'College of Engineering and Information Technology',
-          'Department of Information Technology',
-          'Department of Industrial Engineering and Technology',
-          'Department of Computer, Electronics, and Electrical Engineering',
-          'Department of Civil Engineering and Architecture',
-          'Department of Agriculture and Food Engineering',
-        ];
-        
-        const defaultRoles = ['Dean', 'CEIT Official', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'];
-        
-        setDepartments(defaultDepartments);
-        setAllRoles(defaultRoles);
+        // If API fails, use empty arrays
+        setDepartments([]);
+        setAllRoles([]);
         
         setFormData(prev => ({
           ...prev,
-          department: prev.department || defaultDepartments[0] || '',
-          designation: prev.designation || defaultRoles[0] || '',
+          department: prev.department || '',
+          designation: prev.designation || '',
         }));
       });
     }

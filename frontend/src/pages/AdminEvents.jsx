@@ -39,8 +39,17 @@ export default function AdminEvents() {
 
     const fetchAcademicCalendarEvents = async () => {
         try {
-            const response = await api.get('/default-events/v2');
-            setAcademicCalendarEvents(response.data.events || []);
+            // Get current school year
+            const currentYear = new Date().getFullYear();
+            const currentMonth = new Date().getMonth() + 1; // 1-12
+            const schoolYear = currentMonth >= 9 
+                ? `${currentYear}-${currentYear + 1}` 
+                : `${currentYear - 1}-${currentYear}`;
+            
+            const response = await api.get(`/default-events?school_year=${schoolYear}`);
+            // Only show events that have dates set (edited events)
+            const eventsWithDates = (response.data.events || []).filter(event => event.has_date_set);
+            setAcademicCalendarEvents(eventsWithDates);
         } catch (error) {
             console.error('Error fetching academic calendar events:', error);
         }

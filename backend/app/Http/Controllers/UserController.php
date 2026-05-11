@@ -73,7 +73,7 @@ class UserController extends Controller
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8',
             'department' => 'nullable|string|max:255',
-            'designation' => 'required|in:Admin,Dean,CEIT Official,Chairperson,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
+            'designation' => 'required|string|max:255',
             'ceit_officer_type' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
         ]);
