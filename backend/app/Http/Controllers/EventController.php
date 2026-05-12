@@ -66,6 +66,7 @@ class EventController extends Controller
                     'id' => $event->host->id,
                     'username' => $event->host->name,
                     'email' => $event->host->email,
+                    'designation' => $event->host->designation,
                 ],
                 'members' => $event->members->map(fn($m) => [
                     'id' => $m->id,
@@ -128,6 +129,7 @@ class EventController extends Controller
                     'id' => $event->host->id ?? null,
                     'username' => $event->host->name ?? 'Unknown',
                     'email' => $event->host->email ?? 'Unknown',
+                    'designation' => $event->host->designation ?? null,
                 ],
                 'members' => $event->members->map(fn($m) => [
                     'id' => $m->id,

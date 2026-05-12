@@ -374,16 +374,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     return true;
   });
 
-  // Auto-remove Dean from selectedMembers when urgent is toggled on by non-Admin/Dean
-  useEffect(() => {
-    if (isUrgent && eventType === 'meeting' && !['Admin', 'Dean'].includes(currentUser?.role || currentUser?.designation)) {
-      const deanIds = members.filter(m => m.role === 'Dean' || m.designation === 'Dean').map(m => m.id);
-      if (deanIds.length > 0) {
-        setSelectedMembers(prev => prev.filter(id => !deanIds.includes(id)));
-      }
-    }
-  }, [isUrgent, eventType]);
-
   // Further filter by search term and sort selected members first
   const searchFilteredMembers = filteredMembers
     .filter(member =>
@@ -667,34 +657,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   </p>
                 )}
               </div>
-
-              {/* ── Urgent toggle — meetings only, restricted roles ── */}
-              {eventType === 'meeting' && ['Admin', 'Dean', 'CEIT Official', 'Chairperson'].includes(currentUser?.role || currentUser?.designation) && (
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isUrgent}
-                    onChange={(e) => setIsUrgent(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                  />
-                  <div>
-                    <span className="text-sm font-semibold text-red-700">Mark as Urgent</span>
-                    <p className="text-xs text-gray-500 mt-0.5">Recipients are notified but cannot accept or decline — announcement only</p>
-                  </div>
-                </label>
-              )}
-
-              {/* ── Urgent restriction warning ── */}
-              {isUrgent && eventType === 'meeting' && !['Admin', 'Dean'].includes(currentUser?.role || currentUser?.designation) && (
-                <div className="flex items-start gap-2.5 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200">
-                  <svg className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <p className="text-xs text-amber-800 font-medium">
-                    Dean cannot be invited to urgent meetings by your role. Dean members have been removed from the invite list.
-                  </p>
-                </div>
-              )}
 
               {/* ── Event Files ── */}
               <div className="pt-3 border-t border-gray-100">

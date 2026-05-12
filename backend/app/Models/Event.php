@@ -18,13 +18,11 @@ class Event extends Model
         'is_personal',
         'personal_color',
         'event_type',
-        'is_urgent',
         'is_archived',
     ];
 
     protected $casts = [
         'is_personal' => 'boolean',
-        'is_urgent' => 'boolean',
     ];
 
     public function host()

@@ -35,26 +35,26 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
     return 'Event';
   };
 
-  // Pending invitations — only for non-urgent meetings, show regardless of date (not past)
+  // Pending invitations — only for non-Dean-created meetings, show regardless of date (not past)
   const pendingInvitations = events.filter(event => {
     if (!event.members?.some(m => m.id === user?.id && m.status === 'pending')) return false;
     if (event.date && event.date < todayStr) return false;
     // Events (non-meeting) never show as pending
     if (event.event_type !== 'meeting') return false;
-    // Urgent meetings never show as pending — they're announcements
-    if (event.is_urgent) return false;
+    // Dean-created meetings never show as pending — they're announcements
+    if (event.host?.designation === 'Dean') return false;
     return true;
   });
 
-  // Accepted invitations — only non-urgent meetings, only today
+  // Accepted invitations — only non-Dean-created meetings, only today
   const acceptedInvitations = events.filter(event => {
     if (event.host?.id === user?.id) return false;
     const membership = event.members?.find(m => m.id === user?.id);
     if (!membership || membership.status !== 'accepted') return false;
     if (event.date !== todayStr) return false;
-    // Only non-urgent meetings show the "Accepted" badge (events go straight to reminders)
+    // Only non-Dean-created meetings show the "Accepted" badge (events go straight to reminders)
     if (event.event_type !== 'meeting') return false;
-    if (event.is_urgent) return false;
+    if (event.host?.designation === 'Dean') return false;
     return true;
   });
 
@@ -80,8 +80,8 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
       } else if (event.event_type !== 'meeting') {
         // Regular events: show for any invited member regardless of status
         qualifies = !!membership;
-      } else if (event.is_urgent) {
-        // Urgent meetings: show for any invited member regardless of status
+      } else if (event.host?.designation === 'Dean') {
+        // Dean-created meetings: show for any invited member regardless of status
         qualifies = !!membership;
       } else {
         // Normal meetings: only accepted
@@ -270,11 +270,11 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                     <button
                       key={`upcoming-${event.id}`}
                       onClick={() => handleNotificationClick(event)}
-                      className={`w-full p-4 transition-colors text-left ${event.is_urgent ? 'hover:bg-red-50/40' : 'hover:bg-blue-50/40'}`}
+                      className={`w-full p-4 transition-colors text-left ${event.host?.designation === 'Dean' ? 'hover:bg-red-50/40' : 'hover:bg-blue-50/40'}`}
                     >
                       <div className="flex items-start space-x-3">
-                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${event.is_urgent ? 'bg-red-100' : 'bg-blue-100'}`}>
-                          {event.is_urgent ? (
+                        <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${event.host?.designation === 'Dean' ? 'bg-red-100' : 'bg-blue-100'}`}>
+                          {event.host?.designation === 'Dean' ? (
                             <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                             </svg>
@@ -287,9 +287,9 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
-                            {event.is_urgent && (
+                            {event.host?.designation === 'Dean' && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 flex-shrink-0">
-                                URGENT
+                                DEAN
                               </span>
                             )}
                           </div>
@@ -298,7 +298,7 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                           </p>
                           {event.location && <p className="text-xs text-gray-400 mt-0.5 truncate">{event.location}</p>}
                         </div>
-                        <span className={`flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${event.is_urgent ? 'bg-red-100 text-red-800' : countdownColor(event._minsUntil)}`}>
+                        <span className={`flex-shrink-0 inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${event.host?.designation === 'Dean' ? 'bg-red-100 text-red-800' : countdownColor(event._minsUntil)}`}>
                           {formatCountdown(event._minsUntil)}
                         </span>
                       </div>
