@@ -12,7 +12,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const [images, setImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [dateEntries, setDateEntries] = useState([{ date: '', startTime: '', endTime: '' }]);
-  const [isUrgent, setIsUrgent] = useState(false);
   const [time, setTime] = useState('');
   const [schoolYear, setSchoolYear] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
@@ -125,7 +124,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       }]);
       setSchoolYear(editingEvent.school_year || getSchoolYearFromDate(editingEvent.date));
       setSelectedMembers(editingEvent.members.map(m => m.id));
-      setIsUrgent(editingEvent.is_urgent ?? false);
     }
   }, [editingEvent]);
 
@@ -148,7 +146,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       formData.append('time', entry.startTime);
       if (entry.endTime) formData.append('end_time', entry.endTime);
       formData.append('school_year', getSchoolYearFromDate(entry.date));
-      formData.append('is_urgent', isUrgent ? '1' : '0');
       
       // Append images with proper naming for Laravel
       images.forEach((image, index) => {
@@ -204,7 +201,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
     const now = new Date();
     setDateEntries([{ date: now.toISOString().split('T')[0], startTime: now.toTimeString().slice(0, 5), endTime: '' }]);
     setSelectedMembers([]);
-    setIsUrgent(false);
   };
 
   const handleCancel = () => {
@@ -365,10 +361,6 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const filteredMembers = members.filter(member => {
     // Exclude current user (host)
     if (member.id === currentUser?.id) return false;
-
-    // When urgent is on and host is not Admin/Dean, hide Dean/Admin members
-    const hostCanInvitePrivileged = ['Admin', 'Dean'].includes(currentUser?.role || currentUser?.designation);
-    if (isUrgent && eventType === 'meeting' && !hostCanInvitePrivileged && ['Dean', 'Admin'].includes(member.role || member.designation)) return false;
 
     // Always show selected members regardless of filters
     if (selectedMembers.includes(member.id)) return true;

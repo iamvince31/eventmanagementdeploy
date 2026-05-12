@@ -161,7 +161,6 @@ class EventController extends Controller
             'time' => 'required',
             'end_time' => 'nullable|date_format:H:i',
             'member_ids' => 'nullable|array',
-            'is_urgent' => 'nullable|boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 files.',
             'event_type.required' => 'Event type is required.',
@@ -223,7 +222,7 @@ class EventController extends Controller
             'end_time' => $request->end_time ?: null,
             'school_year' => $request->school_year,
             'host_id' => $user->id,
-            'is_urgent' => $request->boolean('is_urgent', false),
+            'is_urgent' => false, // Remove urgent functionality
         ]);
 
         // Handle multiple images/files
@@ -247,7 +246,10 @@ class EventController extends Controller
         }
 
         if (!empty($memberIds)) {
-            $memberData = collect($memberIds)->mapWithKeys(fn($id) => [$id => ['status' => 'pending']])->all();
+            // If host is Dean, set status to 'accepted' (non-negotiable)
+            // Otherwise, set status to 'pending' (can accept/decline)
+            $status = $user->isDean() ? 'accepted' : 'pending';
+            $memberData = collect($memberIds)->mapWithKeys(fn($id) => [$id => ['status' => $status]])->all();
             $event->members()->attach($memberData);
         }
 
@@ -279,7 +281,6 @@ class EventController extends Controller
             'time' => 'sometimes|required',
             'end_time' => 'nullable|date_format:H:i',
             'member_ids' => 'nullable|array',
-            'is_urgent' => 'nullable|boolean',
         ], [
             'images.max' => 'You can upload a maximum of 5 files.',
             'event_type.required' => 'Event type is required.',
@@ -306,7 +307,7 @@ class EventController extends Controller
             }
         }
 
-        $event->update($request->only(['title', 'description', 'location', 'event_type', 'date', 'time', 'end_time', 'is_urgent']));
+        $event->update($request->only(['title', 'description', 'location', 'event_type', 'date', 'time', 'end_time']));
 
         // Handle new images/files
         if ($request->hasFile('images')) {
@@ -342,10 +343,13 @@ class EventController extends Controller
                 ->unique()
                 ->values();
 
-            // Keep existing statuses for members that remain, set 'pending' for new ones
+            // Keep existing statuses for members that remain
+            // For new members: if host is Dean, set to 'accepted', otherwise 'pending'
             $existingMembers = $event->members()->pluck('status', 'users.id')->all();
-            $syncData = $memberIds->mapWithKeys(function ($id) use ($existingMembers) {
-                return [$id => ['status' => $existingMembers[$id] ?? 'pending']];
+            $user = $request->user();
+            $syncData = $memberIds->mapWithKeys(function ($id) use ($existingMembers, $user) {
+                $status = $existingMembers[$id] ?? ($user->isDean() ? 'accepted' : 'pending');
+                return [$id => ['status' => $status]];
             })->all();
             $event->members()->sync($syncData);
         }
@@ -380,6 +384,12 @@ class EventController extends Controller
         // Check if user is an invited member
         if (!$event->members()->where('users.id', $user->id)->exists()) {
             return response()->json(['error' => 'You are not invited to this event'], 403);
+        }
+
+        // Check if event host is Dean - if so, members cannot accept/decline
+        $host = $event->host;
+        if ($host && $host->isDean()) {
+            return response()->json(['error' => 'This event was created by a Dean and does not require acceptance/decline'], 403);
         }
 
         $request->validate([
