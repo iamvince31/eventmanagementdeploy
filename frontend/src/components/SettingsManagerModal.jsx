@@ -64,6 +64,7 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
   const handleSave = async (key) => {
     setSavingKey(key);
     try {
+      // Send the complete array (including defaults that are already merged in the backend)
       await api.put(`/settings/${key}`, { value: settings[key] });
       if (onSettingsUpdated) onSettingsUpdated();
     } catch (error) {
@@ -162,20 +163,47 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
                 {settings[activeTab].length === 0 ? (
                   <p className="text-sm text-gray-500 text-center py-4">No items found.</p>
                 ) : (
-                  settings[activeTab].map((item, index) => (
-                    <div key={index} className="flex items-center justify-between bg-white px-3 py-2 border border-gray-200 rounded-lg shadow-sm">
-                      <span className="text-sm text-gray-800 break-words">{item}</span>
-                      <button
-                        onClick={() => handleRemoveItem(index)}
-                        className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0 ml-2"
-                        title="Remove item"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))
+                  settings[activeTab].map((item, index) => {
+                    // Define default values for each tab
+                    const defaultItems = {
+                      departments: [
+                        'College of Engineering and Information Technology',
+                        'Department of Information Technology',
+                        'Department of Industrial Engineering and Technology',
+                        'Department of Computer, Electronics, and Electrical Engineering',
+                        'Department of Civil Engineering and Architecture',
+                        'Department of Agriculture and Food Engineering',
+                      ],
+                      ceit_roles: ['Dean', 'CEIT Official', 'Faculty Member'],
+                      department_roles: ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
+                      ceit_officer_types: [] // No defaults
+                    };
+                    
+                    const isDefault = defaultItems[activeTab]?.includes(item) || false;
+                    
+                    return (
+                      <div key={index} className="flex items-center justify-between bg-white px-3 py-2 border border-gray-200 rounded-lg shadow-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-800 break-words">{item}</span>
+                          {isDefault && (
+                            <span className="px-1.5 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">
+                              Default
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleRemoveItem(index)}
+                          className="p-1 text-red-500 hover:bg-red-50 rounded-md transition-colors shrink-0 ml-2"
+                          title="Remove item"
+                          disabled={isDefault}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-4 italic">* Remember to click "Save Changes" after adding or removing items before switching tabs.</p>

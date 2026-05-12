@@ -26,15 +26,13 @@ class SystemSettingController extends Controller
         // Get settings from database
         $dbSettings = \App\Models\SystemSetting::all()->pluck('value', 'key')->toArray();
         
-        // Merge defaults with database values (database values take precedence)
+        // Merge defaults with database values
         $settings = [];
         foreach ($defaults as $key => $defaultValue) {
-            if (isset($dbSettings[$key]) && !empty($dbSettings[$key])) {
-                // Database already contains defaults merged with user-added values
-                $settings[$key] = $dbSettings[$key];
-            } else {
-                $settings[$key] = $defaultValue;
-            }
+            $dbValue = $dbSettings[$key] ?? [];
+            // Merge defaults with database values, remove duplicates
+            $mergedValue = array_values(array_unique(array_merge($defaultValue, $dbValue)));
+            $settings[$key] = $mergedValue;
         }
         
         // Also include any settings in database that aren't in defaults
