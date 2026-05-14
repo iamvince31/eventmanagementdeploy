@@ -22,12 +22,6 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
 
   const todayStr = now.toISOString().split('T')[0];
 
-  const parseMin = (t) => {
-    if (!t) return null;
-    const [h, m] = t.split(':');
-    return parseInt(h) * 60 + parseInt(m || 0);
-  };
-
   // Helper: get event type label
   const getTypeLabel = (event) => {
     if (event.is_personal) return 'Personal Event';
@@ -288,7 +282,7 @@ export default function NotificationBell({ events, user, onNotificationClick }) 
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <p className="text-sm font-semibold text-gray-900 truncate">{event.title}</p>
                             {event.host?.designation === 'Dean' && (
-                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-700 border border-red-200 flex-shrink-0">
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200 flex-shrink-0">
                                 DEAN
                               </span>
                             )}

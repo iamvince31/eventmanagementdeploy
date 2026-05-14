@@ -350,7 +350,15 @@ class EventController extends Controller
             $existingMembers = $event->members()->pluck('status', 'users.id')->all();
             $user = $request->user();
             $syncData = $memberIds->mapWithKeys(function ($id) use ($existingMembers, $user) {
-                $status = $existingMembers[$id] ?? ($user->isDean() ? 'accepted' : 'pending');
+                // If member already exists and host is not Dean, keep existing status
+                // If member already exists and host is Dean, force to 'accepted'
+                // If new member and host is Dean, set to 'accepted'
+                // If new member and host is not Dean, set to 'pending'
+                if (isset($existingMembers[$id])) {
+                    $status = $user->isDean() ? 'accepted' : $existingMembers[$id];
+                } else {
+                    $status = $user->isDean() ? 'accepted' : 'pending';
+                }
                 return [$id => ['status' => $status]];
             })->all();
             $event->members()->sync($syncData);

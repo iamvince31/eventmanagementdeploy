@@ -138,43 +138,48 @@ export default function AddEvent() {
         </div>
 
         {/* Form Skeleton */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-            <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
-              <div className="space-y-6">
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                  <div className="h-10 bg-gray-100 rounded"></div>
-                </div>
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
-                  <div className="h-24 bg-gray-100 rounded"></div>
-                </div>
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
-                  <div className="h-10 bg-gray-100 rounded"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <main className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-y-auto">
+            <div className="w-full px-4 sm:px-6 lg:px-8 py-4 pb-24">
+              <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse">
+                <div className="space-y-6">
                   <div>
-                    <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
                     <div className="h-10 bg-gray-100 rounded"></div>
                   </div>
                   <div>
-                    <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                    <div className="h-24 bg-gray-100 rounded"></div>
+                  </div>
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
                     <div className="h-10 bg-gray-100 rounded"></div>
                   </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                      <div className="h-10 bg-gray-100 rounded"></div>
+                    </div>
+                    <div>
+                      <div className="h-4 bg-gray-200 rounded w-16 mb-2"></div>
+                      <div className="h-10 bg-gray-100 rounded"></div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+                    <div className="h-32 bg-gray-100 rounded"></div>
+                  </div>
+                  <div>
+                    <div className="h-4 bg-gray-200 rounded w-40 mb-2"></div>
+                    <div className="h-48 bg-gray-100 rounded"></div>
+                  </div>
                 </div>
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
-                  <div className="h-32 bg-gray-100 rounded"></div>
-                </div>
-                <div>
-                  <div className="h-4 bg-gray-200 rounded w-40 mb-2"></div>
-                  <div className="h-48 bg-gray-100 rounded"></div>
-                </div>
-                <div className="flex justify-end space-x-4 pt-4">
-                  <div className="h-10 bg-gray-200 rounded w-24"></div>
-                  <div className="h-10 bg-gray-200 rounded w-32"></div>
+              </div>
+              {/* Fixed button skeleton */}
+              <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 shadow-lg z-40">
+                <div className="max-w-7xl mx-auto flex space-x-4">
+                  <div className="flex-1 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
+                  <div className="h-12 bg-gray-200 rounded-xl w-24 animate-pulse"></div>
                 </div>
               </div>
             </div>
@@ -201,17 +206,19 @@ export default function AddEvent() {
       </div>
 
       {/* Form */}
-      <main className="flex-1 overflow-y-auto">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
-          <EventForm
-            members={members}
-            onEventCreated={handleEventCreated}
-            editingEvent={editingEvent}
-            onCancelEdit={handleCancelEdit}
-            defaultDate={selectedDate}
-            hasSchedule={hasSchedule}
-            currentUser={user}
-          />
+      <main className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-y-auto">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-4 pb-24">
+            <EventForm
+              members={members}
+              onEventCreated={handleEventCreated}
+              editingEvent={editingEvent}
+              onCancelEdit={handleCancelEdit}
+              defaultDate={selectedDate}
+              hasSchedule={hasSchedule}
+              currentUser={user}
+            />
+          </div>
         </div>
       </main>
     </div>

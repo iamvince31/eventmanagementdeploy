@@ -304,11 +304,11 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
                           </div>
                         </div>
                         <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                          member.status === 'accepted' ? 'bg-green-100 text-green-800'
+                          (member.status === 'accepted' || event.host?.designation === 'Dean') ? 'bg-green-100 text-green-800'
                           : member.status === 'declined' ? 'bg-red-100 text-red-800'
                           : 'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {member.status === 'accepted' ? '✔ Accepted' : member.status === 'declined' ? '✘ Declined' : '⏳ Pending'}
+                          {(member.status === 'accepted' || event.host?.designation === 'Dean') ? '✔ Accepted' : member.status === 'declined' ? '✘ Declined' : '⏳ Pending'}
                         </span>
                       </div>
                       {declineMsg && (
@@ -610,6 +610,26 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
               )}
             </div>
           )}
+
+          {/* Dean Event Announcement Notice */}
+          {isInvited && event.host?.designation === 'Dean' && (
+            <div className="pt-4 border-t border-gray-200">
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-blue-800 mb-1">Dean Announcement</p>
+                  <p className="text-xs text-blue-700">
+                    This {event.event_type === 'meeting' ? 'meeting' : 'event'} was created by the Dean and is considered mandatory. 
+                    No acceptance or decline is required - you are automatically included.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ── Files column (only when images exist) ── */}
@@ -768,11 +788,11 @@ export default function EventDetailModal({ isOpen, onClose, event, currentUser, 
                         </div>
                       </div>
                       <span className={`ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold flex-shrink-0 ${
-                        member.status === 'accepted' ? 'bg-green-100 text-green-800'
+                        (member.status === 'accepted' || event.host?.designation === 'Dean') ? 'bg-green-100 text-green-800'
                         : member.status === 'declined' ? 'bg-red-100 text-red-800'
                         : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {member.status === 'accepted' ? '✔ Accepted' : member.status === 'declined' ? '✘ Declined' : '⏳ Pending'}
+                        {(member.status === 'accepted' || event.host?.designation === 'Dean') ? '✔ Accepted' : member.status === 'declined' ? '✘ Declined' : '⏳ Pending'}
                       </span>
                     </div>
                     {declineMsg && (

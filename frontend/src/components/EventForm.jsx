@@ -402,11 +402,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const availableDesignations = [...new Set(members.map(m => m.designation).filter(Boolean))];
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in relative">
 
       {/* Undo Toast — Option 2 */}
       {undoToast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl animate-fade-in">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl animate-fade-in">
           <span>{undoToast.count} member{undoToast.count !== 1 ? 's' : ''} selected</span>
           <button
             type="button"
@@ -476,10 +476,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         </div>
       )}
 
-      <form onSubmit={handleSubmit} autoComplete="off">
+      <form onSubmit={handleSubmit} autoComplete="off" className="pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {/* Left Column - Event Details (1/3 width) — fixed max height, no outer scroll */}
-          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 180px)', minHeight: '520px' }}>
+          {/* Left Column - Event Details (1/3 width) — responsive height */}
+          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[400px] max-h-[55vh] lg:max-h-[60vh]">
             <div className="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
               <div className="bg-green-100 rounded-lg p-2">
                 <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -760,7 +760,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
           </div>
 
           {/* Right Column - Members (2/3 width) */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden" style={{ height: 'calc(100vh - 180px)', minHeight: '520px' }}>
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[400px] max-h-[55vh] lg:max-h-[60vh]">
             {/* Fixed header: title + search + filters */}
             <div className="px-6 pt-6 pb-3 flex-shrink-0 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -877,43 +877,45 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
           </div>
         </div>
 
-        {/* Submit Buttons */}
-        <div className="flex space-x-3 mt-6">
-          <button
-            type="submit"
-            disabled={loading}
-            className="flex-1 inline-flex items-center justify-center px-5 py-3 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-green-700 to-green-800 hover:from-green-800 hover:to-green-900 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                Saving...
-              </>
-            ) : editingEvent ? (
-              <>
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Save Changes
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                </svg>
-                Create Event
-              </>
-            )}
-          </button>
-          {editingEvent && (
+        {/* Submit Buttons - Sticky Footer */}
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 shadow-lg z-40">
+          <div className="max-w-7xl mx-auto flex space-x-3">
             <button
-              type="button"
-              onClick={handleCancel}
-              className="px-5 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+              type="submit"
+              disabled={loading}
+              className="flex-1 inline-flex items-center justify-center px-5 py-3 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-green-700 to-green-800 hover:from-green-800 hover:to-green-900 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {loading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                  Saving...
+                </>
+              ) : editingEvent ? (
+                <>
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Save Changes
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  </svg>
+                  Create Event
+                </>
+              )}
             </button>
-          )}
+            {editingEvent && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="px-5 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       </form>
     </div>
