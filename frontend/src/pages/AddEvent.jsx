@@ -101,9 +101,9 @@ export default function AddEvent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
+      <div className="h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col overflow-hidden">
         {/* Navbar */}
-        <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg sticky top-0 z-20">
+        <nav className="bg-gradient-to-r from-green-700 via-green-600 to-green-800 shadow-lg flex-shrink-0 z-20">
           <div className="w-full px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-3">
@@ -127,7 +127,7 @@ export default function AddEvent() {
         </nav>
 
         {/* Page Header Skeleton */}
-        <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+        <div className="flex-shrink-0 w-full px-4 sm:px-6 lg:px-8 pt-4 pb-2">
           <div className="flex justify-between items-center">
             <div className="animate-pulse">
               <div className="h-8 bg-gray-200 rounded w-48 mb-2"></div>
@@ -138,8 +138,8 @@ export default function AddEvent() {
         </div>
 
         {/* Form Skeleton */}
-        <main className="flex flex-col">
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+        <main className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full w-full px-4 sm:px-6 lg:px-8 pb-4">
             <div className="h-full flex flex-col">
               <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse min-h-0">
                 <div className="space-y-6">
@@ -172,7 +172,7 @@ export default function AddEvent() {
                 </div>
               </div>
               {/* Button skeleton */}
-              <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 mt-6 shadow-lg">
+              <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 mt-4 shadow-lg rounded-b-2xl">
                 <div className="flex space-x-4">
                   <div className="flex-1 h-12 bg-gray-200 rounded-xl animate-pulse"></div>
                   <div className="h-12 bg-gray-200 rounded-xl w-24 animate-pulse"></div>
@@ -186,11 +186,11 @@ export default function AddEvent() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-gray-50 via-green-100 to-gray-50 flex flex-col overflow-hidden">
       <Navbar isLoading={loading} />
 
       {/* Page Header */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+      <div className="flex-shrink-0 w-full px-4 sm:px-6 lg:px-8 pt-4 pb-2">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">
             {editingEvent ? 'Edit Event' : 'Create New Event'}
@@ -202,8 +202,8 @@ export default function AddEvent() {
       </div>
 
       {/* Form */}
-      <main className="flex flex-col">
-        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
+      <main className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full w-full px-4 sm:px-6 lg:px-8 pb-4">
           <EventForm
             members={members}
             onEventCreated={handleEventCreated}

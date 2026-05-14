@@ -402,7 +402,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
   const availableDesignations = [...new Set(members.map(m => m.designation).filter(Boolean))];
 
   return (
-    <div className="animate-fade-in relative">
+    <div className="h-full flex flex-col animate-fade-in relative">
 
       {/* Undo Toast — Option 2 */}
       {undoToast && (
@@ -476,11 +476,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         </div>
       )}
 
-      <form onSubmit={handleSubmit} autoComplete="off" className="h-full flex flex-col">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-          {/* Left Column - Event Details (1/3 width) — maximize height */}
-          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[500px]">
-            <div className="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
+      <form onSubmit={handleSubmit} autoComplete="off" className="h-full flex flex-col min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 min-h-0 overflow-hidden">
+          {/* Left Column - Event Details (1/3 width) */}
+          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
+            <div className="flex items-center space-x-2 px-6 pt-5 pb-4 border-b border-gray-100 flex-shrink-0">
               <div className="bg-green-100 rounded-lg p-2">
                 <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -759,11 +759,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
             </div>
           </div>
 
-          {/* Right Column - Members (2/3 width) — fixed height */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[600px]">
+          {/* Right Column - Members (2/3 width) */}
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden">
             {/* Fixed header: title + search + filters */}
-            <div className="px-6 pt-6 pb-3 flex-shrink-0 border-b border-gray-100">
-              <div className="flex items-center justify-between mb-4">
+            <div className="px-6 pt-5 pb-3 flex-shrink-0 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center space-x-2">
                   <div className="bg-green-50 rounded-lg p-2">
                     <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -780,7 +780,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               </div>
 
               {/* Search Bar */}
-              <div className="mb-3">
+              <div className="mb-2.5">
                 <div className="relative">
                   <input
                     type="text"
@@ -803,11 +803,11 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               </div>
 
               {/* Department and Designation Filters with Select All */}
-              <div className="mb-3 flex flex-col md:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <select
                   value={filterDepartment}
                   onChange={(e) => setFilterDepartment(e.target.value)}
-                  className="flex-1 min-w-0 md:min-w-[120px] px-2 md:px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                  className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                 >
                   <option value="all">All Departments</option>
                   {availableDepartments.map(dept => <option key={dept} value={dept}>{dept}</option>)}
@@ -816,7 +816,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                 <select
                   value={filterDesignation}
                   onChange={(e) => setFilterDesignation(e.target.value)}
-                  className="flex-1 min-w-0 md:min-w-[120px] px-2 md:px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
+                  className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-green-600/20 focus:border-green-600 transition-colors"
                 >
                   <option value="all">All Designations</option>
                   {availableDesignations
@@ -830,7 +830,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
                   type="button"
                   onClick={handleSelectAll}
                   disabled={searchFilteredMembers.length === 0}
-                  className="shrink-0 flex justify-center items-center px-3 py-2.5 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                  className="shrink-0 flex justify-center items-center px-3 py-2 border border-green-600 text-sm font-medium rounded-lg text-green-700 bg-white hover:bg-green-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-600/20 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                 >
                   {searchFilteredMembers.length > 0 && searchFilteredMembers.every(m => selectedMembers.includes(m.id)) ? (
                     <><svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>Deselect All</>
@@ -841,9 +841,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               </div>
             </div>
 
-            {/* Scrollable member list — inner container with its own scroll */}
-            <div className="flex-1 px-6 pb-6 pt-2">
-              <div className="h-full border border-gray-200 rounded-lg bg-gray-50/50 overflow-y-auto max-h-[400px]">
+            {/* Scrollable member list — maximizes available space */}
+            <div className="flex-1 min-h-0 px-6 pb-4 pt-3">
+              <div className="h-full border border-gray-200 rounded-lg bg-gray-50/50 overflow-y-auto">
                 {searchFilteredMembers.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <p className="text-sm text-gray-400">{searchMember ? 'No members found' : 'No members available'}</p>
@@ -878,12 +878,12 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         </div>
 
         {/* Submit Buttons - Fixed Footer */}
-        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 mt-6 shadow-lg">
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 py-3 mt-4 shadow-lg rounded-b-xl">
           <div className="flex space-x-3">
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 inline-flex items-center justify-center px-5 py-3 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-green-700 to-green-800 hover:from-green-800 hover:to-green-900 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 inline-flex items-center justify-center px-5 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-green-700 to-green-800 hover:from-green-800 hover:to-green-900 shadow-sm hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <>
@@ -910,7 +910,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
               <button
                 type="button"
                 onClick={handleCancel}
-                className="px-5 py-3 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
+                className="px-5 py-2.5 border border-gray-300 text-sm font-semibold rounded-xl text-gray-700 bg-white hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-300"
               >
                 Cancel
               </button>
