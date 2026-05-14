@@ -1035,6 +1035,7 @@ export default function Calendar({ events, defaultEvents = [], userSchedules = [
         eventTitle={eventToDelete?.title || eventToDelete?.name}
         eventType={eventToDelete?.event_type === 'meeting' ? 'Meeting' : 'Event'}
         isDeleting={isDeleting}
+        event={eventToDelete}
       />
     </>
   );

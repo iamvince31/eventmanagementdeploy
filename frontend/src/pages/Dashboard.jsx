@@ -435,6 +435,7 @@ export default function Dashboard() {
         eventTitle={pendingDeleteEvent?.title}
         eventType={pendingDeleteEvent?.event_type === 'meeting' ? 'Meeting' : 'Event'}
         isDeleting={isDeleting}
+        event={pendingDeleteEvent}
       />
 
     </div>
