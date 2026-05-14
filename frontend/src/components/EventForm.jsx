@@ -477,7 +477,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
       )}
 
       <form onSubmit={handleSubmit} autoComplete="off" className="h-full flex flex-col">
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
           {/* Left Column - Event Details (1/3 width) — maximize height */}
           <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[500px]">
             <div className="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
@@ -759,8 +759,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
             </div>
           </div>
 
-          {/* Right Column - Members (2/3 width) — maximize height */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[500px]">
+          {/* Right Column - Members (2/3 width) — fixed height */}
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden max-h-[600px]">
             {/* Fixed header: title + search + filters */}
             <div className="px-6 pt-6 pb-3 flex-shrink-0 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -842,8 +842,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
             </div>
 
             {/* Scrollable member list — inner container with its own scroll */}
-            <div className="flex-1 min-h-0 px-6 pb-6 pt-2">
-              <div className="h-full border border-gray-200 rounded-lg bg-gray-50/50 overflow-y-auto">
+            <div className="flex-1 px-6 pb-6 pt-2">
+              <div className="h-full border border-gray-200 rounded-lg bg-gray-50/50 overflow-y-auto max-h-[400px]">
                 {searchFilteredMembers.length === 0 ? (
                   <div className="h-full flex items-center justify-center">
                     <p className="text-sm text-gray-400">{searchMember ? 'No members found' : 'No members available'}</p>

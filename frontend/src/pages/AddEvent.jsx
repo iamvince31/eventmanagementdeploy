@@ -138,8 +138,8 @@ export default function AddEvent() {
         </div>
 
         {/* Form Skeleton */}
-        <main className="flex-1 min-h-0 flex flex-col">
-          <div className="flex-1 min-h-0 w-full px-4 sm:px-6 lg:px-8 py-4">
+        <main className="flex flex-col">
+          <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
             <div className="h-full flex flex-col">
               <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 p-8 animate-pulse min-h-0">
                 <div className="space-y-6">
@@ -202,8 +202,8 @@ export default function AddEvent() {
       </div>
 
       {/* Form */}
-      <main className="flex-1 min-h-0 flex flex-col">
-        <div className="flex-1 min-h-0 w-full px-4 sm:px-6 lg:px-8 py-4">
+      <main className="flex flex-col">
+        <div className="w-full px-4 sm:px-6 lg:px-8 py-4">
           <EventForm
             members={members}
             onEventCreated={handleEventCreated}
