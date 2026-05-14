@@ -406,7 +406,7 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
 
       {/* Undo Toast — Option 2 */}
       {undoToast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl animate-fade-in">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-gray-900 text-white text-sm px-4 py-3 rounded-xl shadow-xl animate-fade-in">
           <span>{undoToast.count} member{undoToast.count !== 1 ? 's' : ''} selected</span>
           <button
             type="button"
@@ -476,10 +476,10 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
         </div>
       )}
 
-      <form onSubmit={handleSubmit} autoComplete="off" className="pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
-          {/* Left Column - Event Details (1/3 width) — responsive height */}
-          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[400px] max-h-[55vh] lg:max-h-[60vh]">
+      <form onSubmit={handleSubmit} autoComplete="off" className="h-full flex flex-col">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch min-h-0">
+          {/* Left Column - Event Details (1/3 width) — maximize height */}
+          <div className="lg:col-span-1 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[500px]">
             <div className="flex items-center space-x-2 px-6 pt-6 pb-4 border-b border-gray-100 flex-shrink-0">
               <div className="bg-green-100 rounded-lg p-2">
                 <svg className="w-5 h-5 text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -759,8 +759,8 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
             </div>
           </div>
 
-          {/* Right Column - Members (2/3 width) */}
-          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[400px] max-h-[55vh] lg:max-h-[60vh]">
+          {/* Right Column - Members (2/3 width) — maximize height */}
+          <div className="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col overflow-hidden min-h-[500px]">
             {/* Fixed header: title + search + filters */}
             <div className="px-6 pt-6 pb-3 flex-shrink-0 border-b border-gray-100">
               <div className="flex items-center justify-between mb-4">
@@ -877,9 +877,9 @@ export default function EventForm({ members, onEventCreated, editingEvent, onCan
           </div>
         </div>
 
-        {/* Submit Buttons - Sticky Footer */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 shadow-lg z-40">
-          <div className="max-w-7xl mx-auto flex space-x-3">
+        {/* Submit Buttons - Fixed Footer */}
+        <div className="flex-shrink-0 bg-white border-t border-gray-200 px-4 sm:px-6 lg:px-8 py-4 mt-6 shadow-lg">
+          <div className="flex space-x-3">
             <button
               type="submit"
               disabled={loading}
