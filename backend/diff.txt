@@ -1,0 +1,665 @@
+﻿diff --git a/backend/app/Http/Controllers/OrganizationalChartController.php b/backend/app/Http/Controllers/OrganizationalChartController.php
+index 90827b3..1413d90 100644
+--- a/backend/app/Http/Controllers/OrganizationalChartController.php
++++ b/backend/app/Http/Controllers/OrganizationalChartController.php
+@@ -150,9 +150,13 @@ public function update(Request $request, $id)
+         // Clear cache
+         Cache::forget('org_chart_all');
+         Cache::forget('org_chart_departments');
+-        // Clear all department-specific caches
+-        $departments = ['Department of Information Technology', 'Department of Industrial Engineering and Technology', 'Department of Computer, Electronics, and Electrical Engineering', 'Department of Civil Engineering and Architecture', 'Department of Agriculture and Food Engineering'];
+-        foreach ($departments as $dept) {
++        Cache::forget('system_settings_all');
++        // Clear department-specific caches dynamically
++        $allDepts = array_merge(
++            \App\Models\SystemSetting::where('key', 'departments')->value('value') ?? [],
++            User::whereNotNull('department')->where('department', '!=', '')->distinct()->pluck('department')->toArray()
++        );
++        foreach (array_unique($allDepts) as $dept) {
+             Cache::forget("org_chart_{$dept}");
+         }
+ 
+@@ -176,9 +180,12 @@ public function destroy(Request $request, $id)
+         // Clear cache
+         Cache::forget('org_chart_all');
+         Cache::forget('org_chart_departments');
+-        // Clear all department-specific caches
+-        $departments = ['Department of Information Technology', 'Department of Industrial Engineering and Technology', 'Department of Computer, Electronics, and Electrical Engineering', 'Department of Civil Engineering and Architecture', 'Department of Agriculture and Food Engineering'];
+-        foreach ($departments as $dept) {
++        // Clear department-specific caches dynamically
++        $allDepts = array_merge(
++            \App\Models\SystemSetting::where('key', 'departments')->value('value') ?? [],
++            User::whereNotNull('department')->where('department', '!=', '')->distinct()->pluck('department')->toArray()
++        );
++        foreach (array_unique($allDepts) as $dept) {
+             Cache::forget("org_chart_{$dept}");
+         }
+ 
+@@ -188,20 +195,44 @@ public function destroy(Request $request, $id)
+     public function departments()
+     {
+         $departments = Cache::remember('org_chart_departments', 600, function () {
+-            // Get all department names excluding CEIT (college-level) and Admin
+-            $depts = User::where('is_validated', true)
++            // Get the departments configured in System Settings
++            $setting = \App\Models\SystemSetting::where('key', 'departments')->first();
++
++            $depts = [];
++            if ($setting && !empty($setting->value)) {
++                $depts = $setting->value;
++            } else {
++                // Fallback to defaults if setting doesn't exist yet
++                $depts = [
++                    'Department of Information Technology',
++                    'Department of Industrial Engineering and Technology',
++                    'Department of Computer, Electronics, and Electrical Engineering',
++                    'Department of Civil Engineering and Architecture',
++                    'Department of Agriculture and Food Engineering',
++                ];
++            }
++
++            // Also check for any departments users might be assigned to that aren't in settings
++            // Just to ensure existing users are still visible in the chart
++            $userDepts = User::where('is_validated', true)
+                 ->where('designation', '!=', 'Admin')
+                 ->where('designation', '!=', 'Dean')
+                 ->whereNotNull('department')
+-                ->where('department', '!=', 'CEIT') // Exclude CEIT college-level department
+-                ->where('department', '!=', '') // Exclude empty departments
++                ->where('department', '!=', 'CEIT')
++                ->where('department', '!=', '')
+                 ->distinct()
+                 ->pluck('department')
+-                ->filter() // Remove any null/empty values
+-                ->sort()
+-                ->values();
++                ->toArray();
++
++            // Merge and sort uniquely
++            $allDepts = collect(array_merge($depts, $userDepts))
++                ->filter() // Remove empty strings
++                ->unique() // Remove duplicates
++                ->sort()   // Sort alphabetically
++                ->values() // Re-index array
++                ->toArray();
+ 
+-            return $depts;
++            return $allDepts;
+         });
+ 
+         return response()->json(['departments' => $departments]);
+diff --git a/backend/app/Http/Controllers/SystemSettingController.php b/backend/app/Http/Controllers/SystemSettingController.php
+index 9d81e33..09a35a4 100644
+--- a/backend/app/Http/Controllers/SystemSettingController.php
++++ b/backend/app/Http/Controllers/SystemSettingController.php
+@@ -8,40 +8,42 @@ class SystemSettingController extends Controller
+ {
+     public function index()
+     {
+-        // Define default values for each setting key
+-        $defaults = [
+-            'departments' => [
+-                'College of Engineering and Information Technology',
+-                'Department of Information Technology',
+-                'Department of Industrial Engineering and Technology',
+-                'Department of Computer, Electronics, and Electrical Engineering',
+-                'Department of Civil Engineering and Architecture',
+-                'Department of Agriculture and Food Engineering',
+-            ],
+-            'ceit_roles' => ['Dean', 'CEIT Official', 'Faculty Member'],
+-            'department_roles' => ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
+-            'ceit_officer_types' => [] // No defaults for this
+-        ];
+-        
+-        // Get settings from database
+-        $dbSettings = \App\Models\SystemSetting::all()->pluck('value', 'key')->toArray();
+-        
+-        // Merge defaults with database values
+-        $settings = [];
+-        foreach ($defaults as $key => $defaultValue) {
+-            $dbValue = $dbSettings[$key] ?? [];
+-            // Merge defaults with database values, remove duplicates
+-            $mergedValue = array_values(array_unique(array_merge($defaultValue, $dbValue)));
+-            $settings[$key] = $mergedValue;
+-        }
+-        
+-        // Also include any settings in database that aren't in defaults
+-        foreach ($dbSettings as $key => $value) {
+-            if (!isset($defaults[$key])) {
+-                $settings[$key] = $value;
++        $settings = \Illuminate\Support\Facades\Cache::remember('system_settings_all', 600, function () {
++            // Define default values for each setting key
++            $defaults = [
++                'departments' => [
++                    'Department of Information Technology',
++                    'Department of Industrial Engineering and Technology',
++                    'Department of Computer, Electronics, and Electrical Engineering',
++                    'Department of Civil Engineering and Architecture',
++                    'Department of Agriculture and Food Engineering',
++                ],
++                'designations' => ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator'],
++                'ceit_officer_types' => [] // No defaults for this
++            ];
++
++            // Get settings from database
++            $dbSettings = \App\Models\SystemSetting::all()->pluck('value', 'key')->toArray();
++
++            // Merge defaults with database values
++            $settings = [];
++            foreach ($defaults as $key => $defaultValue) {
++                $dbValue = $dbSettings[$key] ?? [];
++                // Merge defaults with database values, remove duplicates
++                $mergedValue = array_values(array_unique(array_merge($defaultValue, $dbValue)));
++                $settings[$key] = $mergedValue;
+             }
+-        }
+-        
++
++            // Also include any settings in database that aren't in defaults
++            foreach ($dbSettings as $key => $value) {
++                if (!isset($defaults[$key])) {
++                    $settings[$key] = $value;
++                }
++            }
++
++            return $settings;
++        });
++
+         return response()->json($settings);
+     }
+ 
+@@ -53,41 +55,55 @@ public function update(Request $request, $key)
+ 
+         // Get existing setting value
+         $existingSetting = \App\Models\SystemSetting::where('key', $key)->first();
+-        
++
+         // Define default values for each setting key
+         $defaults = [
+             'departments' => [
+-                'College of Engineering and Information Technology',
+                 'Department of Information Technology',
+                 'Department of Industrial Engineering and Technology',
+                 'Department of Computer, Electronics, and Electrical Engineering',
+                 'Department of Civil Engineering and Architecture',
+                 'Department of Agriculture and Food Engineering',
+             ],
+-            'ceit_roles' => ['Dean', 'CEIT Official', 'Faculty Member'],
+-            'department_roles' => ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
++            'designations' => ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator'],
+             'ceit_officer_types' => [] // No defaults for this
+         ];
+-        
++
+         $defaultValue = $defaults[$key] ?? [];
+-        
++
+         if ($existingSetting) {
+             // Merge defaults with the new values from request
+             // The request value should contain all items the user wants to keep (including defaults)
+             $mergedValue = array_values(array_unique(array_merge($defaultValue, $request->value)));
+-            
++
+             $existingSetting->update(['value' => $mergedValue]);
+             $setting = $existingSetting;
+         } else {
+             // For new setting, merge defaults with provided values
+             $mergedValue = array_values(array_unique(array_merge($defaultValue, $request->value)));
+-            
++
+             $setting = \App\Models\SystemSetting::create([
+                 'key' => $key,
+                 'value' => $mergedValue
+             ]);
+         }
+ 
++        // Always invalidate the settings cache
++        \Illuminate\Support\Facades\Cache::forget('system_settings_all');
++
++        if ($key === 'departments' || $key === 'designations') {
++            \Illuminate\Support\Facades\Cache::forget('org_chart_departments');
++            \Illuminate\Support\Facades\Cache::forget('org_chart_all');
++            // Clear all department-specific org chart caches dynamically
++            $allDepts = array_merge(
++                $request->value ?? [],
++                \App\Models\User::whereNotNull('department')->where('department', '!=', '')->distinct()->pluck('department')->toArray()
++            );
++            foreach (array_unique($allDepts) as $dept) {
++                \Illuminate\Support\Facades\Cache::forget("org_chart_{$dept}");
++            }
++        }
++
+         return response()->json([
+             'message' => 'Setting updated successfully',
+             'setting' => $setting
+diff --git a/backend/app/Http/Controllers/UserController.php b/backend/app/Http/Controllers/UserController.php
+index 541a5d7..0f3fa60 100644
+--- a/backend/app/Http/Controllers/UserController.php
++++ b/backend/app/Http/Controllers/UserController.php
+@@ -74,7 +74,8 @@ public function store(Request $request)
+             'password' => 'required|string|min:8',
+             'department' => 'nullable|string|max:255',
+             'designation' => 'required|string|max:255',
+-            'ceit_officer_type' => 'nullable|string|max:255',
++            'ceit_officer_type' => 'nullable|array',
++            'ceit_officer_type.*' => 'string|max:255',
+             'name' => 'required|string|max:255',
+         ]);
+ 
+@@ -260,7 +261,7 @@ public function updateDesignation(Request $request, $id)
+         if (array_key_exists('department', $validated)) {
+             $updateData['department'] = $validated['department']; // can be null
+         }
+-        
++
+         // Only store ceit_officer_type when designation includes CEIT Official
+         $updateData['ceit_officer_type'] = in_array('CEIT Official', $designations)
+             ? ($validated['ceit_officer_type'] ?? [])
+diff --git a/backend/database/seeders/SystemSettingSeeder.php b/backend/database/seeders/SystemSettingSeeder.php
+index df6d00a..3c51d37 100644
+--- a/backend/database/seeders/SystemSettingSeeder.php
++++ b/backend/database/seeders/SystemSettingSeeder.php
+@@ -14,15 +14,13 @@ public function run(): void
+     {
+         $settings = [
+             'departments' => [
+-                'College of Engineering and Information Technology',
+                 'Department of Information Technology',
+                 'Department of Industrial Engineering and Technology',
+                 'Department of Computer, Electronics, and Electrical Engineering',
+                 'Department of Civil Engineering and Architecture',
+                 'Department of Agriculture and Food Engineering',
+             ],
+-            'ceit_roles' => ['Dean', 'CEIT Official', 'Faculty Member'],
+-            'department_roles' => ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
++            'designations' => ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator'],
+             'ceit_officer_types' => [
+                 'College Secretary',
+                 'College Inspector',
+diff --git a/frontend/src/components/CreateUserModal.jsx b/frontend/src/components/CreateUserModal.jsx
+index 46056dd..5949268 100644
+--- a/frontend/src/components/CreateUserModal.jsx
++++ b/frontend/src/components/CreateUserModal.jsx
+@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
+ import api from '../services/api';
+ import CeitOfficerTypePicker from './CeitOfficerTypePicker';
+ 
+-export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists = false }) {
++export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists = false, users = [] }) {
+   const [formData, setFormData] = useState({
+     first_name: '',
+     last_name: '',
+@@ -24,14 +24,13 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
+     if (isOpen) {
+       api.get('/settings').then(res => {
+         const depts = res.data.departments || [];
+-        const ceitRoles = res.data.ceit_roles || [];
+-        const deptRoles = res.data.department_roles || [];
++        const designations = res.data.designations || [];
+         // Merge all roles, deduplicate, keep Admin out of self-service
+-        const merged = [...new Set([...ceitRoles, ...deptRoles])];
+-        
++        const merged = [...new Set(designations)];
++
+         setDepartments(depts);
+         setAllRoles(merged);
+-        
++
+         // Set defaults once loaded
+         setFormData(prev => ({
+           ...prev,
+@@ -43,7 +42,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
+         // If API fails, use empty arrays
+         setDepartments([]);
+         setAllRoles([]);
+-        
++
+         setFormData(prev => ({
+           ...prev,
+           department: prev.department || '',
+@@ -53,7 +52,23 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
+     }
+   }, [isOpen]);
+ 
+-  const availableRoles = deanExists ? allRoles.filter(r => r !== 'Dean') : allRoles;
++  // Check if chairperson exists for selected department
++  const isChairpersonTaken = formData.department ? users.some(u =>
++    u.department === formData.department &&
++    (u.designation === 'Chairperson' || (u.designations || []).includes('Chairperson'))
++  ) : false;
++
++  const availableRoles = allRoles.filter(r =>
++    r !== 'Admin' &&
++    (!deanExists || r !== 'Dean') &&
++    (!isChairpersonTaken || r !== 'Chairperson')
++  );
++
++  useEffect(() => {
++    if (formData.designation && availableRoles.length > 0 && !availableRoles.includes(formData.designation)) {
++      setFormData(prev => ({ ...prev, designation: availableRoles[0] }));
++    }
++  }, [availableRoles, formData.designation]);
+ 
+   const generateFullName = () => {
+     const cap = (text) => text.split(' ').map(w => w.trim()).filter(Boolean)
+diff --git a/frontend/src/components/SettingsManagerModal.jsx b/frontend/src/components/SettingsManagerModal.jsx
+index 44993bd..109e7c0 100644
+--- a/frontend/src/components/SettingsManagerModal.jsx
++++ b/frontend/src/components/SettingsManagerModal.jsx
+@@ -4,8 +4,7 @@ import api from '../services/api';
+ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdated }) {
+   const [settings, setSettings] = useState({
+     departments: [],
+-    ceit_roles: [],
+-    department_roles: [],
++    designations: [],
+     ceit_officer_types: []
+   });
+   const [loading, setLoading] = useState(true);
+@@ -15,8 +14,7 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
+ 
+   const tabs = [
+     { id: 'departments', label: 'Departments' },
+-    { id: 'ceit_roles', label: 'CEIT Roles' },
+-    { id: 'department_roles', label: 'Department Roles' },
++    { id: 'designations', label: 'Designations' },
+     { id: 'ceit_officer_types', label: 'CEIT Officer Types' }
+   ];
+ 
+@@ -32,8 +30,7 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
+       const response = await api.get('/settings');
+       setSettings({
+         departments: response.data.departments || [],
+-        ceit_roles: response.data.ceit_roles || [],
+-        department_roles: response.data.department_roles || [],
++        designations: response.data.designations || [],
+         ceit_officer_types: response.data.ceit_officer_types || []
+       });
+     } catch (error) {
+@@ -104,11 +101,10 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
+                 <button
+                   key={tab.id}
+                   onClick={() => { setActiveTab(tab.id); setNewItem(''); }}
+-                  className={`text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+-                    activeTab === tab.id
++                  className={`text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
+                       ? 'bg-green-100 text-green-800'
+                       : 'text-gray-600 hover:bg-gray-100'
+-                  }`}
++                    }`}
+                 >
+                   {tab.label}
+                 </button>
+@@ -167,20 +163,18 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
+                     // Define default values for each tab
+                     const defaultItems = {
+                       departments: [
+-                        'College of Engineering and Information Technology',
+                         'Department of Information Technology',
+                         'Department of Industrial Engineering and Technology',
+                         'Department of Computer, Electronics, and Electrical Engineering',
+                         'Department of Civil Engineering and Architecture',
+                         'Department of Agriculture and Food Engineering',
+                       ],
+-                      ceit_roles: ['Dean', 'CEIT Official', 'Faculty Member'],
+-                      department_roles: ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
++                      designations: ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator'],
+                       ceit_officer_types: [] // No defaults
+                     };
+-                    
++
+                     const isDefault = defaultItems[activeTab]?.includes(item) || false;
+-                    
++
+                     return (
+                       <div key={index} className="flex items-center justify-between bg-white px-3 py-2 border border-gray-200 rounded-lg shadow-sm">
+                         <div className="flex items-center gap-2">
+diff --git a/frontend/src/pages/Admin.jsx b/frontend/src/pages/Admin.jsx
+index 5e95b33..8be88b5 100644
+--- a/frontend/src/pages/Admin.jsx
++++ b/frontend/src/pages/Admin.jsx
+@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
+ import { useNavigate, useLocation } from 'react-router-dom';
+ import { useAuth } from '../context/AuthContext';
+ import api from '../services/api';
+-import { getCache, setCache, invalidateCache } from '../services/cache';
++import { getCache, setCache, invalidateCache, SETTINGS_TTL } from '../services/cache';
+ import logo from "../assets/CEIT-LOGO.png";
+ import Navbar from '../components/Navbar';
+ import CreateUserModal from '../components/CreateUserModal';
+@@ -31,7 +31,7 @@ export default function Admin() {
+   const tableRef = useRef(null);
+   const [expandedRows, setExpandedRows] = useState(new Set());
+   const [showSettingsModal, setShowSettingsModal] = useState(false);
+-  
++
+   const [departments, setDepartments] = useState([]);
+   const [designations, setDesignations] = useState([]);
+ 
+@@ -45,27 +45,58 @@ export default function Admin() {
+ 
+   const getDesignationsForDepartment = (dept, excludingUserId = null) => {
+     const deanTaken = users.some(u => u.designation === 'Dean' && u.id !== excludingUserId);
+-    let filtered = deanTaken ? designations.filter(r => r !== 'Dean') : designations;
++
++    // Check if chairperson is already taken in this specific department
++    const chairpersonTaken = dept ? users.some(u =>
++      u.department === dept &&
++      (u.designation === 'Chairperson' || (u.designations || []).includes('Chairperson')) &&
++      u.id !== excludingUserId
++    ) : false;
++
++    // Hide Admin from selection. Also hide Dean if already taken by someone else.
++    let filtered = designations.filter(r => r !== 'Admin');
++    if (deanTaken) {
++      filtered = filtered.filter(r => r !== 'Dean');
++    }
++
++    // Hide Chairperson if already taken in the selected department
++    if (chairpersonTaken) {
++      filtered = filtered.filter(r => r !== 'Chairperson');
++    }
++
+     return filtered;
+   };
+ 
+   const fetchSettings = async () => {
++    const cacheKey = 'settings';
++    const cached = getCache(cacheKey);
++    if (cached) {
++      setDepartments(cached.departments || []);
++      const allDesig = new Set(['Admin', ...(cached.designations || [])]);
++      setDesignations(Array.from(allDesig));
++      // Revalidate in background
++      api.get('/settings').then(response => {
++        setCache(cacheKey, response.data, SETTINGS_TTL);
++        const apiDepartments = response.data.departments || [];
++        const apiDesignations = response.data.designations || [];
++        setDepartments(apiDepartments);
++        const allDesig2 = new Set(['Admin', ...apiDesignations]);
++        setDesignations(Array.from(allDesig2));
++      }).catch(() => { });
++      return;
++    }
+     try {
+       const response = await api.get('/settings');
++      setCache(cacheKey, response.data, SETTINGS_TTL);
+       const apiDepartments = response.data.departments || [];
+-      const apiCeitRoles = response.data.ceit_roles || [];
+-      const apiDeptRoles = response.data.department_roles || [];
+-      
++      const apiDesignations = response.data.designations || [];
+       setDepartments(apiDepartments);
+-      
+-      // Combine for the "all designations" list (Admin is always included)
+-      const allDesig = new Set(['Admin', ...apiCeitRoles, ...apiDeptRoles]);
++      const allDesig = new Set(['Admin', ...apiDesignations]);
+       setDesignations(Array.from(allDesig));
+     } catch (error) {
+       console.error('Error fetching settings:', error);
+-      // If API fails, use empty arrays - the UI will handle empty states
+       setDepartments([]);
+-      setDesignations(['Admin']); // At minimum, Admin should be available
++      setDesignations(['Admin']);
+     }
+   };
+ 
+@@ -129,7 +160,7 @@ export default function Admin() {
+ 
+   const handleDesignationChange = async (userId, newDesignation) => {
+     try {
+-      await api.put(`/users/${userId}/designation`, { 
++      await api.put(`/users/${userId}/designation`, {
+         designations: [newDesignation],
+         department: users.find(u => u.id === userId)?.department || ''
+       });
+@@ -703,6 +734,7 @@ export default function Admin() {
+         isOpen={showCreateUserModal}
+         onClose={() => setShowCreateUserModal(false)}
+         deanExists={deanExists}
++        users={users}
+         onSuccess={() => {
+           fetchUsers();
+           setShowCreateUserModal(false);
+@@ -721,13 +753,16 @@ export default function Admin() {
+       <SettingsManagerModal
+         isOpen={showSettingsModal}
+         onClose={() => setShowSettingsModal(false)}
+-        onSettingsUpdated={() => fetchSettings()}
++        onSettingsUpdated={() => {
++          invalidateCache('settings');
++          fetchSettings();
++        }}
+       />
+ 
+       {isEditUserModalOpen && editingUser && (
+         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
+-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
+-            <div className="flex items-center justify-between mb-4 sm:mb-6">
++          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 flex flex-col max-h-[90vh]">
++            <div className="flex items-center justify-between mb-4 sm:mb-6 shrink-0">
+               <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
+               <button
+                 onClick={() => setIsEditUserModalOpen(false)}
+@@ -739,7 +774,7 @@ export default function Admin() {
+               </button>
+             </div>
+ 
+-            <div className="space-y-4">
++            <div className="space-y-4 overflow-y-auto pr-1 flex-1">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">User</label>
+                 <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg overflow-hidden">
+@@ -763,10 +798,16 @@ export default function Admin() {
+                 </label>
+                 <select
+                   value={editingUser.department}
+-                  onChange={(e) => setEditingUser(prev => ({
+-                    ...prev,
+-                    department: e.target.value,
+-                  }))}
++                  onChange={(e) => setEditingUser(prev => {
++                    const newDept = e.target.value;
++                    const availableReqs = getDesignationsForDepartment(newDept, prev.id);
++                    const validDesignations = (prev.designations || []).filter(d => availableReqs.includes(d));
++                    return {
++                      ...prev,
++                      department: newDept,
++                      designations: validDesignations.length > 0 ? validDesignations : [availableReqs[0] || 'Faculty Member'],
++                    };
++                  })}
+                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
+                 >
+                   <option value="">Select Department</option>
+@@ -791,9 +832,9 @@ export default function Admin() {
+                             const newDesig = e.target.checked
+                               ? [...(prev.designations || []), designation]
+                               : (prev.designations || []).filter(d => d !== designation);
+-                            return { 
+-                              ...prev, 
+-                              designations: newDesig, 
++                            return {
++                              ...prev,
++                              designations: newDesig,
+                               ceit_officer_type: newDesig.includes('CEIT Official') ? prev.ceit_officer_type : []
+                             };
+                           });
+@@ -815,7 +856,7 @@ export default function Admin() {
+               )}
+             </div>
+ 
+-            <div className="flex space-x-3 mt-6">
++            <div className="flex space-x-3 mt-6 shrink-0 pt-2 border-t border-gray-100">
+               <button
+                 onClick={() => setIsEditUserModalOpen(false)}
+                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+diff --git a/frontend/src/pages/OrganizationalChart.jsx b/frontend/src/pages/OrganizationalChart.jsx
+index d744ee7..f5c0d56 100644
+--- a/frontend/src/pages/OrganizationalChart.jsx
++++ b/frontend/src/pages/OrganizationalChart.jsx
+@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
+ import { useAuth } from '../context/AuthContext';
+ import Navbar from '../components/Navbar';
+ import api from '../services/api';
++import { getCache, setCache, SETTINGS_TTL } from '../services/cache';
+ 
+ export default function OrganizationalChart() {
+   const { user } = useAuth();
+@@ -12,24 +13,38 @@ export default function OrganizationalChart() {
+   const [loading, setLoading] = useState(true);
+   const [editingUser, setEditingUser] = useState(null);
+   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+-  
++
+   const canEdit = (user?.role === 'Admin' || user?.designation === 'Admin') ||
+-                  (user?.role === 'Dean'  || user?.designation === 'Dean');
+-  
++    (user?.role === 'Dean' || user?.designation === 'Dean');
++
+   // Format department name for dropdown display only
+   const formatDepartmentForDropdown = (dept) => {
+     return dept;
+   };
+-  
++
+   useEffect(() => {
+-    fetchDepartments();
+-    fetchSettings();
++    // Fetch departments and settings in parallel for faster initial load
++    Promise.all([fetchDepartments(), fetchSettings()]);
+   }, []);
+ 
+   const fetchSettings = async () => {
++    const cacheKey = 'settings';
++    const cached = getCache(cacheKey);
++    if (cached) {
++      const allDesig = new Set(['Admin', ...(cached.designations || [])]);
++      setDesignations(Array.from(allDesig));
++      // Revalidate in background
++      api.get('/settings').then(response => {
++        setCache(cacheKey, response.data, SETTINGS_TTL);
++        const allDesig2 = new Set(['Admin', ...(response.data.designations || [])]);
++        setDesignations(Array.from(allDesig2));
++      }).catch(() => { });
++      return;
++    }
+     try {
+       const response = await api.get('/settings');
+-      const allDesig = new Set(['Admin', ...(response.data.ceit_roles || []), ...(response.data.department_roles || [])]);
++      setCache(cacheKey, response.data, SETTINGS_TTL);
++      const allDesig = new Set(['Admin', ...(response.data.designations || [])]);
+       setDesignations(Array.from(allDesig));
+     } catch (error) {
+       console.error('Error fetching settings:', error);
+diff --git a/frontend/src/services/cache.js b/frontend/src/services/cache.js
+index 37f06c8..0189a76 100644
+--- a/frontend/src/services/cache.js
++++ b/frontend/src/services/cache.js
+@@ -1,5 +1,6 @@
+ // Stale-while-revalidate cache using localStorage
+-const DEFAULT_TTL = 3 * 60 * 1000; // 3 minutes
++export const DEFAULT_TTL = 3 * 60 * 1000; // 3 minutes
++export const SETTINGS_TTL = 10 * 60 * 1000; // 10 minutes ΓÇö for slow-changing data like settings
+ 
+ export function getCache(key) {
+   try {

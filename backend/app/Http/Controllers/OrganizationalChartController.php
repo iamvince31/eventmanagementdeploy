@@ -150,9 +150,13 @@ class OrganizationalChartController extends Controller
         // Clear cache
         Cache::forget('org_chart_all');
         Cache::forget('org_chart_departments');
-        // Clear all department-specific caches
-        $departments = ['Department of Information Technology', 'Department of Industrial Engineering and Technology', 'Department of Computer, Electronics, and Electrical Engineering', 'Department of Civil Engineering and Architecture', 'Department of Agriculture and Food Engineering'];
-        foreach ($departments as $dept) {
+        Cache::forget('system_settings_all');
+        // Clear department-specific caches dynamically
+        $allDepts = array_merge(
+            \App\Models\SystemSetting::where('key', 'departments')->value('value') ?? [],
+            User::whereNotNull('department')->where('department', '!=', '')->distinct()->pluck('department')->toArray()
+        );
+        foreach (array_unique($allDepts) as $dept) {
             Cache::forget("org_chart_{$dept}");
         }
 
@@ -176,9 +180,12 @@ class OrganizationalChartController extends Controller
         // Clear cache
         Cache::forget('org_chart_all');
         Cache::forget('org_chart_departments');
-        // Clear all department-specific caches
-        $departments = ['Department of Information Technology', 'Department of Industrial Engineering and Technology', 'Department of Computer, Electronics, and Electrical Engineering', 'Department of Civil Engineering and Architecture', 'Department of Agriculture and Food Engineering'];
-        foreach ($departments as $dept) {
+        // Clear department-specific caches dynamically
+        $allDepts = array_merge(
+            \App\Models\SystemSetting::where('key', 'departments')->value('value') ?? [],
+            User::whereNotNull('department')->where('department', '!=', '')->distinct()->pluck('department')->toArray()
+        );
+        foreach (array_unique($allDepts) as $dept) {
             Cache::forget("org_chart_{$dept}");
         }
 
@@ -188,20 +195,44 @@ class OrganizationalChartController extends Controller
     public function departments()
     {
         $departments = Cache::remember('org_chart_departments', 600, function () {
-            // Get all department names excluding CEIT (college-level) and Admin
-            $depts = User::where('is_validated', true)
+            // Get the departments configured in System Settings
+            $setting = \App\Models\SystemSetting::where('key', 'departments')->first();
+
+            $depts = [];
+            if ($setting && !empty($setting->value)) {
+                $depts = $setting->value;
+            } else {
+                // Fallback to defaults if setting doesn't exist yet
+                $depts = [
+                    'Department of Information Technology',
+                    'Department of Industrial Engineering and Technology',
+                    'Department of Computer, Electronics, and Electrical Engineering',
+                    'Department of Civil Engineering and Architecture',
+                    'Department of Agriculture and Food Engineering',
+                ];
+            }
+
+            // Also check for any departments users might be assigned to that aren't in settings
+            // Just to ensure existing users are still visible in the chart
+            $userDepts = User::where('is_validated', true)
                 ->where('designation', '!=', 'Admin')
                 ->where('designation', '!=', 'Dean')
                 ->whereNotNull('department')
-                ->where('department', '!=', 'CEIT') // Exclude CEIT college-level department
-                ->where('department', '!=', '') // Exclude empty departments
+                ->where('department', '!=', 'CEIT')
+                ->where('department', '!=', '')
                 ->distinct()
                 ->pluck('department')
-                ->filter() // Remove any null/empty values
-                ->sort()
-                ->values();
+                ->toArray();
 
-            return $depts;
+            // Merge and sort uniquely
+            $allDepts = collect(array_merge($depts, $userDepts))
+                ->filter() // Remove empty strings
+                ->unique() // Remove duplicates
+                ->sort()   // Sort alphabetically
+                ->values() // Re-index array
+                ->toArray();
+
+            return $allDepts;
         });
 
         return response()->json(['departments' => $departments]);

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { getCache, setCache, invalidateCache } from '../services/cache';
+import { getCache, setCache, invalidateCache, SETTINGS_TTL } from '../services/cache';
 import logo from "../assets/CEIT-LOGO.png";
 import Navbar from '../components/Navbar';
 import CreateUserModal from '../components/CreateUserModal';
@@ -31,7 +31,7 @@ export default function Admin() {
   const tableRef = useRef(null);
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  
+
   const [departments, setDepartments] = useState([]);
   const [designations, setDesignations] = useState([]);
 
@@ -45,27 +45,58 @@ export default function Admin() {
 
   const getDesignationsForDepartment = (dept, excludingUserId = null) => {
     const deanTaken = users.some(u => u.designation === 'Dean' && u.id !== excludingUserId);
-    let filtered = deanTaken ? designations.filter(r => r !== 'Dean') : designations;
+
+    // Check if chairperson is already taken in this specific department
+    const chairpersonTaken = dept ? users.some(u =>
+      u.department === dept &&
+      (u.designation === 'Chairperson' || (u.designations || []).includes('Chairperson')) &&
+      u.id !== excludingUserId
+    ) : false;
+
+    // Hide Admin from selection. Also hide Dean if already taken by someone else.
+    let filtered = designations.filter(r => r !== 'Admin');
+    if (deanTaken) {
+      filtered = filtered.filter(r => r !== 'Dean');
+    }
+
+    // Hide Chairperson if already taken in the selected department
+    if (chairpersonTaken) {
+      filtered = filtered.filter(r => r !== 'Chairperson');
+    }
+
     return filtered;
   };
 
   const fetchSettings = async () => {
+    const cacheKey = 'settings';
+    const cached = getCache(cacheKey);
+    if (cached) {
+      setDepartments(cached.departments || []);
+      const allDesig = new Set(['Admin', ...(cached.designations || [])]);
+      setDesignations(Array.from(allDesig));
+      // Revalidate in background
+      api.get('/settings').then(response => {
+        setCache(cacheKey, response.data, SETTINGS_TTL);
+        const apiDepartments = response.data.departments || [];
+        const apiDesignations = response.data.designations || [];
+        setDepartments(apiDepartments);
+        const allDesig2 = new Set(['Admin', ...apiDesignations]);
+        setDesignations(Array.from(allDesig2));
+      }).catch(() => { });
+      return;
+    }
     try {
       const response = await api.get('/settings');
+      setCache(cacheKey, response.data, SETTINGS_TTL);
       const apiDepartments = response.data.departments || [];
-      const apiCeitRoles = response.data.ceit_roles || [];
-      const apiDeptRoles = response.data.department_roles || [];
-      
+      const apiDesignations = response.data.designations || [];
       setDepartments(apiDepartments);
-      
-      // Combine for the "all designations" list (Admin is always included)
-      const allDesig = new Set(['Admin', ...apiCeitRoles, ...apiDeptRoles]);
+      const allDesig = new Set(['Admin', ...apiDesignations]);
       setDesignations(Array.from(allDesig));
     } catch (error) {
       console.error('Error fetching settings:', error);
-      // If API fails, use empty arrays - the UI will handle empty states
       setDepartments([]);
-      setDesignations(['Admin']); // At minimum, Admin should be available
+      setDesignations(['Admin']);
     }
   };
 
@@ -129,7 +160,7 @@ export default function Admin() {
 
   const handleDesignationChange = async (userId, newDesignation) => {
     try {
-      await api.put(`/users/${userId}/designation`, { 
+      await api.put(`/users/${userId}/designation`, {
         designations: [newDesignation],
         department: users.find(u => u.id === userId)?.department || ''
       });
@@ -703,6 +734,7 @@ export default function Admin() {
         isOpen={showCreateUserModal}
         onClose={() => setShowCreateUserModal(false)}
         deanExists={deanExists}
+        users={users}
         onSuccess={() => {
           fetchUsers();
           setShowCreateUserModal(false);
@@ -721,13 +753,16 @@ export default function Admin() {
       <SettingsManagerModal
         isOpen={showSettingsModal}
         onClose={() => setShowSettingsModal(false)}
-        onSettingsUpdated={() => fetchSettings()}
+        onSettingsUpdated={() => {
+          invalidateCache('settings');
+          fetchSettings();
+        }}
       />
 
       {isEditUserModalOpen && editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-4 sm:p-6 flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between mb-4 sm:mb-6 shrink-0">
               <h3 className="text-lg font-semibold text-gray-900">Edit User</h3>
               <button
                 onClick={() => setIsEditUserModalOpen(false)}
@@ -739,7 +774,7 @@ export default function Admin() {
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto pr-1 flex-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">User</label>
                 <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg overflow-hidden">
@@ -763,10 +798,16 @@ export default function Admin() {
                 </label>
                 <select
                   value={editingUser.department}
-                  onChange={(e) => setEditingUser(prev => ({
-                    ...prev,
-                    department: e.target.value,
-                  }))}
+                  onChange={(e) => setEditingUser(prev => {
+                    const newDept = e.target.value;
+                    const availableReqs = getDesignationsForDepartment(newDept, prev.id);
+                    const validDesignations = (prev.designations || []).filter(d => availableReqs.includes(d));
+                    return {
+                      ...prev,
+                      department: newDept,
+                      designations: validDesignations.length > 0 ? validDesignations : [availableReqs[0] || 'Faculty Member'],
+                    };
+                  })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-xs sm:text-sm"
                 >
                   <option value="">Select Department</option>
@@ -791,9 +832,9 @@ export default function Admin() {
                             const newDesig = e.target.checked
                               ? [...(prev.designations || []), designation]
                               : (prev.designations || []).filter(d => d !== designation);
-                            return { 
-                              ...prev, 
-                              designations: newDesig, 
+                            return {
+                              ...prev,
+                              designations: newDesig,
                               ceit_officer_type: newDesig.includes('CEIT Official') ? prev.ceit_officer_type : []
                             };
                           });
@@ -815,7 +856,7 @@ export default function Admin() {
               )}
             </div>
 
-            <div className="flex space-x-3 mt-6">
+            <div className="flex space-x-3 mt-6 shrink-0 pt-2 border-t border-gray-100">
               <button
                 onClick={() => setIsEditUserModalOpen(false)}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"

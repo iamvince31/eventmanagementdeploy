@@ -1,5 +1,6 @@
 // Stale-while-revalidate cache using localStorage
-const DEFAULT_TTL = 3 * 60 * 1000; // 3 minutes
+export const DEFAULT_TTL = 3 * 60 * 1000; // 3 minutes
+export const SETTINGS_TTL = 10 * 60 * 1000; // 10 minutes — for slow-changing data like settings
 
 export function getCache(key) {
   try {

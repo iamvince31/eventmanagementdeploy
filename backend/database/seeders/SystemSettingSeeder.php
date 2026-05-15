@@ -14,15 +14,13 @@ class SystemSettingSeeder extends Seeder
     {
         $settings = [
             'departments' => [
-                'College of Engineering and Information Technology',
                 'Department of Information Technology',
                 'Department of Industrial Engineering and Technology',
                 'Department of Computer, Electronics, and Electrical Engineering',
                 'Department of Civil Engineering and Architecture',
                 'Department of Agriculture and Food Engineering',
             ],
-            'ceit_roles' => ['Dean', 'CEIT Official', 'Faculty Member'],
-            'department_roles' => ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
+            'designations' => ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator'],
             'ceit_officer_types' => [
                 'College Secretary',
                 'College Inspector',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
+import { getCache, setCache, SETTINGS_TTL } from '../services/cache';
 
 export default function OrganizationalChart() {
   const { user } = useAuth();
@@ -12,24 +13,38 @@ export default function OrganizationalChart() {
   const [loading, setLoading] = useState(true);
   const [editingUser, setEditingUser] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
+
   const canEdit = (user?.role === 'Admin' || user?.designation === 'Admin') ||
-                  (user?.role === 'Dean'  || user?.designation === 'Dean');
-  
+    (user?.role === 'Dean' || user?.designation === 'Dean');
+
   // Format department name for dropdown display only
   const formatDepartmentForDropdown = (dept) => {
     return dept;
   };
-  
+
   useEffect(() => {
-    fetchDepartments();
-    fetchSettings();
+    // Fetch departments and settings in parallel for faster initial load
+    Promise.all([fetchDepartments(), fetchSettings()]);
   }, []);
 
   const fetchSettings = async () => {
+    const cacheKey = 'settings';
+    const cached = getCache(cacheKey);
+    if (cached) {
+      const allDesig = new Set(['Admin', ...(cached.designations || [])]);
+      setDesignations(Array.from(allDesig));
+      // Revalidate in background
+      api.get('/settings').then(response => {
+        setCache(cacheKey, response.data, SETTINGS_TTL);
+        const allDesig2 = new Set(['Admin', ...(response.data.designations || [])]);
+        setDesignations(Array.from(allDesig2));
+      }).catch(() => { });
+      return;
+    }
     try {
       const response = await api.get('/settings');
-      const allDesig = new Set(['Admin', ...(response.data.ceit_roles || []), ...(response.data.department_roles || [])]);
+      setCache(cacheKey, response.data, SETTINGS_TTL);
+      const allDesig = new Set(['Admin', ...(response.data.designations || [])]);
       setDesignations(Array.from(allDesig));
     } catch (error) {
       console.error('Error fetching settings:', error);

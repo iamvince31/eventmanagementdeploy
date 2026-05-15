@@ -74,7 +74,8 @@ class UserController extends Controller
             'password' => 'required|string|min:8',
             'department' => 'nullable|string|max:255',
             'designation' => 'required|string|max:255',
-            'ceit_officer_type' => 'nullable|string|max:255',
+            'ceit_officer_type' => 'nullable|array',
+            'ceit_officer_type.*' => 'string|max:255',
             'name' => 'required|string|max:255',
         ]);
 
@@ -260,7 +261,7 @@ class UserController extends Controller
         if (array_key_exists('department', $validated)) {
             $updateData['department'] = $validated['department']; // can be null
         }
-        
+
         // Only store ceit_officer_type when designation includes CEIT Official
         $updateData['ceit_officer_type'] = in_array('CEIT Official', $designations)
             ? ($validated['ceit_officer_type'] ?? [])

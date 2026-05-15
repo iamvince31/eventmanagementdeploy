@@ -4,8 +4,7 @@ import api from '../services/api';
 export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdated }) {
   const [settings, setSettings] = useState({
     departments: [],
-    ceit_roles: [],
-    department_roles: [],
+    designations: [],
     ceit_officer_types: []
   });
   const [loading, setLoading] = useState(true);
@@ -15,8 +14,7 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
 
   const tabs = [
     { id: 'departments', label: 'Departments' },
-    { id: 'ceit_roles', label: 'CEIT Roles' },
-    { id: 'department_roles', label: 'Department Roles' },
+    { id: 'designations', label: 'Designations' },
     { id: 'ceit_officer_types', label: 'CEIT Officer Types' }
   ];
 
@@ -32,8 +30,7 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
       const response = await api.get('/settings');
       setSettings({
         departments: response.data.departments || [],
-        ceit_roles: response.data.ceit_roles || [],
-        department_roles: response.data.department_roles || [],
+        designations: response.data.designations || [],
         ceit_officer_types: response.data.ceit_officer_types || []
       });
     } catch (error) {
@@ -104,11 +101,10 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
                 <button
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setNewItem(''); }}
-                  className={`text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                    activeTab === tab.id
+                  className={`text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeTab === tab.id
                       ? 'bg-green-100 text-green-800'
                       : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   {tab.label}
                 </button>
@@ -167,20 +163,18 @@ export default function SettingsManagerModal({ isOpen, onClose, onSettingsUpdate
                     // Define default values for each tab
                     const defaultItems = {
                       departments: [
-                        'College of Engineering and Information Technology',
                         'Department of Information Technology',
                         'Department of Industrial Engineering and Technology',
                         'Department of Computer, Electronics, and Electrical Engineering',
                         'Department of Civil Engineering and Architecture',
                         'Department of Agriculture and Food Engineering',
                       ],
-                      ceit_roles: ['Dean', 'CEIT Official', 'Faculty Member'],
-                      department_roles: ['Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Faculty Member'],
+                      designations: ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator'],
                       ceit_officer_types: [] // No defaults
                     };
-                    
+
                     const isDefault = defaultItems[activeTab]?.includes(item) || false;
-                    
+
                     return (
                       <div key={index} className="flex items-center justify-between bg-white px-3 py-2 border border-gray-200 rounded-lg shadow-sm">
                         <div className="flex items-center gap-2">

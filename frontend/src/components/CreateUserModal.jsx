@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../services/api';
 import CeitOfficerTypePicker from './CeitOfficerTypePicker';
 
-export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists = false }) {
+export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists = false, users = [] }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -24,14 +24,13 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
     if (isOpen) {
       api.get('/settings').then(res => {
         const depts = res.data.departments || [];
-        const ceitRoles = res.data.ceit_roles || [];
-        const deptRoles = res.data.department_roles || [];
+        const designations = res.data.designations || [];
         // Merge all roles, deduplicate, keep Admin out of self-service
-        const merged = [...new Set([...ceitRoles, ...deptRoles])];
-        
+        const merged = [...new Set(designations)];
+
         setDepartments(depts);
         setAllRoles(merged);
-        
+
         // Set defaults once loaded
         setFormData(prev => ({
           ...prev,
@@ -43,7 +42,7 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
         // If API fails, use empty arrays
         setDepartments([]);
         setAllRoles([]);
-        
+
         setFormData(prev => ({
           ...prev,
           department: prev.department || '',
@@ -53,7 +52,23 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess, deanExists
     }
   }, [isOpen]);
 
-  const availableRoles = deanExists ? allRoles.filter(r => r !== 'Dean') : allRoles;
+  // Check if chairperson exists for selected department
+  const isChairpersonTaken = formData.department ? users.some(u =>
+    u.department === formData.department &&
+    (u.designation === 'Chairperson' || (u.designations || []).includes('Chairperson'))
+  ) : false;
+
+  const availableRoles = allRoles.filter(r =>
+    r !== 'Admin' &&
+    (!deanExists || r !== 'Dean') &&
+    (!isChairpersonTaken || r !== 'Chairperson')
+  );
+
+  useEffect(() => {
+    if (formData.designation && availableRoles.length > 0 && !availableRoles.includes(formData.designation)) {
+      setFormData(prev => ({ ...prev, designation: availableRoles[0] }));
+    }
+  }, [availableRoles, formData.designation]);
 
   const generateFullName = () => {
     const cap = (text) => text.split(' ').map(w => w.trim()).filter(Boolean)
