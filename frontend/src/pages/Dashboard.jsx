@@ -438,6 +438,22 @@ export default function Dashboard() {
         event={pendingDeleteEvent}
       />
 
+      {/* Footer */}
+      <footer className="flex-shrink-0 bg-gradient-to-r from-green-700 via-green-600 to-green-800 border-t border-green-900/20 py-3 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+            <p className="text-white text-sm font-medium">Developed by:</p>
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xs sm:text-sm">
+              <span className="text-green-100 font-semibold hover:text-white transition-colors">Steven Clyde E. Maranan</span>
+              <span className="text-green-200 hidden sm:inline">•</span>
+              <span className="text-green-100 font-semibold hover:text-white transition-colors">Mark Vincent C. Asibor</span>
+              <span className="text-green-200 hidden sm:inline">•</span>
+              <span className="text-green-100 font-semibold hover:text-white transition-colors">Gabriel Ian B. De Leon</span>
+            </div>
+          </div>
+        </div>
+      </footer>
+
     </div>
   );
 }
