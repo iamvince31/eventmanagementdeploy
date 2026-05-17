@@ -121,9 +121,9 @@ class DashboardController extends Controller
                 'location' => $event->location,
                 'event_type' => $event->event_type ?? 'event',
                 'images' => $event->images->map(fn($img) => [
-                    'url' => $img->cloudinary_url ?? asset('storage/' . $img->image_path),
+                    'url' => $this->safeImageUrl($img->cloudinary_url, $img->image_path),
                     'original_filename' => $img->original_filename,
-                ]),
+                ])->filter(fn($img) => $img['url'] !== null)->values(),
                 'date' => $date,
                 'time' => $event->time,
                 'end_time' => $event->end_time,
@@ -274,5 +274,40 @@ class DashboardController extends Controller
             'schoolYear' => $schoolYear,
             'nextSchoolYear' => $nextSchoolYear,
         ]);
+    }
+
+    /**
+     * Safely return image URL, filtering out broken backend URLs
+     * - Rejects URLs pointing to the backend server (files are gone)
+     * - Rejects onrender.com/storage URLs (legacy backend storage)
+     * - Rejects localhost storage URLs (local dev legacy records)
+     * - Forces https:// to prevent mixed content
+     */
+    private function safeImageUrl(?string $cloudinaryUrl, ?string $imagePath): ?string
+    {
+        if (!$cloudinaryUrl) {
+            return null;
+        }
+
+        // Reject URLs pointing to the backend server itself — those files are gone
+        $appUrl = rtrim(env('APP_URL', ''), '/');
+        if ($appUrl && str_starts_with($cloudinaryUrl, $appUrl)) {
+            return null;
+        }
+        // Also reject any onrender.com backend URLs regardless of APP_URL setting
+        if (str_contains($cloudinaryUrl, 'onrender.com/storage')) {
+            return null;
+        }
+        // Reject localhost storage URLs (local dev legacy records)
+        if (str_contains($cloudinaryUrl, 'localhost') && str_contains($cloudinaryUrl, '/storage/')) {
+            return null;
+        }
+
+        // Force HTTPS — prevents mixed content when APP_URL is http://
+        if (str_starts_with($cloudinaryUrl, 'http://')) {
+            return 'https://' . substr($cloudinaryUrl, 7);
+        }
+
+        return $cloudinaryUrl;
     }
 }
