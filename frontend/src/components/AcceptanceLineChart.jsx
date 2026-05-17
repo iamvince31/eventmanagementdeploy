@@ -20,6 +20,7 @@ export default function AcceptanceLineChart({ data }) {
   const academicYears = yearlyData.map(d => d.year);
   const acceptedData = yearlyData.map(d => d.accepted);
   const declinedData = yearlyData.map(d => d.declined);
+  const pendingData = yearlyData.map(d => d.pending || 0);
   
   // If no data, show empty chart
   if (academicYears.length === 0) {
@@ -56,6 +57,7 @@ export default function AcceptanceLineChart({ data }) {
   const maxValue = Math.max(
     ...acceptedData,
     ...declinedData,
+    ...pendingData,
     10 // Minimum scale
   );
   
@@ -188,9 +190,9 @@ export default function AcceptanceLineChart({ data }) {
             strokeLinejoin="round"
           />
           
-          {/* Pending line (third line for visual variety) */}
+          {/* Pending line */}
           <path
-            d={createLinePath(acceptedData.map((val, i) => Math.round((val + declinedData[i]) * 0.3)))}
+            d={createLinePath(pendingData)}
             fill="none"
             stroke="#86efac"
             strokeWidth="2.5"
@@ -237,8 +239,7 @@ export default function AcceptanceLineChart({ data }) {
           })}
           
           {/* Pending data points */}
-          {acceptedData.map((val, index) => {
-            const value = Math.round((val + declinedData[index]) * 0.3);
+          {pendingData.map((value, index) => {
             const x = getX(index);
             const y = getY(value);
             return (

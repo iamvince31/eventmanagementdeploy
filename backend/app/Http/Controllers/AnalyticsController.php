@@ -196,10 +196,23 @@ class AnalyticsController extends Controller
                     ->where('events.event_type', 'meeting')
                     ->count();
                 
+                $yearPending = DB::table('event_user')
+                    ->join('events', 'event_user.event_id', '=', 'events.id')
+                    ->join('users', 'event_user.user_id', '=', 'users.id')
+                    ->where('users.department', $dept)
+                    ->where('users.designation', '!=', 'Admin')
+                    ->where('event_user.status', 'pending')
+                    ->where('events.date', '>=', $yearStartDate)
+                    ->where('events.date', '<=', $yearEndDate)
+                    ->where('events.is_personal', false)
+                    ->where('events.event_type', 'meeting')
+                    ->count();
+                
                 $yearlyData[] = [
                     'year' => $yearLabel,
                     'accepted' => $yearAccepted,
                     'declined' => $yearDeclined,
+                    'pending' => $yearPending,
                 ];
             }
                 
