@@ -98,10 +98,14 @@ class UserController extends Controller
 
         $user = User::create([
             'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'],
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'department' => $validated['department'],
             'designation' => $validated['designation'],
+            'designations' => [$validated['designation']],
             'ceit_officer_type' => $validated['designation'] === 'CEIT Official' ? (is_array($request->ceit_officer_type) ? $request->ceit_officer_type : ($request->ceit_officer_type ? [$request->ceit_officer_type] : null)) : null,
             'is_validated' => true,
             'email_verified_at' => now(),
@@ -297,10 +301,14 @@ class UserController extends Controller
 
         $user = User::create([
             'name' => $validated['name'],
+            'first_name' => $validated['first_name'],
+            'middle_name' => $validated['middle_name'],
+            'last_name' => $validated['last_name'],
             'email' => $validated['email'],
             'password' => bcrypt($validated['password']),
             'department' => 'CEIT',
             'designation' => 'Dean',
+            'designations' => ['Dean'],
             'is_validated' => true,
             'email_verified_at' => now(),
         ]);
