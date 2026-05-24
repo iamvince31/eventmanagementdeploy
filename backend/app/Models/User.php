@@ -116,10 +116,11 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isCoordinator()
     {
-        return in_array($this->role, [
+        $designations = $this->getDesignationsArray();
+        return !empty(array_intersect($designations, [
             'Department Research Coordinator',
             'Department Extension Coordinator',
-        ]);
+        ]));
     }
 
     public function isFaculty()
@@ -134,11 +135,17 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function canCreateEvents()
     {
-        return in_array($this->role, [
-            'Admin', 'Dean', 'Chairperson',
-            'Department Research Coordinator', 'Department Extension Coordinator',
-            'CEIT Official', 'Faculty Member',
-        ]);
+        $designations = $this->getDesignationsArray();
+        $allowed = [
+            'Admin',
+            'Dean',
+            'Chairperson',
+            'Department Research Coordinator',
+            'Department Extension Coordinator',
+            'CEIT Official',
+            'Faculty Member',
+        ];
+        return !empty(array_intersect($designations, $allowed));
     }
 
     public function needsApprovalForEvents()
