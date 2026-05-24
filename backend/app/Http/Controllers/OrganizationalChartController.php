@@ -32,7 +32,15 @@ class OrganizationalChartController extends Controller
             }
 
             $users = $query->select('id', 'name', 'first_name', 'last_name', 'email', 'department', 'designation', 'profile_picture')
-                ->orderByRaw("FIELD(designation, 'Chairperson', 'CEIT Official', 'Program Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator', 'GAD Coordinator', 'Faculty Member')")
+                ->orderByRaw("CASE 
+                    WHEN designation = 'Chairperson' THEN 1
+                    WHEN designation = 'CEIT Official' THEN 2
+                    WHEN designation = 'Program Coordinator' THEN 3
+                    WHEN designation = 'Department Research Coordinator' THEN 4
+                    WHEN designation = 'Department Extension Coordinator' THEN 5
+                    WHEN designation = 'GAD Coordinator' THEN 6
+                    WHEN designation = 'Faculty Member' THEN 8
+                    ELSE 7 END")
                 ->orderBy('name', 'asc')
                 ->get();
 
@@ -101,6 +109,10 @@ class OrganizationalChartController extends Controller
                     case 'Faculty Member':
                         $departmentGroups[$dept]['faculty'][] = $userData;
                         break;
+                    default:
+                        // Treat any other custom designation as a faculty-level member for display
+                        $departmentGroups[$dept]['faculty'][] = $userData;
+                        break;
                 }
             }
         }
@@ -133,7 +145,7 @@ class OrganizationalChartController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'department' => 'sometimes|string|max:255',
-            'designation' => 'sometimes|in:Dean,CEIT Official,Chairperson,Program Coordinator,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
+            'designation' => 'sometimes|string|max:255',
         ]);
 
         $user = User::findOrFail($id);
