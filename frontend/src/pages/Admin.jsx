@@ -215,16 +215,7 @@ export default function Admin() {
   };
 
   const getDesignationColor = (designation) => {
-    const colors = {
-      'Admin': 'bg-purple-100 text-purple-800',
-      'Dean': 'bg-blue-100 text-blue-800',
-      'Chairperson': 'bg-indigo-100 text-indigo-800',
-      'Department Research Coordinator': 'bg-cyan-100 text-cyan-800',
-      'Department Extension Coordinator': 'bg-emerald-100 text-emerald-800',
-      'Faculty Member': 'bg-green-100 text-green-800',
-      'CEIT Official': 'bg-orange-100 text-orange-800',
-    };
-    return colors[designation] || 'bg-gray-100 text-gray-800';
+    return 'bg-gray-100 text-gray-700 border border-gray-200';
   };
 
   const handleEditUser = (user) => {
@@ -545,7 +536,7 @@ export default function Admin() {
 
                           <td className="hidden lg:table-cell px-4 py-3">
                             {u.department && u.department !== 'CEIT' ? (
-                              <span className="px-2 py-1 inline-block text-xs font-bold rounded-lg bg-green-100 text-green-800 leading-tight shadow-sm border border-green-200/50 max-w-[170px] break-words">
+                              <span className="px-2 py-1 inline-block text-xs font-bold rounded-lg bg-gray-100 text-gray-700 leading-tight shadow-sm border border-gray-200 max-w-[170px] break-words">
                                 {u.department}
                               </span>
                             ) : (
@@ -633,7 +624,7 @@ export default function Admin() {
                                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Department</span>
                                   <p className="mt-0.5">
                                     {u.department && u.department !== 'CEIT' ? (
-                                      <span className="px-2 py-1 inline-block text-[11px] font-bold rounded-lg bg-green-100 text-green-800 leading-tight max-w-[200px] break-words">
+                                      <span className="px-2 py-1 inline-block text-[11px] font-bold rounded-lg bg-gray-100 text-gray-700 leading-tight border border-gray-200 max-w-[200px] break-words">
                                         {u.department}
                                       </span>
                                     ) : (

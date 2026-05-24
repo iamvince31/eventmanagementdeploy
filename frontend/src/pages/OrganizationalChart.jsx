@@ -212,7 +212,7 @@ export default function OrganizationalChart() {
 
             {/* Designation - Flexible height */}
             <div className={`${s.designationHeight} flex items-center justify-center mb-1 md:mb-2`}>
-              <p className={`${s.designation} text-green-600 font-medium line-clamp-1`}>{member.designation}</p>
+              <p className={`${s.designation} text-gray-700 font-medium line-clamp-1`}>{member.designation}</p>
             </div>
 
             {/* Department - Flexible height */}

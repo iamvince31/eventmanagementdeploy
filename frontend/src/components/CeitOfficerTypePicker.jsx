@@ -90,7 +90,7 @@ export default function CeitOfficerTypePicker({ selected = [], onChange, error }
           {selected.map(type => (
             <span
               key={type}
-              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-800 border border-orange-200"
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-800 border border-gray-200"
             >
               {type}
               <button
@@ -124,7 +124,7 @@ export function CeitOfficerTypeTags({ types, className = '' }) {
       {list.map(type => (
         <span
           key={type}
-          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-orange-50 text-orange-700 border border-orange-200 leading-tight"
+          className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-200 leading-tight"
           title={type}
         >
           {type}
