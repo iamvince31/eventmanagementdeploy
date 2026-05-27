@@ -1,13 +1,30 @@
 <?php
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 
-$app = require_once __DIR__ . '/bootstrap/app.php';
-$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+$app = require_once __DIR__.'/bootstrap/app.php';
 
-use Illuminate\Support\Facades\Cache;
+$kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+$kernel->bootstrap();
 
-Cache::forget('org_chart_departments');
-Cache::forget('org_chart_all');
+// Clear all org chart related caches
+$cacheKeys = [
+    'org_chart_all',
+    'org_chart_departments',
+    'system_settings_all'
+];
 
-echo "Cache cleared successfully\n";
+foreach ($cacheKeys as $key) {
+    Illuminate\Support\Facades\Cache::forget($key);
+    echo "Cleared cache: {$key}\n";
+}
+
+// Also clear department-specific caches
+$departments = \App\Models\SystemSetting::where('key', 'departments')->value('value') ?? [];
+foreach ($departments as $dept) {
+    $key = "org_chart_{$dept}";
+    Illuminate\Support\Facades\Cache::forget($key);
+    echo "Cleared cache: {$key}\n";
+}
+
+echo "\nAll organizational chart caches cleared successfully!\n";

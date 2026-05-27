@@ -31,8 +31,31 @@ class OrganizationalChartController extends Controller
                 $query->where('department', $department);
             }
 
+            // Get custom designations from system settings
+            $customDesignations = \App\Models\SystemSetting::where('key', 'designations')->value('value') ?? [];
+            
+            // Define the hierarchy order
+            $baseOrder = ['Chairperson', 'CEIT Official'];
+            
+            // Add custom designations (excluding predefined ones) after CEIT Official
+            $predefinedDesignations = ['Dean', 'CEIT Official', 'Faculty Member', 'Chairperson', 'Department Research Coordinator', 'Department Extension Coordinator', 'Admin'];
+            $customOnly = array_diff($customDesignations, $predefinedDesignations);
+            
+            // Build the complete order: Chairperson, CEIT Official, Department Research Coordinator, Department Extension Coordinator, [custom designations], Program Coordinator, Faculty Member
+            $orderArray = array_merge(
+                $baseOrder,
+                ['Department Research Coordinator', 'Department Extension Coordinator'],
+                $customOnly,
+                ['Program Coordinator', 'Faculty Member']
+            );
+            
+            // Build the FIELD() clause
+            $orderString = implode("', '", array_map(function($item) {
+                return addslashes($item);
+            }, $orderArray));
+            
             $users = $query->select('id', 'name', 'first_name', 'last_name', 'email', 'department', 'designation', 'profile_picture')
-                ->orderByRaw("FIELD(designation, 'Chairperson', 'CEIT Official', 'Program Coordinator', 'Department Research Coordinator', 'Department Extension Coordinator', 'GAD Coordinator', 'Faculty Member')")
+                ->orderByRaw("FIELD(designation, '{$orderString}')")
                 ->orderBy('name', 'asc')
                 ->get();
 
