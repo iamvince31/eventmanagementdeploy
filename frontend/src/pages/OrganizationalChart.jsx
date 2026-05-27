@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import api from '../services/api';
-import { getCache, setCache, SETTINGS_TTL } from '../services/cache';
+import { getCache, setCache, invalidateCache, SETTINGS_TTL } from '../services/cache';
 
 export default function OrganizationalChart() {
   const { user } = useAuth();
@@ -89,6 +89,9 @@ export default function OrganizationalChart() {
   const handleEdit = (member) => {
     setEditingUser(member);
     setIsEditModalOpen(true);
+    // Invalidate cache and refetch settings to ensure we have the latest designations
+    invalidateCache('settings');
+    fetchSettings();
   };
 
   const handleDelete = async (memberId) => {

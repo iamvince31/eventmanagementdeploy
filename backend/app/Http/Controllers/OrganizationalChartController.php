@@ -79,8 +79,9 @@ class OrganizationalChartController extends Controller
                         'chairperson' => null,
                         'ceitOfficials' => [], // CEIT Officials within department
                         'programCoordinators' => [],
-                        'departmentCoordinators' => [], // Research and Extension coordinators
-                        'faculty' => []
+                        'departmentCoordinators' => [], // Research, Extension, and other coordinators
+                        'faculty' => [],
+                        'others' => [] // Custom designations
                     ];
                 }
 
@@ -101,6 +102,11 @@ class OrganizationalChartController extends Controller
                     case 'Faculty Member':
                         $departmentGroups[$dept]['faculty'][] = $userData;
                         break;
+                    default:
+                        // Handle custom designations - add to departmentCoordinators
+                        // This ensures custom roles appear alongside Research/Extension coordinators
+                        $departmentGroups[$dept]['departmentCoordinators'][] = $userData;
+                        break;
                 }
             }
         }
@@ -113,7 +119,8 @@ class OrganizationalChartController extends Controller
                 'ceitOfficials' => $deptData['ceitOfficials'] ?? [],
                 'programCoordinators' => $deptData['programCoordinators'] ?? [],
                 'departmentCoordinators' => $deptData['departmentCoordinators'] ?? [],
-                'faculty' => $deptData['faculty'] ?? []
+                'faculty' => $deptData['faculty'] ?? [],
+                'others' => $deptData['others'] ?? []
             ];
         }
 
@@ -133,7 +140,7 @@ class OrganizationalChartController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|email|unique:users,email,' . $id,
             'department' => 'sometimes|string|max:255',
-            'designation' => 'sometimes|in:Dean,CEIT Official,Chairperson,Program Coordinator,Department Research Coordinator,Department Extension Coordinator,Faculty Member',
+            'designation' => 'sometimes|string|max:255', // Allow any custom designation
         ]);
 
         $user = User::findOrFail($id);
