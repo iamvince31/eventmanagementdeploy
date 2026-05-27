@@ -114,7 +114,7 @@ export default function Dashboard() {
       applyDashboardData(cached, false);
       setLoading(false);
       try {
-        const response = await api.get('/dashboard');
+        const response = await api.get('/dashboard', { timeout: 10000 });
         setCache(cacheKey, response.data);
         applyDashboardData(response.data, true);
         setNavRefreshTrigger(t => t + 1);
@@ -128,7 +128,8 @@ export default function Dashboard() {
     }
 
     try {
-      const response = await api.get('/dashboard');
+      // Add timeout to prevent hanging
+      const response = await api.get('/dashboard', { timeout: 10000 });
       setCache(cacheKey, response.data);
       applyDashboardData(response.data, false);
       setNavRefreshTrigger(t => t + 1);
@@ -138,6 +139,8 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      // Set empty data on error to prevent infinite loading
+      applyDashboardData({ events: [], defaultEvents: [], userSchedules: [] }, false);
     } finally {
       setLoading(false);
     }

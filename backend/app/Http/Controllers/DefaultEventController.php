@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DefaultEvent;
+use App\Services\EventCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -13,88 +14,122 @@ class DefaultEventController extends Controller
      * Get all default events ordered by month and order.
      * Returns base events (no school_year) and school-year-specific versions.
      * If both exist for the same event, only the school-year-specific version is returned.
+     * OPTIMIZED: Uses eager loading, single query, and caching for better performance.
      *
      * @return JsonResponse
      */
     public function index(Request $request): JsonResponse
     {
-        $schoolYear = $request->query('school_year');
-        $onlyEdited = filter_var($request->query('only_edited', false), FILTER_VALIDATE_BOOLEAN);
-        
-        if (!$schoolYear) {
-            return response()->json([
-                'error' => 'school_year parameter is required'
-            ], 422);
-        }
-
-        // Get all base default events (templates without school_year)
-        $baseEvents = DefaultEvent::whereNull('school_year')
-            ->orderBy('month')
-            ->orderBy('order')
-            ->get();
-
-        // Get all date assignments for this school year from default_event_dates table
-        $eventDates = \App\Models\DefaultEventDate::where('school_year', $schoolYear)
-            ->get()
-            ->keyBy('default_event_id');
-
-        // Merge base events with their assigned dates
-        $events = $baseEvents->map(function ($event) use ($eventDates, $schoolYear) {
-            $dateAssignment = $eventDates->get($event->id);
+        try {
+            $schoolYear = $request->query('school_year');
+            $onlyEdited = filter_var($request->query('only_edited', false), FILTER_VALIDATE_BOOLEAN);
             
-            return [
-                'id' => $event->id,
-                'name' => $event->name,
-                'month' => $event->month,
-                'order' => $event->order,
-                'date' => $dateAssignment?->date?->format('Y-m-d'),
-                'end_date' => $dateAssignment?->end_date?->format('Y-m-d'),
-                'school_year' => $schoolYear,
-                'semester' => $dateAssignment?->semester,
-                'has_date_set' => $dateAssignment !== null,
-                'is_created' => false, // This is a default/base event
-            ];
-        });
+            if (!$schoolYear) {
+                return response()->json([
+                    'error' => 'school_year parameter is required'
+                ], 422);
+            }
 
-        // Get created academic events for this school year
-        $createdEvents = \App\Models\CreatedAcademicEvent::forSchoolYear($schoolYear)
-            ->ordered()
-            ->get()
-            ->map(function ($event) {
-                return [
-                    'id' => 'created_' . $event->id, // Prefix to distinguish from default events
-                    'actual_id' => $event->id, // Store the real ID for operations
-                    'name' => $event->name,
-                    'month' => $event->month,
-                    'order' => $event->order,
-                    'date' => $event->date?->format('Y-m-d'),
-                    'end_date' => $event->end_date?->format('Y-m-d'),
-                    'school_year' => $event->school_year,
-                    'semester' => $event->semester,
-                    'has_date_set' => $event->date !== null,
-                    'is_created' => true, // This is a user-created event
-                    'created_by' => $event->created_by,
-                ];
+            // OPTIMIZATION: Use caching to avoid repeated database queries
+            $cacheKey = EventCacheService::getDefaultEventsCacheKey($schoolYear, $onlyEdited);
+            
+            $allEvents = EventCacheService::remember($cacheKey, function() use ($schoolYear, $onlyEdited) {
+                // OPTIMIZATION 1: Use a single query with LEFT JOIN to get base events and their dates
+                $baseEventsWithDates = \DB::table('default_events as de')
+                    ->leftJoin('default_event_dates as ded', function($join) use ($schoolYear) {
+                        $join->on('de.id', '=', 'ded.default_event_id')
+                             ->where('ded.school_year', '=', $schoolYear);
+                    })
+                    ->whereNull('de.school_year')
+                    ->select(
+                        'de.id',
+                        'de.name',
+                        'de.month',
+                        'de.order',
+                        'ded.date',
+                        'ded.end_date',
+                        'ded.semester'
+                    )
+                    ->orderBy('de.month')
+                    ->orderBy('de.order')
+                    ->get();
+
+                // OPTIMIZATION 2: Transform results in a single pass
+                $events = $baseEventsWithDates->map(function ($event) use ($schoolYear) {
+                    $hasDate = $event->date !== null;
+                    return [
+                        'id' => $event->id,
+                        'name' => $event->name,
+                        'month' => $event->month,
+                        'order' => $event->order,
+                        'date' => $hasDate ? \Carbon\Carbon::parse($event->date)->format('Y-m-d') : null,
+                        'end_date' => $event->end_date ? \Carbon\Carbon::parse($event->end_date)->format('Y-m-d') : null,
+                        'school_year' => $schoolYear,
+                        'semester' => $event->semester,
+                        'has_date_set' => $hasDate,
+                        'is_created' => false,
+                    ];
+                });
+
+                // OPTIMIZATION 3: Get created academic events with a single query
+                $createdEvents = \App\Models\CreatedAcademicEvent::select([
+                        'id', 'name', 'month', 'order', 'date', 'end_date', 
+                        'school_year', 'semester', 'created_by'
+                    ])
+                    ->where('school_year', $schoolYear)
+                    ->orderBy('order')
+                    ->get()
+                    ->map(function ($event) {
+                        $hasDate = $event->date !== null;
+                        return [
+                            'id' => 'created_' . $event->id,
+                            'actual_id' => $event->id,
+                            'name' => $event->name,
+                            'month' => $event->month,
+                            'order' => $event->order,
+                            'date' => $hasDate ? $event->date->format('Y-m-d') : null,
+                            'end_date' => $event->end_date ? $event->end_date->format('Y-m-d') : null,
+                            'school_year' => $event->school_year,
+                            'semester' => $event->semester,
+                            'has_date_set' => $hasDate,
+                            'is_created' => true,
+                            'created_by' => $event->created_by,
+                        ];
+                    });
+
+                // OPTIMIZATION 4: Filter before merging if only_edited=true
+                if ($onlyEdited) {
+                    $events = $events->filter(fn($e) => $e['has_date_set']);
+                    $createdEvents = $createdEvents->filter(fn($e) => $e['has_date_set']);
+                }
+
+                // OPTIMIZATION 5: Merge and sort efficiently
+                return $events->concat($createdEvents)
+                    ->sortBy([['month', 'asc'], ['order', 'asc']])
+                    ->values()
+                    ->all();
             });
 
-        // Merge both collections and sort by month and order
-        $allEvents = $events->concat($createdEvents)->sortBy([
-            ['month', 'asc'],
-            ['order', 'asc'],
-        ])->values();
-
-        // Filter to only show events with dates if only_edited=true
-        if ($onlyEdited) {
-            $allEvents = $allEvents->filter(function ($event) {
-                return $event['has_date_set'] === true;
-            })->values();
+            return response()->json([
+                'events' => $allEvents,
+                'school_year' => $schoolYear,
+                'only_edited' => $onlyEdited
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('DefaultEventController index error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'school_year' => $request->query('school_year'),
+            ]);
+            
+            return response()->json([
+                'error' => 'Failed to fetch default events',
+                'message' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+                'events' => [],
+                'school_year' => $request->query('school_year'),
+                'only_edited' => false
+            ], 500);
         }
-
-        return response()->json([
-            'events' => $allEvents,
-            'school_year' => $schoolYear,
-            'only_edited' => $onlyEdited
-        ]);
     }
 
     /**
@@ -196,6 +231,9 @@ class DefaultEventController extends Controller
             ]
         );
 
+        // Clear cache for this school year
+        EventCacheService::clearDefaultEventsCache($request->school_year);
+
         return response()->json([
             'message' => 'Event date set successfully',
             'event' => [
@@ -228,6 +266,9 @@ class DefaultEventController extends Controller
         $deleted = \App\Models\DefaultEventDate::where('default_event_id', $id)
             ->where('school_year', $schoolYear)
             ->delete();
+
+        // Clear cache for this school year
+        EventCacheService::clearDefaultEventsCache($schoolYear);
 
         return response()->json([
             'message' => $deleted ? 'Date removed successfully' : 'No date assignment found',

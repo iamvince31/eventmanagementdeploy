@@ -45,10 +45,14 @@ export default function AdminEvents() {
                 : `${currentYear - 1}-${currentYear}`;
             
             // Use /default-events with only_edited=true to only show events with dates set
-            const response = await api.get(`/default-events?school_year=${schoolYear}&only_edited=true`);
+            const response = await api.get(`/default-events?school_year=${schoolYear}&only_edited=true`, {
+                timeout: 10000 // 10 second timeout
+            });
             setAcademicCalendarEvents(response.data.events || []);
         } catch (error) {
             console.error('Error fetching academic calendar events:', error);
+            // Set empty array on error to prevent blocking
+            setAcademicCalendarEvents([]);
         }
     };
 

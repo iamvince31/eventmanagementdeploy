@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CreatedAcademicEvent;
+use App\Services\EventCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -97,6 +98,9 @@ class CreatedAcademicEventController extends Controller
             'order' => $maxOrder + 1,
         ]);
 
+        // Clear cache for this school year
+        EventCacheService::clearDefaultEventsCache($request->school_year);
+
         return response()->json([
             'message' => 'Academic event created successfully',
             'event' => $event
@@ -139,6 +143,9 @@ class CreatedAcademicEventController extends Controller
 
         $event->update($request->only(['name', 'date', 'end_date']));
 
+        // Clear cache for this school year
+        EventCacheService::clearDefaultEventsCache($event->school_year);
+
         return response()->json([
             'message' => 'Academic event updated successfully',
             'event' => $event
@@ -150,7 +157,11 @@ class CreatedAcademicEventController extends Controller
      */
     public function destroy(CreatedAcademicEvent $event): JsonResponse
     {
+        $schoolYear = $event->school_year;
         $event->delete();
+
+        // Clear cache for this school year
+        EventCacheService::clearDefaultEventsCache($schoolYear);
 
         return response()->json([
             'message' => 'Academic event deleted successfully'
@@ -178,6 +189,9 @@ class CreatedAcademicEventController extends Controller
             'date' => $request->date,
             'end_date' => $request->end_date,
         ]);
+
+        // Clear cache for this school year
+        EventCacheService::clearDefaultEventsCache($event->school_year);
 
         return response()->json([
             'message' => 'Event date updated successfully',
