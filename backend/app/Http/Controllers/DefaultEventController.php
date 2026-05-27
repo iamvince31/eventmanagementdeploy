@@ -6,6 +6,8 @@ use App\Models\DefaultEvent;
 use App\Services\EventCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class DefaultEventController extends Controller
@@ -35,7 +37,7 @@ class DefaultEventController extends Controller
             
             $allEvents = EventCacheService::remember($cacheKey, function() use ($schoolYear, $onlyEdited) {
                 // OPTIMIZATION 1: Use a single query with LEFT JOIN to get base events and their dates
-                $baseEventsWithDates = \DB::table('default_events as de')
+                $baseEventsWithDates = DB::table('default_events as de')
                     ->leftJoin('default_event_dates as ded', function($join) use ($schoolYear) {
                         $join->on('de.id', '=', 'ded.default_event_id')
                              ->where('ded.school_year', '=', $schoolYear);
@@ -117,9 +119,11 @@ class DefaultEventController extends Controller
             ]);
             
         } catch (\Exception $e) {
-            \Log::error('DefaultEventController index error: ' . $e->getMessage(), [
+            Log::error('DefaultEventController index error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'school_year' => $request->query('school_year'),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
             ]);
             
             return response()->json([
